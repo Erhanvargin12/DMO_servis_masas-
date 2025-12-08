@@ -1,0 +1,462 @@
+@model WebUI.Models.UserListViewModel
+@{
+    ViewData["Title"] = "Kullanıcılar";
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-header-title">Kullanıcılar</h1>
+    </div>
+    <button type="button" class="btn btn-primary" data-modal-open="userModal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Yeni Kullanıcı
+    </button>
+</div>
+
+<!-- Data Table -->
+<div class="data-table">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>Tüm Kullanıcılar</span>
+            <span class="data-table-count">@Model.TotalCount kayıt</span>
+        </div>
+        <div class="data-table-actions">
+            <div class="data-table-search">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" placeholder="Ara..." id="tableSearch" autocomplete="off" />
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="table" id="usersTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="name">
+                        Kullanıcı
+                        <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                    </th>
+                    <th class="sortable" data-sort="email">
+                        E-posta
+                        <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                    </th>
+                    <th>Sicil No</th>
+                    <th class="sortable" data-sort="status">
+                        Durum
+                        <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                    </th>
+                    <th class="sortable" data-sort="date">
+                        Tarih
+                        <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                    </th>
+                    <th width="140"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Users.Any())
+                {
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr data-item-id="@user.Id" data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(user, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
+                            <td>
+                                <div class="cell-user">
+                                    <div class="cell-avatar">@user.FirstName[..1].ToUpper()</div>
+                                    <div>
+                                        <div class="cell-name">@user.FullName</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@user.Mail</td>
+                            <td><span class="cell-id">@user.RegistirationId</span></td>
+                            <td>
+                                <span class="badge @(user.Status ? "badge-success" : "badge-error")">
+                                    @(user.Status ? "Aktif" : "Pasif")
+                                </span>
+                            </td>
+                            <td class="text-muted">@user.CreateAt.ToString("dd.MM.yyyy")</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Roller"
+                                            data-role-modal="@user.Id" data-user-name="@user.FullName">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Düzenle"
+                                            data-modal-open="userModal" data-item-id="@user.Id">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm btn-icon-danger" title="Sil"
+                                            data-delete="@user.Id" data-delete-name="@user.FullName">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <div class="empty-state-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                            <p class="empty-state-title">Kullanıcı bulunamadı</p>
+                            <p class="empty-state-text">Yeni kullanıcı eklemek için butonu kullanın</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="data-table-footer">
+        <div class="data-table-info">
+            <span id="paginationInfo">Toplam @Model.TotalCount kullanıcı</span>
+        </div>
+        <div class="data-table-pagination" id="pagination"></div>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title" data-create-title="Yeni Kullanıcı" data-edit-title="Kullanıcı Düzenle">Yeni Kullanıcı</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <form class="ajax-form" asp-controller="Users" asp-action="Save" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="0" />
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Ad</label>
+                        <input type="text" name="FirstName" class="form-input" placeholder="Adı girin" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Soyad</label>
+                        <input type="text" name="LastName" class="form-input" placeholder="Soyadı girin" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">E-posta</label>
+                    <input type="email" name="Mail" class="form-input" placeholder="ornek@email.com" required />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Sicil No</label>
+                        <input type="number" name="RegistirationId" class="form-input" value="0" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Organizasyon ID</label>
+                        <input type="number" name="OrganizationUnitId" class="form-input" value="0" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Pozisyon ID</label>
+                        <input type="number" name="PositionId" class="form-input" value="0" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Durum</label>
+                        <div class="form-check" style="margin-top: 8px;">
+                            <input type="checkbox" name="Status" class="form-checkbox" id="userStatus" checked />
+                            <label for="userStatus">Aktif</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary" data-create-text="Kaydet" data-edit-text="Güncelle">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Roles Modal -->
+<div class="modal-overlay" id="rolesModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Rol Yönetimi</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="role-user-info">
+                <div class="role-user-avatar" id="roleUserAvatar">U</div>
+                <div class="role-user-name" id="roleUserName">Kullanıcı Adı</div>
+            </div>
+            <div class="role-list" id="roleList">
+                @foreach (var role in Model.Roles)
+                {
+                    <label class="role-item">
+                        <input type="checkbox" class="role-checkbox" value="@role.Id" />
+                        <div class="role-info">
+                            <span class="role-name">@role.Name</span>
+                            <span class="role-desc">@role.Description</span>
+                        </div>
+                    </label>
+                }
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn" data-modal-close>İptal</button>
+            <button type="button" class="btn btn-primary" id="saveRolesBtn">Rolleri Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-xs">
+        <div class="modal-header">
+            <h3 class="modal-title">Silme Onayı</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <form asp-controller="Users" asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="deleteModalItemId" value="" />
+            <div class="modal-body">
+                <div class="delete-content">
+                    <div class="delete-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </div>
+                    <p class="delete-title">Bu kullanıcıyı silmek istiyor musunuz?</p>
+                    <p class="delete-name" id="deleteModalItemName"></p>
+                    <p class="delete-warning">Bu işlem geri alınamaz</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>Vazgeç</button>
+                <button type="submit" class="btn btn-danger">Sil</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function() {
+    var PAGE_SIZE = 8;
+    var currentPage = 1;
+    var currentUserId = 0;
+    
+    var searchInput = document.getElementById('tableSearch');
+    var tableBody = document.querySelector('#usersTable tbody');
+    var countBadge = document.querySelector('.data-table-count');
+    var paginationInfo = document.getElementById('paginationInfo');
+    var paginationContainer = document.getElementById('pagination');
+    var allRows = Array.from(tableBody.querySelectorAll('tr[data-item-id]'));
+    var emptyRow = tableBody.querySelector('tr:not([data-item-id])');
+    var filteredRows = allRows.slice();
+    
+    // Roles Modal Elements
+    var rolesModal = document.getElementById('rolesModal');
+    var roleUserAvatar = document.getElementById('roleUserAvatar');
+    var roleUserName = document.getElementById('roleUserName');
+    var roleCheckboxes = document.querySelectorAll('.role-checkbox');
+    var saveRolesBtn = document.getElementById('saveRolesBtn');
+    
+    // Pagination
+    function renderPagination() {
+        if (allRows.length === 0) return;
+        
+        var totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
+        var start = (currentPage - 1) * PAGE_SIZE;
+        var end = start + PAGE_SIZE;
+        
+        allRows.forEach(function(row) { row.style.display = 'none'; });
+        filteredRows.slice(start, end).forEach(function(row) { row.style.display = ''; });
+        
+        if (emptyRow) {
+            emptyRow.style.display = filteredRows.length === 0 ? '' : 'none';
+        }
+        
+        var showStart = filteredRows.length > 0 ? start + 1 : 0;
+        var showEnd = Math.min(end, filteredRows.length);
+        if (countBadge) countBadge.textContent = filteredRows.length + ' kayıt';
+        if (paginationInfo) paginationInfo.textContent = showStart + '-' + showEnd + ' / ' + filteredRows.length + ' kullanıcı';
+        
+        var html = '';
+        html += '<button type="button" ' + (currentPage === 1 ? 'disabled' : '') + ' data-page="' + (currentPage - 1) + '">';
+        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
+        html += '</button>';
+        
+        for (var i = 1; i <= totalPages; i++) {
+            if (totalPages <= 7 || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                html += '<button type="button" class="' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
+            } else if (i === currentPage - 2 || i === currentPage + 2) {
+                html += '<button type="button" disabled>...</button>';
+            }
+        }
+        
+        html += '<button type="button" ' + (currentPage === totalPages || totalPages === 0 ? 'disabled' : '') + ' data-page="' + (currentPage + 1) + '">';
+        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+        html += '</button>';
+        
+        paginationContainer.innerHTML = html;
+    }
+    
+    function filterRows(term) {
+        currentPage = 1;
+        if (term === '') {
+            filteredRows = allRows.slice();
+        } else {
+            filteredRows = allRows.filter(function(row) {
+                var data = JSON.parse(row.getAttribute('data-item') || '{}');
+                var searchText = [
+                    data.FirstName || '',
+                    data.LastName || '',
+                    data.Mail || '',
+                    (data.RegistirationId || '').toString()
+                ].join(' ').toLowerCase();
+                return searchText.includes(term);
+            });
+        }
+        renderPagination();
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterRows(this.value.toLowerCase().trim());
+        });
+    }
+    
+    if (paginationContainer) {
+        paginationContainer.addEventListener('click', function(e) {
+            var btn = e.target.closest('button[data-page]');
+            if (btn && !btn.disabled) {
+                currentPage = parseInt(btn.getAttribute('data-page'));
+                renderPagination();
+            }
+        });
+    }
+    
+    // Roles Modal
+    document.querySelectorAll('[data-role-modal]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            currentUserId = parseInt(this.getAttribute('data-role-modal'));
+            var userName = this.getAttribute('data-user-name') || 'Kullanıcı';
+            
+            roleUserAvatar.textContent = userName.charAt(0).toUpperCase();
+            roleUserName.textContent = userName;
+            
+            // Reset checkboxes
+            roleCheckboxes.forEach(function(cb) { cb.checked = false; });
+            
+            // Get user roles
+            fetch('/Users/GetUserRoles?userId=' + currentUserId)
+                .then(function(res) { return res.json(); })
+                .then(function(result) {
+                    if (result.success && result.data) {
+                        result.data.forEach(function(roleId) {
+                            var cb = document.querySelector('.role-checkbox[value="' + roleId + '"]');
+                            if (cb) cb.checked = true;
+                        });
+                    }
+                })
+                .catch(function(err) { console.error('Rol getirme hatası:', err); });
+            
+            rolesModal.classList.add('active');
+        });
+    });
+    
+    // Save Roles
+    if (saveRolesBtn) {
+        saveRolesBtn.addEventListener('click', function() {
+            var selectedRoles = [];
+            roleCheckboxes.forEach(function(cb) {
+                if (cb.checked) selectedRoles.push(parseInt(cb.value));
+            });
+            
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            fetch('/Users/SaveRoles', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ userId: currentUserId, roleIds: selectedRoles })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    if (typeof AdminUI !== 'undefined' && AdminUI.Toast) {
+                        AdminUI.Toast.success(result.message || 'Roller güncellendi');
+                    } else {
+                        alert(result.message || 'Roller güncellendi');
+                    }
+                    rolesModal.classList.remove('active');
+                } else {
+                    if (typeof AdminUI !== 'undefined' && AdminUI.Toast) {
+                        AdminUI.Toast.error(result.message || 'Bir hata oluştu');
+                    } else {
+                        alert(result.message || 'Bir hata oluştu');
+                    }
+                }
+            })
+            .catch(function(err) {
+                console.error('Rol kaydetme hatası:', err);
+                alert('Bağlantı hatası');
+            });
+        });
+    }
+    
+    // Close roles modal
+    rolesModal.querySelectorAll('[data-modal-close]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            rolesModal.classList.remove('active');
+        });
+    });
+    
+    rolesModal.addEventListener('click', function(e) {
+        if (e.target === rolesModal) {
+            rolesModal.classList.remove('active');
+        }
+    });
+    
+    // Initial render
+    renderPagination();
+})();
+</script>
+}

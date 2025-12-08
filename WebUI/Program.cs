@@ -1,5 +1,6 @@
 using WebUI.Models;
-using WebUI.Services;
+using WebUI.Services.Abstract;
+using WebUI.Services.Concrete;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +16,7 @@ builder.Services.AddSession(options =>
     options.Cookie.Name = builder.Configuration.GetValue<string>("SessionSettings:CookieName", ".BackendCore.Session");
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // Authentication
@@ -28,18 +29,27 @@ builder.Services.AddAuthentication("Cookies")
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
 
-// HttpClient for API calls
+// HttpClient for API calls - Development SSL bypass
 var apiBaseUrl = builder.Configuration.GetValue<string>("ApiSettings:BaseUrl") ?? "https://localhost:5001/api/";
 var apiTimeout = builder.Configuration.GetValue<int>("ApiSettings:Timeout", 30);
+
+// SSL bypass handler for development
+var handler = new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+};
 
 builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(apiTimeout);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
 
 builder.Services.AddHttpClient<IApiService, ApiService>(client =>
@@ -47,10 +57,47 @@ builder.Services.AddHttpClient<IApiService, ApiService>(client =>
     client.BaseAddress = new Uri(apiBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(apiTimeout);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+});
+
+builder.Services.AddHttpClient<IUserApiService, UserApiService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(apiTimeout);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+});
+
+builder.Services.AddHttpClient<IRoleApiService, RoleApiService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(apiTimeout);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+});
+
+builder.Services.AddHttpClient<IMenuApiService, MenuApiService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(apiTimeout);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 
 // HttpContextAccessor
 builder.Services.AddHttpContextAccessor();

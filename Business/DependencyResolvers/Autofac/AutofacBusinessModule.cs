@@ -17,6 +17,18 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<UserManager>().As<IUserService>().SingleInstance();
         builder.RegisterType<EfUserDal>().As<IUserDal>().SingleInstance();
 
+        builder.RegisterType<OperationClaimManager>().As<IOperationClaimService>().SingleInstance();
+        builder.RegisterType<EfOperationClaimDal>().As<IOperationClaimDal>().SingleInstance();
+
+        builder.RegisterType<UserOperationClaimManager>().As<IUserOperationClaimService>().SingleInstance();
+        builder.RegisterType<EfUserOperationClaimDal>().As<IUserOperationClaimDal>().SingleInstance();
+
+        builder.RegisterType<MenuManager>().As<IMenuService>().SingleInstance();
+        builder.RegisterType<EfMenuDal>().As<IMenuDal>().SingleInstance();
+
+        builder.RegisterType<MenuOperationClaimManager>().As<IMenuOperationClaimService>().SingleInstance();
+        builder.RegisterType<EfMenuOperationClaimDal>().As<IMenuOperationClaimDal>().SingleInstance();
+
         builder.RegisterType<AuthManager>().As<IAuthService>().SingleInstance();
         builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 

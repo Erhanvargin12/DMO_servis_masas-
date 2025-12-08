@@ -1,4 +1,7 @@
-﻿CREATE DATABASE CoreDev;
+﻿-- Her ortam için (development, staging, production) bir db oluştur
+-- Oluşan dblerin connection stringlerini appsettings'e kaydet
+
+CREATE DATABASE CoreDev;
 GO
 USE CoreDev;
 GO
@@ -45,14 +48,11 @@ CREATE TABLE UserClaims
 GO
 
 
-INSERT INTO Users
-(FirstName, LastName, Mail, PasswordHash, PasswordSalt, Status, CreateAt, RegistirationId, OrganizationUnitId, PositionId)
+INSERT INTO Users(FirstName, LastName, Mail, PasswordHash, PasswordSalt, Status, CreateAt, RegistirationId, OrganizationUnitId, PositionId)
 VALUES ('Test','User','user@dev.com',0x010203,0x040506,1,GETDATE(),1,10,5);
 
-INSERT INTO OperationClaims (Name, Description) VALUES
-('Admin','Yönetim Yetkisi'),
-('User','Temel Kullanıcı Yetkisi'),
-('Inspector','Denetim Yetkisi');
+INSERT INTO OperationClaims (Name, Description) 
+VALUES ('Admin','Yönetim Yetkisi'), ('User','Temel Kullanıcı Yetkisi'), ('Inspector','Denetim Yetkisi');
 
 INSERT INTO UserOperationClaims (UserId, OperationClaimId)
 VALUES (1,1),(1,2);

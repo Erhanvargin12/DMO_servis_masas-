@@ -1,8 +1,9 @@
 using Newtonsoft.Json;
 using System.Text;
 using WebUI.Models;
+using WebUI.Services.Abstract;
 
-namespace WebUI.Services
+namespace WebUI.Services.Concrete
 {
     public class AuthService : IAuthService
     {

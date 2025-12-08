@@ -1,0 +1,284 @@
+@model WebUI.Models.RoleListViewModel
+@{
+    ViewData["Title"] = "Roller";
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-header-title">Roller</h1>
+    </div>
+    <button type="button" class="btn btn-primary" data-modal-open="roleModal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Yeni Rol
+    </button>
+</div>
+
+<!-- Data Table -->
+<div class="data-table">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>Tüm Roller</span>
+            <span class="data-table-count">@Model.TotalCount kayıt</span>
+        </div>
+        <div class="data-table-actions">
+            <div class="data-table-search">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" placeholder="Ara..." id="tableSearch" autocomplete="off" />
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="table" id="rolesTable">
+            <thead>
+                <tr>
+                    <th width="80">ID</th>
+                    <th class="sortable" data-sort="name">
+                        Rol Adı
+                        <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                    </th>
+                    <th>Açıklama</th>
+                    <th width="100"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Roles.Any())
+                {
+                    @foreach (var role in Model.Roles)
+                    {
+                        <tr data-item-id="@role.Id" data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(role, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
+                            <td><span class="cell-id">#@role.Id</span></td>
+                            <td>
+                                <div class="cell-icon">
+                                    <div class="cell-icon-box">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                        </svg>
+                                    </div>
+                                    <span class="cell-name">@role.Name</span>
+                                </div>
+                            </td>
+                            <td class="text-muted">@(role.Description ?? "-")</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Düzenle"
+                                            data-modal-open="roleModal" data-item-id="@role.Id">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm btn-icon-danger" title="Sil"
+                                            data-delete="@role.Id" data-delete-name="@role.Name">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <div class="empty-state-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
+                            </div>
+                            <p class="empty-state-title">Rol bulunamadı</p>
+                            <p class="empty-state-text">Yeni rol eklemek için butonu kullanın</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="data-table-footer">
+        <div class="data-table-info">
+            <span id="paginationInfo">Toplam @Model.TotalCount rol</span>
+        </div>
+        <div class="data-table-pagination" id="pagination"></div>
+    </div>
+</div>
+
+<!-- Role Modal -->
+<div class="modal-overlay" id="roleModal">
+    <div class="modal modal-xs">
+        <div class="modal-header">
+            <h3 class="modal-title" data-create-title="Yeni Rol" data-edit-title="Rol Düzenle">Yeni Rol</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <form class="ajax-form" asp-controller="Roles" asp-action="Save" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="0" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Rol Adı</label>
+                    <input type="text" name="Name" class="form-input" placeholder="Örn: Admin, Editor, Viewer" required />
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Açıklama</label>
+                    <textarea name="Description" class="form-input form-textarea" rows="3" placeholder="Rol açıklaması (isteğe bağlı)"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary" data-create-text="Kaydet" data-edit-text="Güncelle">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-xs">
+        <div class="modal-header">
+            <h3 class="modal-title">Silme Onayı</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <form asp-controller="Roles" asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="deleteModalItemId" value="" />
+            <div class="modal-body">
+                <div class="delete-content">
+                    <div class="delete-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </div>
+                    <p class="delete-title">Bu rolü silmek istiyor musunuz?</p>
+                    <p class="delete-name" id="deleteModalItemName"></p>
+                    <p class="delete-warning">Bu işlem geri alınamaz</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>Vazgeç</button>
+                <button type="submit" class="btn btn-danger">Sil</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function() {
+    var PAGE_SIZE = 8;
+    var currentPage = 1;
+    
+    var searchInput = document.getElementById('tableSearch');
+    var tableBody = document.querySelector('#rolesTable tbody');
+    var countBadge = document.querySelector('.data-table-count');
+    var paginationInfo = document.getElementById('paginationInfo');
+    var paginationContainer = document.getElementById('pagination');
+    var allRows = Array.from(tableBody.querySelectorAll('tr[data-item-id]'));
+    var emptyRow = tableBody.querySelector('tr:not([data-item-id])');
+    var filteredRows = allRows.slice();
+    
+    if (allRows.length === 0) return;
+
+    function renderPagination() {
+        var totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
+        var start = (currentPage - 1) * PAGE_SIZE;
+        var end = start + PAGE_SIZE;
+        
+        // Hide all rows first
+        allRows.forEach(function(row) { row.style.display = 'none'; });
+        
+        // Show only current page rows
+        filteredRows.slice(start, end).forEach(function(row) { row.style.display = ''; });
+        
+        // Empty state
+        if (emptyRow) {
+            emptyRow.style.display = filteredRows.length === 0 ? '' : 'none';
+        }
+        
+        // Update info
+        var showStart = filteredRows.length > 0 ? start + 1 : 0;
+        var showEnd = Math.min(end, filteredRows.length);
+        if (countBadge) countBadge.textContent = filteredRows.length + ' kayıt';
+        if (paginationInfo) paginationInfo.textContent = showStart + '-' + showEnd + ' / ' + filteredRows.length + ' rol';
+        
+        // Render pagination buttons
+        var html = '';
+        
+        // Prev button
+        html += '<button type="button" ' + (currentPage === 1 ? 'disabled' : '') + ' data-page="' + (currentPage - 1) + '">';
+        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
+        html += '</button>';
+        
+        // Page numbers
+        for (var i = 1; i <= totalPages; i++) {
+            if (totalPages <= 7 || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                html += '<button type="button" class="' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
+            } else if (i === currentPage - 2 || i === currentPage + 2) {
+                html += '<button type="button" disabled>...</button>';
+            }
+        }
+        
+        // Next button
+        html += '<button type="button" ' + (currentPage === totalPages || totalPages === 0 ? 'disabled' : '') + ' data-page="' + (currentPage + 1) + '">';
+        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+        html += '</button>';
+        
+        paginationContainer.innerHTML = html;
+    }
+    
+    function filterRows(term) {
+        currentPage = 1;
+        if (term === '') {
+            filteredRows = allRows.slice();
+        } else {
+            filteredRows = allRows.filter(function(row) {
+                var data = JSON.parse(row.getAttribute('data-item') || '{}');
+                var searchText = [
+                    data.Name || '',
+                    data.Description || ''
+                ].join(' ').toLowerCase();
+                return searchText.includes(term);
+            });
+        }
+        renderPagination();
+    }
+    
+    // Search
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterRows(this.value.toLowerCase().trim());
+        });
+    }
+    
+    // Pagination clicks
+    paginationContainer.addEventListener('click', function(e) {
+        var btn = e.target.closest('button[data-page]');
+        if (btn && !btn.disabled) {
+            currentPage = parseInt(btn.getAttribute('data-page'));
+            renderPagination();
+        }
+    });
+    
+    // Initial render
+    renderPagination();
+})();
+</script>
+}

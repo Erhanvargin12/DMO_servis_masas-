@@ -5,27 +5,62 @@ public static class Messages
     #region General Messages
     public const string ActionSuccessful = "İşlem başarılı.";
     public const string ActionFailed = "İşlem başarısız.";
-    internal static string? AuthorizationsDenied = "Yetkiniz yok!";
+    public const string AuthorizationsDenied = "Yetkiniz yok!";
     public const string UserNotFound = "Kullanıcı bulunamadı!";
     public const string LdapError = "Personel bulunamadı!";
     public const string PasswordError = "Hatalı Parola";
     public const string SuccessfulLogin = "Giriş Başarılı";
-    internal static string AccessTokenCreated = "Erişim jetonu oluşturuldu.";
+    public const string AccessTokenCreated = "Erişim jetonu oluşturuldu.";
 
     #endregion
 
     #region User Messages
-    public const  string UserAdded = "Kullanıcı başarıyla eklendi!";
+    public const string UserAdded = "Kullanıcı başarıyla eklendi!";
     public const string UserDeleted = "Kullanıcı başarıyla silindi!";
     public const string UserUpdated = "Kullanıcı başarıyla güncellendi!";
     public const string UserNameInvalid = "Kullanıcı adı en az 2 karakter olmalıdır.";
     public const string UsersList = "Kullanıcılar listelendi.";
     public const string UserDetailsList = "Kullanıcı detayları listelendi.";
-    internal static string UserMailAlreadyExists = "Bu kullanıcı maili sistemde zaten kayıtlı!";
-    internal static string UserRegistrationIdAlreadyExists = "Bu kullanıcı sicil numarası sistemde zaten kayıtlı!";
-    internal static string UserAlreadyExists = "Bu kullaıcı zaten var!";
+    public const string UserMailAlreadyExists = "Bu kullanıcı maili sistemde zaten kayıtlı!";
+    public const string UserRegistrationIdAlreadyExists = "Bu kullanıcı sicil numarası sistemde zaten kayıtlı!";
+    public const string UserAlreadyExists = "Bu kullanıcı zaten var!";
 
+    #endregion
 
+    #region OperationClaim Messages
+    public const string OperationClaimsListed = "Roller listelendi.";
+    public const string OperationClaimAdded = "Rol başarıyla eklendi!";
+    public const string OperationClaimUpdated = "Rol başarıyla güncellendi!";
+    public const string OperationClaimDeleted = "Rol başarıyla silindi!";
+    public const string OperationClaimNotFound = "Rol bulunamadı!";
+    public const string OperationClaimAlreadyExists = "Bu rol zaten mevcut!";
+    #endregion
 
+    #region UserOperationClaim Messages
+    public const string UserOperationClaimsListed = "Kullanıcı rolleri listelendi.";
+    public const string UserOperationClaimAdded = "Kullanıcıya rol atandı!";
+    public const string UserOperationClaimDeleted = "Kullanıcıdan rol kaldırıldı!";
+    public const string UserOperationClaimsDeleted = "Kullanıcının tüm rolleri kaldırıldı!";
+    public const string UserOperationClaimAlreadyExists = "Bu rol kullanıcıya zaten atanmış!";
+    public const string UserOperationClaimNotFound = "Kullanıcı rol ataması bulunamadı!";
+    #endregion
+
+    #region Menu Messages
+    public const string MenusListed = "Menüler listelendi.";
+    public const string MenuAdded = "Menü başarıyla eklendi!";
+    public const string MenuUpdated = "Menü başarıyla güncellendi!";
+    public const string MenuDeleted = "Menü başarıyla silindi!";
+    public const string MenuNotFound = "Menü bulunamadı!";
+    public const string MenuAlreadyExists = "Bu menü zaten mevcut!";
+    public const string MenuHasChildren = "Bu menünün alt menüleri var, önce onları silin!";
+    #endregion
+
+    #region MenuOperationClaim Messages
+    public const string MenuOperationClaimsListed = "Menü yetkileri listelendi.";
+    public const string MenuOperationClaimAdded = "Menüye yetki atandı!";
+    public const string MenuOperationClaimDeleted = "Menüden yetki kaldırıldı!";
+    public const string MenuOperationClaimsDeleted = "Menünün tüm yetkileri kaldırıldı!";
+    public const string MenuOperationClaimAlreadyExists = "Bu yetki menüye zaten atanmış!";
+    public const string MenuOperationClaimNotFound = "Menü yetki ataması bulunamadı!";
     #endregion
 }

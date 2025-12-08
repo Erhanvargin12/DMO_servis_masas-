@@ -1,5 +1,6 @@
 ﻿using Business.Abstract;
 using Business.Constants;
+using Core.Utilities.Business;
 using Core.Utilities.Results;
 using Core.Utilities.Security.Hashing;
 using Core.Utilities.Security.Jwt;
@@ -21,8 +22,18 @@ public class AuthManager : IAuthService
 
     public IDataResult<User> Register(UserForRegisterDto userForRegisterDto)
     {
+        IResult result = BusinessRules.Run(
+            CheckIfUserMailExists(userForRegisterDto.Mail)
+        );
+
+        if (result != null)
+        {
+            return new ErrorDataResult<User>(result.Message);
+        }
+
         byte[] passwordHash, passwordSalt;
         HashingHelper.CreatePasswordHash(userForRegisterDto.Password, out passwordHash, out passwordSalt);
+        
         var user = new User
         {
             Mail = userForRegisterDto.Mail,
@@ -34,15 +45,23 @@ public class AuthManager : IAuthService
             PositionId = userForRegisterDto.PositionId,
             RegistirationId = userForRegisterDto.RegistirationId,
             CreateAt = DateTime.Now,
-            
+            Status = true
         };
-        _userService.Add(user);
+        
+        var addResult = _userService.Add(user);
+        if (!addResult.Success)
+        {
+            return new ErrorDataResult<User>(addResult.Message);
+        }
+        
         return new SuccessDataResult<User>(user, Messages.UserAdded);
     }
 
     public IDataResult<User> Login(UserForLoginDto userForLoginDto)
     {
-        var userToCheck = _userService.GetAll(m=>m.Mail == userForLoginDto.Email).Data.FirstOrDefault();
+        var userResult = _userService.GetAll(m => m.Mail == userForLoginDto.Email);
+        var userToCheck = userResult.Data?.FirstOrDefault();
+        
         if (userToCheck == null)
         {
             return new ErrorDataResult<User>(Messages.UserNotFound);
@@ -58,7 +77,8 @@ public class AuthManager : IAuthService
 
     public IResult UserExists(string email)
     {
-        if (_userService.GetAll(m => m.Mail == email).Data.FirstOrDefault() != null)
+        var userResult = _userService.GetAll(m => m.Mail == email);
+        if (userResult.Data?.FirstOrDefault() != null)
         {
             return new ErrorResult(Messages.UserAlreadyExists);
         }
@@ -72,4 +92,17 @@ public class AuthManager : IAuthService
         return new SuccessDataResult<AccessToken>(accessToken, Messages.AccessTokenCreated);
     }
 
+    #region Business Rules
+
+    private IResult CheckIfUserMailExists(string email)
+    {
+        var userResult = _userService.GetAll(m => m.Mail == email);
+        if (userResult.Data?.FirstOrDefault() != null)
+        {
+            return new ErrorResult(Messages.UserAlreadyExists);
+        }
+        return new SuccessResult();
+    }
+
+    #endregion
 }

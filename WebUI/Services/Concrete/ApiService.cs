@@ -3,8 +3,9 @@ using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Text;
 using WebUI.Models;
+using WebUI.Services.Abstract;
 
-namespace WebUI.Services
+namespace WebUI.Services.Concrete
 {
     public class ApiService : IApiService
     {
