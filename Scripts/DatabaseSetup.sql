@@ -105,6 +105,22 @@ CREATE TABLE MenuOperationClaims (
 );
 PRINT 'MenuOperationClaims tablosu oluşturuldu.';
 
+-- RefreshTokens Tablosu
+CREATE TABLE RefreshTokens (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    UserId INT NOT NULL,
+    Token NVARCHAR(500) NOT NULL,
+    Expires DATETIME NOT NULL,
+    Created DATETIME NOT NULL DEFAULT GETUTCDATE(),
+    CreatedByIp NVARCHAR(50) NULL,
+    Revoked DATETIME NULL,
+    RevokedByIp NVARCHAR(50) NULL,
+    ReplacedByToken NVARCHAR(500) NULL,
+    ReasonRevoked NVARCHAR(255) NULL,
+    CONSTRAINT FK_RefreshTokens_User FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+);
+PRINT 'RefreshTokens tablosu oluşturuldu.';
+
 -- =============================================
 -- 3. İNDEKSLER
 -- =============================================
@@ -118,6 +134,8 @@ CREATE INDEX IX_Menus_ParentId ON Menus(ParentId);
 CREATE INDEX IX_Menus_IsActive ON Menus(IsActive);
 CREATE INDEX IX_MenuOperationClaims_MenuId ON MenuOperationClaims(MenuId);
 CREATE INDEX IX_MenuOperationClaims_OperationClaimId ON MenuOperationClaims(OperationClaimId);
+CREATE INDEX IX_RefreshTokens_UserId ON RefreshTokens(UserId);
+CREATE INDEX IX_RefreshTokens_Token ON RefreshTokens(Token);
 
 PRINT 'İndeksler oluşturuldu.';
 

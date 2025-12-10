@@ -1,3 +1,4 @@
+using WebUI.Middleware;
 using WebUI.Models;
 using WebUI.Services.Abstract;
 using WebUI.Services.Concrete;
@@ -35,12 +36,6 @@ builder.Services.AddAuthentication("Cookies")
 // HttpClient for API calls - Development SSL bypass
 var apiBaseUrl = builder.Configuration.GetValue<string>("ApiSettings:BaseUrl") ?? "https://localhost:5001/api/";
 var apiTimeout = builder.Configuration.GetValue<int>("ApiSettings:Timeout", 30);
-
-// SSL bypass handler for development
-var handler = new HttpClientHandler
-{
-    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-};
 
 builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
 {
@@ -119,6 +114,9 @@ app.UseRouting();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Token refresh middleware - Authentication'dan sonra, Authorization'dan sonra
+app.UseTokenRefresh();
 
 app.MapControllerRoute(
     name: "default",

@@ -1,9 +1,10 @@
-﻿using Entities.Concrete;
+﻿using Core.Entities.Concrete;
+using Entities.Concrete;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccess.Concrete.EntityFramework;
 
-public class MsSqlDbContext: DbContext
+public class MsSqlDbContext : DbContext
 {
 
     public MsSqlDbContext(DbContextOptions<MsSqlDbContext> options) : base(options)
@@ -16,4 +17,5 @@ public class MsSqlDbContext: DbContext
     public DbSet<UserOperationClaim> UserOperationClaims { get; set; }
     public DbSet<Menu> Menus { get; set; }
     public DbSet<MenuOperationClaim> MenuOperationClaims { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 }

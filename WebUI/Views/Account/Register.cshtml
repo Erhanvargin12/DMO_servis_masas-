@@ -1,0 +1,91 @@
+@model WebUI.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Kayıt Ol";
+    Layout = "_AuthLayout";
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="auth-logo-icon">B</div>
+            <h1>BackendCore</h1>
+            <p>Yeni hesap oluşturun</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-error">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@error.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form asp-action="Register" asp-controller="Account" method="post">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="firstName">Ad</label>
+                    <input type="text" 
+                           class="form-input @(ViewData.ModelState["FirstName"]?.Errors.Any() == true ? "error" : "")" 
+                           id="firstName" 
+                           asp-for="FirstName" 
+                           placeholder="Adınız" />
+                    <span asp-validation-for="FirstName" class="validation-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="lastName">Soyad</label>
+                    <input type="text" 
+                           class="form-input @(ViewData.ModelState["LastName"]?.Errors.Any() == true ? "error" : "")" 
+                           id="lastName" 
+                           asp-for="LastName" 
+                           placeholder="Soyadınız" />
+                    <span asp-validation-for="LastName" class="validation-message"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">E-posta</label>
+                <input type="email" 
+                       class="form-input @(ViewData.ModelState["Email"]?.Errors.Any() == true ? "error" : "")" 
+                       id="email" 
+                       asp-for="Email" 
+                       placeholder="ornek@email.com" />
+                <span asp-validation-for="Email" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Şifre</label>
+                <input type="password" 
+                       class="form-input @(ViewData.ModelState["Password"]?.Errors.Any() == true ? "error" : "")" 
+                       id="password" 
+                       asp-for="Password" 
+                       placeholder="En az 6 karakter" />
+                <span asp-validation-for="Password" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="confirmPassword">Şifre Tekrar</label>
+                <input type="password" 
+                       class="form-input @(ViewData.ModelState["ConfirmPassword"]?.Errors.Any() == true ? "error" : "")" 
+                       id="confirmPassword" 
+                       asp-for="ConfirmPassword" 
+                       placeholder="Şifrenizi tekrar girin" />
+                <span asp-validation-for="ConfirmPassword" class="validation-message"></span>
+            </div>
+
+            <button type="submit" class="btn-submit">Kayıt Ol</button>
+        </form>
+
+        <div class="auth-footer">
+            <span>Zaten hesabınız var mı?</span>
+            <a asp-action="Login">Giriş Yap</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

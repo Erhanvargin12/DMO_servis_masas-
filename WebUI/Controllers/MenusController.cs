@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebUI.Filters;
 using WebUI.Models;
 using WebUI.Services.Abstract;
 
 namespace WebUI.Controllers
 {
     [Authorize]
+    [AdminAuthorize("Admin")]
     public class MenusController : Controller
     {
         private readonly IMenuApiService _menuApiService;

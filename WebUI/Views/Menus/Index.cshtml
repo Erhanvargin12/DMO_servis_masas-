@@ -1,13 +1,26 @@
 @model WebUI.Controllers.MenuListViewModel
 @{
     ViewData["Title"] = "Menüler";
-    var parentMenus = Model.Menus.Where(m => m.ParentId == null).ToList();
+    var parentMenus = Model.Menus.Where(m => m.ParentId == null).OrderBy(m => m.DisplayOrder).ToList();
+    
+    // Menüleri hiyerarşik sırala
+    var orderedMenus = new List<WebUI.Models.MenuViewModel>();
+    foreach (var parent in parentMenus)
+    {
+        orderedMenus.Add(parent);
+        var children = Model.Menus.Where(m => m.ParentId == parent.Id).OrderBy(m => m.DisplayOrder).ToList();
+        orderedMenus.AddRange(children);
+    }
+    // Üst menüsü olmayan alt menüler
+    var orphans = Model.Menus.Where(m => m.ParentId != null && !parentMenus.Any(p => p.Id == m.ParentId)).ToList();
+    orderedMenus.AddRange(orphans);
 }
 
 <!-- Page Header -->
 <div class="page-header">
     <div class="page-header-left">
-        <h1 class="page-header-title">Menüler</h1>
+        <h1 class="page-header-title">Menü Yönetimi</h1>
+        <p class="page-header-subtitle">Sistem menülerini düzenleyin ve rollere atayın</p>
     </div>
     <button type="button" class="btn btn-primary" data-modal-open="menuModal">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -21,7 +34,7 @@
 <div class="data-table">
     <div class="data-table-header">
         <div class="data-table-title">
-            <span>Tüm Menüler</span>
+            <span>Menü Listesi</span>
             <span class="data-table-count">@Model.TotalCount kayıt</span>
         </div>
         <div class="data-table-actions">
@@ -29,7 +42,7 @@
                 <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
-                <input type="text" placeholder="Ara..." id="tableSearch" autocomplete="off" />
+                <input type="text" placeholder="Menü ara..." id="tableSearch" autocomplete="off" />
             </div>
         </div>
     </div>
@@ -38,33 +51,35 @@
         <table class="table" id="menusTable">
             <thead>
                 <tr>
-                    <th>Menü Adı</th>
-                    <th>URL</th>
-                    <th>İkon</th>
-                    <th>Sıra</th>
-                    <th>Durum</th>
-                    <th width="140"></th>
+                    <th width="35%">Menü Adı</th>
+                    <th width="20%">URL</th>
+                    <th width="10%">İkon</th>
+                    <th width="8%">Sıra</th>
+                    <th width="10%">Durum</th>
+                    <th width="17%"></th>
                 </tr>
             </thead>
             <tbody>
-                @if (Model.Menus.Any())
+                @if (orderedMenus.Any())
                 {
-                    @foreach (var menu in Model.Menus.OrderBy(m => m.ParentId ?? 0).ThenBy(m => m.DisplayOrder))
+                    @foreach (var menu in orderedMenus)
                     {
                         var isParent = menu.ParentId == null;
-                        var parentName = menu.ParentId != null ? Model.Menus.FirstOrDefault(m => m.Id == menu.ParentId)?.Name : null;
                         
-                        <tr data-item-id="@menu.Id" data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(menu, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
+                        <tr data-item-id="@menu.Id" 
+                            data-parent="@(isParent ? "true" : "false")"
+                            data-child="@(!isParent ? "true" : "false")"
+                            data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(menu, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
                             <td>
                                 <div class="menu-name-cell">
                                     @if (!isParent)
                                     {
-                                        <span class="menu-indent">└─</span>
+                                        <span class="menu-indent">└</span>
                                     }
-                                    <span class="@(isParent ? "menu-parent" : "")">@menu.Name</span>
+                                    <span class="@(isParent ? "menu-parent" : "menu-child")">@menu.Name</span>
                                     @if (!string.IsNullOrEmpty(menu.Description))
                                     {
-                                        <span class="menu-desc">(@menu.Description)</span>
+                                        <span class="menu-desc">@menu.Description</span>
                                     }
                                 </div>
                             </td>
@@ -75,7 +90,7 @@
                                 }
                                 else
                                 {
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted">—</span>
                                 }
                             </td>
                             <td>
@@ -85,10 +100,10 @@
                                 }
                                 else
                                 {
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted">—</span>
                                 }
                             </td>
-                            <td>@menu.DisplayOrder</td>
+                            <td class="text-center">@menu.DisplayOrder</td>
                             <td>
                                 <span class="badge @(menu.IsActive ? "badge-success" : "badge-error")">
                                     @(menu.IsActive ? "Aktif" : "Pasif")
@@ -123,10 +138,10 @@
                 }
                 else
                 {
-                    <tr>
+                    <tr class="empty-row">
                         <td colspan="6" class="empty-state">
                             <div class="empty-state-icon">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                     <line x1="3" y1="12" x2="21" y2="12"/>
                                     <line x1="3" y1="6" x2="21" y2="6"/>
                                     <line x1="3" y1="18" x2="21" y2="18"/>
@@ -142,18 +157,16 @@
     </div>
 
     <div class="data-table-footer">
-        <div class="data-table-info">
-            <span id="paginationInfo">Toplam @Model.TotalCount menü</span>
-        </div>
+        <div class="data-table-info" id="paginationInfo">Toplam @Model.TotalCount menü</div>
         <div class="data-table-pagination" id="pagination"></div>
     </div>
 </div>
 
-<!-- Menu Modal -->
+<!-- Menu Modal - Yatay form düzeni -->
 <div class="modal-overlay" id="menuModal">
-    <div class="modal modal-sm">
+    <div class="modal modal-md">
         <div class="modal-header">
-            <h3 class="modal-title" data-create-title="Yeni Menü" data-edit-title="Menü Düzenle">Yeni Menü</h3>
+            <h3 class="modal-title" data-create-title="Yeni Menü Ekle" data-edit-title="Menü Düzenle">Yeni Menü Ekle</h3>
             <button type="button" class="modal-close" data-modal-close>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -164,31 +177,37 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" value="0" />
             <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label required">Menü Adı</label>
-                    <input type="text" name="Name" class="form-input" placeholder="Menü adını girin" required />
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label required">Menü Adı</label>
+                        <input type="text" name="Name" class="form-input" placeholder="Örn: Kullanıcılar" required />
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Sıra</label>
+                        <input type="number" name="DisplayOrder" class="form-input" value="0" min="0" />
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Açıklama (Grup Başlığı)</label>
-                    <input type="text" name="Description" class="form-input" placeholder="Örn: Yönetim, Sistem" />
+                    <label class="form-label">Grup Başlığı</label>
+                    <input type="text" name="Description" class="form-input" placeholder="Örn: Yönetim, Sistem (sadece üst menüler için)" />
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">URL</label>
-                        <input type="text" name="Url" class="form-input" placeholder="/sayfa-adi" />
+                        <input type="text" name="Url" class="form-input" placeholder="/controller/action" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">İkon</label>
                         <select name="Icon" class="form-input">
                             <option value="">Seçiniz</option>
-                            <option value="dashboard">Dashboard</option>
-                            <option value="users">Kullanıcılar</option>
-                            <option value="roles">Roller</option>
-                            <option value="menu">Menü</option>
-                            <option value="settings">Ayarlar</option>
-                            <option value="logs">Loglar</option>
-                            <option value="folder">Klasör</option>
-                            <option value="organization">Organizasyon</option>
+                            <option value="dashboard">📊 Dashboard</option>
+                            <option value="users">👥 Kullanıcılar</option>
+                            <option value="roles">🛡️ Roller</option>
+                            <option value="menu">☰ Menü</option>
+                            <option value="settings">⚙️ Ayarlar</option>
+                            <option value="logs">📋 Loglar</option>
+                            <option value="folder">📁 Klasör</option>
+                            <option value="organization">🏢 Organizasyon</option>
                         </select>
                     </div>
                 </div>
@@ -196,7 +215,7 @@
                     <div class="form-group">
                         <label class="form-label">Üst Menü</label>
                         <select name="ParentId" class="form-input">
-                            <option value="">Ana Menü (Yok)</option>
+                            <option value="">— Ana Menü —</option>
                             @foreach (var parent in parentMenus)
                             {
                                 <option value="@parent.Id">@parent.Name</option>
@@ -204,14 +223,11 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Sıra</label>
-                        <input type="number" name="DisplayOrder" class="form-input" value="0" />
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" name="IsActive" class="form-checkbox" id="menuIsActive" checked />
-                        <label for="menuIsActive">Aktif</label>
+                        <label class="form-label">Durum</label>
+                        <div class="form-check" style="margin-top: 8px;">
+                            <input type="checkbox" name="IsActive" class="form-checkbox" id="menuIsActive" checked />
+                            <label for="menuIsActive">Aktif</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -223,9 +239,9 @@
     </div>
 </div>
 
-<!-- Roles Modal -->
+<!-- Roles Modal - Uzun liste için -->
 <div class="modal-overlay" id="rolesModal">
-    <div class="modal modal-sm">
+    <div class="modal modal-sm modal-tall">
         <div class="modal-header">
             <h3 class="modal-title">Menü Yetkileri</h3>
             <button type="button" class="modal-close" data-modal-close>
@@ -247,7 +263,10 @@
                         <input type="checkbox" class="role-checkbox" value="@role.Id" />
                         <div class="role-info">
                             <span class="role-name">@role.Name</span>
-                            <span class="role-desc">@role.Description</span>
+                            @if (!string.IsNullOrEmpty(role.Description))
+                            {
+                                <span class="role-desc">@role.Description</span>
+                            }
                         </div>
                     </label>
                 }
@@ -255,14 +274,14 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn" data-modal-close>İptal</button>
-            <button type="button" class="btn btn-primary" id="saveRolesBtn">Rolleri Kaydet</button>
+            <button type="button" class="btn btn-primary" id="saveRolesBtn">Kaydet</button>
         </div>
     </div>
 </div>
 
-<!-- Delete Modal -->
+<!-- Delete Modal - Küçük ve kompakt -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal modal-xs">
+    <div class="modal modal-xs modal-compact">
         <div class="modal-header">
             <h3 class="modal-title">Silme Onayı</h3>
             <button type="button" class="modal-close" data-modal-close>
@@ -277,14 +296,13 @@
             <div class="modal-body">
                 <div class="delete-content">
                     <div class="delete-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"/>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
                     </div>
-                    <p class="delete-title">Bu menüyü silmek istiyor musunuz?</p>
+                    <p class="delete-title">Silmek istediğinize emin misiniz?</p>
                     <p class="delete-name" id="deleteModalItemName"></p>
-                    <p class="delete-warning">Bu işlem geri alınamaz</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -296,195 +314,5 @@
 </div>
 
 @section Scripts {
-<script>
-(function() {
-    var PAGE_SIZE = 10;
-    var currentPage = 1;
-    var currentMenuId = 0;
-    
-    var searchInput = document.getElementById('tableSearch');
-    var tableBody = document.querySelector('#menusTable tbody');
-    var countBadge = document.querySelector('.data-table-count');
-    var paginationInfo = document.getElementById('paginationInfo');
-    var paginationContainer = document.getElementById('pagination');
-    var allRows = Array.from(tableBody.querySelectorAll('tr[data-item-id]'));
-    var emptyRow = tableBody.querySelector('tr:not([data-item-id])');
-    var filteredRows = allRows.slice();
-    
-    // Roles Modal Elements
-    var rolesModal = document.getElementById('rolesModal');
-    var roleMenuIcon = document.getElementById('roleMenuIcon');
-    var roleMenuName = document.getElementById('roleMenuName');
-    var roleCheckboxes = document.querySelectorAll('.role-checkbox');
-    var saveRolesBtn = document.getElementById('saveRolesBtn');
-    
-    // Pagination
-    function renderPagination() {
-        if (allRows.length === 0) return;
-        
-        var totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
-        var start = (currentPage - 1) * PAGE_SIZE;
-        var end = start + PAGE_SIZE;
-        
-        allRows.forEach(function(row) { row.style.display = 'none'; });
-        filteredRows.slice(start, end).forEach(function(row) { row.style.display = ''; });
-        
-        if (emptyRow) {
-            emptyRow.style.display = filteredRows.length === 0 ? '' : 'none';
-        }
-        
-        var showStart = filteredRows.length > 0 ? start + 1 : 0;
-        var showEnd = Math.min(end, filteredRows.length);
-        if (countBadge) countBadge.textContent = filteredRows.length + ' kayıt';
-        if (paginationInfo) paginationInfo.textContent = showStart + '-' + showEnd + ' / ' + filteredRows.length + ' menü';
-        
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-        
-        var html = '';
-        html += '<button type="button" ' + (currentPage === 1 ? 'disabled' : '') + ' data-page="' + (currentPage - 1) + '">';
-        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
-        html += '</button>';
-        
-        for (var i = 1; i <= totalPages; i++) {
-            if (totalPages <= 7 || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                html += '<button type="button" class="' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
-            } else if (i === currentPage - 2 || i === currentPage + 2) {
-                html += '<button type="button" disabled>...</button>';
-            }
-        }
-        
-        html += '<button type="button" ' + (currentPage === totalPages ? 'disabled' : '') + ' data-page="' + (currentPage + 1) + '">';
-        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-        html += '</button>';
-        
-        paginationContainer.innerHTML = html;
-    }
-    
-    function filterRows(term) {
-        currentPage = 1;
-        if (term === '') {
-            filteredRows = allRows.slice();
-        } else {
-            filteredRows = allRows.filter(function(row) {
-                var data = JSON.parse(row.getAttribute('data-item') || '{}');
-                var searchText = [
-                    data.Name || '',
-                    data.Description || '',
-                    data.Url || '',
-                    data.Icon || ''
-                ].join(' ').toLowerCase();
-                return searchText.includes(term);
-            });
-        }
-        renderPagination();
-    }
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            filterRows(this.value.toLowerCase().trim());
-        });
-    }
-    
-    if (paginationContainer) {
-        paginationContainer.addEventListener('click', function(e) {
-            var btn = e.target.closest('button[data-page]');
-            if (btn && !btn.disabled) {
-                currentPage = parseInt(btn.getAttribute('data-page'));
-                renderPagination();
-            }
-        });
-    }
-    
-    // Roles Modal
-    document.querySelectorAll('[data-role-modal]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            currentMenuId = parseInt(this.getAttribute('data-role-modal'));
-            var menuName = this.getAttribute('data-menu-name') || 'Menü';
-            
-            roleMenuIcon.textContent = menuName.charAt(0).toUpperCase();
-            roleMenuName.textContent = menuName;
-            
-            // Reset checkboxes
-            roleCheckboxes.forEach(function(cb) { cb.checked = false; });
-            
-            // Get menu roles
-            fetch('/Menus/GetMenuRoles?menuId=' + currentMenuId)
-                .then(function(res) { return res.json(); })
-                .then(function(result) {
-                    if (result.success && result.data) {
-                        result.data.forEach(function(roleId) {
-                            var cb = document.querySelector('.role-checkbox[value="' + roleId + '"]');
-                            if (cb) cb.checked = true;
-                        });
-                    }
-                })
-                .catch(function(err) { console.error('Rol getirme hatası:', err); });
-            
-            rolesModal.classList.add('active');
-        });
-    });
-    
-    // Save Roles
-    if (saveRolesBtn) {
-        saveRolesBtn.addEventListener('click', function() {
-            var selectedRoles = [];
-            roleCheckboxes.forEach(function(cb) {
-                if (cb.checked) selectedRoles.push(parseInt(cb.value));
-            });
-            
-            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            
-            fetch('/Menus/SaveRoles', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': token
-                },
-                body: JSON.stringify({ menuId: currentMenuId, roleIds: selectedRoles })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(result) {
-                if (result.success) {
-                    if (typeof AdminUI !== 'undefined' && AdminUI.Toast) {
-                        AdminUI.Toast.success(result.message || 'Menü rolleri güncellendi');
-                    } else {
-                        alert(result.message || 'Menü rolleri güncellendi');
-                    }
-                    rolesModal.classList.remove('active');
-                } else {
-                    if (typeof AdminUI !== 'undefined' && AdminUI.Toast) {
-                        AdminUI.Toast.error(result.message || 'Bir hata oluştu');
-                    } else {
-                        alert(result.message || 'Bir hata oluştu');
-                    }
-                }
-            })
-            .catch(function(err) {
-                console.error('Rol kaydetme hatası:', err);
-                alert('Bağlantı hatası');
-            });
-        });
-    }
-    
-    // Close roles modal
-    rolesModal.querySelectorAll('[data-modal-close]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            rolesModal.classList.remove('active');
-        });
-    });
-    
-    rolesModal.addEventListener('click', function(e) {
-        if (e.target === rolesModal) {
-            rolesModal.classList.remove('active');
-        }
-    });
-    
-    // Initial render
-    renderPagination();
-})();
-</script>
+<script src="~/js/pages/menus.js" asp-append-version="true"></script>
 }
-

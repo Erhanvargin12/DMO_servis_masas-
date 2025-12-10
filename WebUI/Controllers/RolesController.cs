@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebUI.Filters;
 using WebUI.Models;
 using WebUI.Services.Abstract;
 
 namespace WebUI.Controllers
 {
     [Authorize]
+    [AdminAuthorize("Admin")]
     public class RolesController : Controller
     {
         private readonly IRoleApiService _roleApiService;
@@ -66,20 +68,20 @@ namespace WebUI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete([FromBody] DeleteRoleRequest request)
         {
-            var (success, message) = await _roleApiService.DeleteAsync(id);
-
-            if (success)
+            if (request?.Id <= 0)
             {
-                TempData["SuccessMessage"] = message;
-            }
-            else
-            {
-                TempData["ErrorMessage"] = message;
+                return Json(new { success = false, message = "Geçersiz rol" });
             }
 
-            return RedirectToAction(nameof(Index));
+            var (success, message) = await _roleApiService.DeleteAsync(request.Id);
+            return Json(new { success, message });
         }
+    }
+
+    public class DeleteRoleRequest
+    {
+        public int Id { get; set; }
     }
 }

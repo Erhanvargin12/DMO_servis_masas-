@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebUI.Filters;
 using WebUI.Models;
 using WebUI.Services.Abstract;
 
 namespace WebUI.Controllers
 {
     [Authorize]
+    [AdminAuthorize("Admin")]
     public class UsersController : Controller
     {
         private readonly IUserApiService _userApiService;
@@ -74,20 +76,20 @@ namespace WebUI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete([FromBody] DeleteRequest request)
         {
-            var (success, message) = await _userApiService.DeleteAsync(id);
-
-            if (success)
+            if (request?.Id <= 0)
             {
-                TempData["SuccessMessage"] = message;
-            }
-            else
-            {
-                TempData["ErrorMessage"] = message;
+                return Json(new { success = false, message = "Geçersiz kullanıcı" });
             }
 
-            return RedirectToAction(nameof(Index));
+            var (success, message) = await _userApiService.DeleteAsync(request.Id);
+            return Json(new { success, message });
+        }
+
+        public class DeleteRequest
+        {
+            public int Id { get; set; }
         }
 
         #region Rol Yönetimi

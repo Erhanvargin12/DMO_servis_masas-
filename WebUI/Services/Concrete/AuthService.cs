@@ -8,11 +8,16 @@ namespace WebUI.Services.Concrete
     public class AuthService : IAuthService
     {
         private readonly HttpClient _httpClient;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(HttpClient httpClient, ILogger<AuthService> logger)
+        public AuthService(
+            HttpClient httpClient, 
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<AuthService> logger)
         {
             _httpClient = httpClient;
+            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
@@ -34,7 +39,17 @@ namespace WebUI.Services.Concrete
                 }
 
                 _logger.LogWarning("Login başarısız: {StatusCode} - {Content}", response.StatusCode, responseContent);
-                return (false, responseContent, null);
+                
+                // Hata mesajını parse et
+                try
+                {
+                    var errorResponse = JsonConvert.DeserializeObject<ApiErrorResponse>(responseContent);
+                    return (false, errorResponse?.Message ?? "Giriş başarısız", null);
+                }
+                catch
+                {
+                    return (false, "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.", null);
+                }
             }
             catch (Exception ex)
             {
@@ -67,7 +82,16 @@ namespace WebUI.Services.Concrete
                 }
 
                 _logger.LogWarning("Register başarısız: {StatusCode} - {Content}", response.StatusCode, responseContent);
-                return (false, responseContent, null);
+                
+                try
+                {
+                    var errorResponse = JsonConvert.DeserializeObject<ApiErrorResponse>(responseContent);
+                    return (false, errorResponse?.Message ?? "Kayıt başarısız", null);
+                }
+                catch
+                {
+                    return (false, "Kayıt başarısız. Lütfen bilgilerinizi kontrol edin.", null);
+                }
             }
             catch (Exception ex)
             {
@@ -76,10 +100,50 @@ namespace WebUI.Services.Concrete
             }
         }
 
+        public async Task<(bool Success, AccessTokenResponse? Token)> RefreshTokenAsync()
+        {
+            try
+            {
+                var token = _httpContextAccessor.HttpContext?.Session.GetString("AccessToken");
+                if (string.IsNullOrEmpty(token))
+                {
+                    return (false, null);
+                }
+
+                // Authorization header'a mevcut token'ı ekle
+                _httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.PostAsync("auth/refresh", null);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var newToken = JsonConvert.DeserializeObject<AccessTokenResponse>(responseContent);
+                    return (true, newToken);
+                }
+
+                _logger.LogWarning("Token refresh başarısız: {StatusCode}", response.StatusCode);
+                return (false, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Token refresh sırasında hata oluştu");
+                return (false, null);
+            }
+        }
+
         public async Task<bool> LogoutAsync()
         {
             try
             {
+                var token = _httpContextAccessor.HttpContext?.Session.GetString("AccessToken");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    _httpClient.DefaultRequestHeaders.Authorization = 
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                }
+
                 var response = await _httpClient.PostAsync("auth/logout", null);
                 return response.IsSuccessStatusCode;
             }
@@ -89,6 +153,11 @@ namespace WebUI.Services.Concrete
                 return false;
             }
         }
+
+        private class ApiErrorResponse
+        {
+            public bool Success { get; set; }
+            public string? Message { get; set; }
+        }
     }
 }
-

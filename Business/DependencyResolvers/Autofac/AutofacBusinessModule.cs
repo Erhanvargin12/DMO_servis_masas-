@@ -29,6 +29,8 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<MenuOperationClaimManager>().As<IMenuOperationClaimService>().SingleInstance();
         builder.RegisterType<EfMenuOperationClaimDal>().As<IMenuOperationClaimDal>().SingleInstance();
 
+        builder.RegisterType<EfRefreshTokenDal>().As<IRefreshTokenDal>().SingleInstance();
+
         builder.RegisterType<AuthManager>().As<IAuthService>().SingleInstance();
         builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 

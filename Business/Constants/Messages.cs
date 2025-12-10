@@ -7,11 +7,23 @@ public static class Messages
     public const string ActionFailed = "İşlem başarısız.";
     public const string AuthorizationsDenied = "Yetkiniz yok!";
     public const string UserNotFound = "Kullanıcı bulunamadı!";
+    public const string UserNotActive = "Kullanıcı hesabı aktif değil!";
     public const string LdapError = "Personel bulunamadı!";
     public const string PasswordError = "Hatalı Parola";
     public const string SuccessfulLogin = "Giriş Başarılı";
     public const string AccessTokenCreated = "Erişim jetonu oluşturuldu.";
 
+    #endregion
+
+    #region Token Messages
+    public const string InvalidToken = "Geçersiz token!";
+    public const string InvalidRefreshToken = "Geçersiz refresh token!";
+    public const string RefreshTokenExpired = "Refresh token süresi dolmuş. Lütfen tekrar giriş yapın.";
+    public const string TokenRefreshed = "Token başarıyla yenilendi.";
+    public const string TokenRevoked = "Token başarıyla iptal edildi.";
+    public const string TokenAlreadyRevoked = "Token zaten iptal edilmiş.";
+    public const string TokenReuseDetected = "Güvenlik ihlali tespit edildi. Tüm oturumlar sonlandırıldı.";
+    public const string AllTokensRevoked = "Tüm oturumlar sonlandırıldı.";
     #endregion
 
     #region User Messages

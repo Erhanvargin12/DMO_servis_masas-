@@ -6,7 +6,8 @@
 <!-- Page Header -->
 <div class="page-header">
     <div class="page-header-left">
-        <h1 class="page-header-title">Roller</h1>
+        <h1 class="page-header-title">Rol Yönetimi</h1>
+        <p class="page-header-subtitle">Sistem rollerini yönetin ve kullanıcılara atayın</p>
     </div>
     <button type="button" class="btn btn-primary" data-modal-open="roleModal">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -20,7 +21,7 @@
 <div class="data-table">
     <div class="data-table-header">
         <div class="data-table-title">
-            <span>Tüm Roller</span>
+            <span>Rol Listesi</span>
             <span class="data-table-count">@Model.TotalCount kayıt</span>
         </div>
         <div class="data-table-actions">
@@ -28,7 +29,7 @@
                 <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
-                <input type="text" placeholder="Ara..." id="tableSearch" autocomplete="off" />
+                <input type="text" placeholder="Rol ara..." id="tableSearch" autocomplete="off" />
             </div>
         </div>
     </div>
@@ -37,15 +38,10 @@
         <table class="table" id="rolesTable">
             <thead>
                 <tr>
-                    <th width="80">ID</th>
-                    <th class="sortable" data-sort="name">
-                        Rol Adı
-                        <svg class="sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 5v14M5 12l7 7 7-7"/>
-                        </svg>
-                    </th>
-                    <th>Açıklama</th>
-                    <th width="100"></th>
+                    <th width="10%">ID</th>
+                    <th width="30%">Rol Adı</th>
+                    <th width="45%">Açıklama</th>
+                    <th width="15%"></th>
                 </tr>
             </thead>
             <tbody>
@@ -65,7 +61,7 @@
                                     <span class="cell-name">@role.Name</span>
                                 </div>
                             </td>
-                            <td class="text-muted">@(role.Description ?? "-")</td>
+                            <td class="text-muted">@(role.Description ?? "—")</td>
                             <td>
                                 <div class="table-actions">
                                     <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Düzenle"
@@ -89,10 +85,10 @@
                 }
                 else
                 {
-                    <tr>
+                    <tr class="empty-row">
                         <td colspan="4" class="empty-state">
                             <div class="empty-state-icon">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                                 </svg>
                             </div>
@@ -106,18 +102,16 @@
     </div>
 
     <div class="data-table-footer">
-        <div class="data-table-info">
-            <span id="paginationInfo">Toplam @Model.TotalCount rol</span>
-        </div>
+        <div class="data-table-info" id="paginationInfo">Toplam @Model.TotalCount rol</div>
         <div class="data-table-pagination" id="pagination"></div>
     </div>
 </div>
 
-<!-- Role Modal -->
+<!-- Role Modal - Küçük form -->
 <div class="modal-overlay" id="roleModal">
-    <div class="modal modal-xs">
+    <div class="modal modal-sm">
         <div class="modal-header">
-            <h3 class="modal-title" data-create-title="Yeni Rol" data-edit-title="Rol Düzenle">Yeni Rol</h3>
+            <h3 class="modal-title" data-create-title="Yeni Rol Ekle" data-edit-title="Rol Düzenle">Yeni Rol Ekle</h3>
             <button type="button" class="modal-close" data-modal-close>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -145,9 +139,9 @@
     </div>
 </div>
 
-<!-- Delete Modal -->
+<!-- Delete Modal - Küçük ve kompakt -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal modal-xs">
+    <div class="modal modal-xs modal-compact">
         <div class="modal-header">
             <h3 class="modal-title">Silme Onayı</h3>
             <button type="button" class="modal-close" data-modal-close>
@@ -162,14 +156,13 @@
             <div class="modal-body">
                 <div class="delete-content">
                     <div class="delete-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"/>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
                     </div>
-                    <p class="delete-title">Bu rolü silmek istiyor musunuz?</p>
+                    <p class="delete-title">Silmek istediğinize emin misiniz?</p>
                     <p class="delete-name" id="deleteModalItemName"></p>
-                    <p class="delete-warning">Bu işlem geri alınamaz</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -181,104 +174,5 @@
 </div>
 
 @section Scripts {
-<script>
-(function() {
-    var PAGE_SIZE = 8;
-    var currentPage = 1;
-    
-    var searchInput = document.getElementById('tableSearch');
-    var tableBody = document.querySelector('#rolesTable tbody');
-    var countBadge = document.querySelector('.data-table-count');
-    var paginationInfo = document.getElementById('paginationInfo');
-    var paginationContainer = document.getElementById('pagination');
-    var allRows = Array.from(tableBody.querySelectorAll('tr[data-item-id]'));
-    var emptyRow = tableBody.querySelector('tr:not([data-item-id])');
-    var filteredRows = allRows.slice();
-    
-    if (allRows.length === 0) return;
-
-    function renderPagination() {
-        var totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
-        var start = (currentPage - 1) * PAGE_SIZE;
-        var end = start + PAGE_SIZE;
-        
-        // Hide all rows first
-        allRows.forEach(function(row) { row.style.display = 'none'; });
-        
-        // Show only current page rows
-        filteredRows.slice(start, end).forEach(function(row) { row.style.display = ''; });
-        
-        // Empty state
-        if (emptyRow) {
-            emptyRow.style.display = filteredRows.length === 0 ? '' : 'none';
-        }
-        
-        // Update info
-        var showStart = filteredRows.length > 0 ? start + 1 : 0;
-        var showEnd = Math.min(end, filteredRows.length);
-        if (countBadge) countBadge.textContent = filteredRows.length + ' kayıt';
-        if (paginationInfo) paginationInfo.textContent = showStart + '-' + showEnd + ' / ' + filteredRows.length + ' rol';
-        
-        // Render pagination buttons
-        var html = '';
-        
-        // Prev button
-        html += '<button type="button" ' + (currentPage === 1 ? 'disabled' : '') + ' data-page="' + (currentPage - 1) + '">';
-        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>';
-        html += '</button>';
-        
-        // Page numbers
-        for (var i = 1; i <= totalPages; i++) {
-            if (totalPages <= 7 || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                html += '<button type="button" class="' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
-            } else if (i === currentPage - 2 || i === currentPage + 2) {
-                html += '<button type="button" disabled>...</button>';
-            }
-        }
-        
-        // Next button
-        html += '<button type="button" ' + (currentPage === totalPages || totalPages === 0 ? 'disabled' : '') + ' data-page="' + (currentPage + 1) + '">';
-        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-        html += '</button>';
-        
-        paginationContainer.innerHTML = html;
-    }
-    
-    function filterRows(term) {
-        currentPage = 1;
-        if (term === '') {
-            filteredRows = allRows.slice();
-        } else {
-            filteredRows = allRows.filter(function(row) {
-                var data = JSON.parse(row.getAttribute('data-item') || '{}');
-                var searchText = [
-                    data.Name || '',
-                    data.Description || ''
-                ].join(' ').toLowerCase();
-                return searchText.includes(term);
-            });
-        }
-        renderPagination();
-    }
-    
-    // Search
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            filterRows(this.value.toLowerCase().trim());
-        });
-    }
-    
-    // Pagination clicks
-    paginationContainer.addEventListener('click', function(e) {
-        var btn = e.target.closest('button[data-page]');
-        if (btn && !btn.disabled) {
-            currentPage = parseInt(btn.getAttribute('data-page'));
-            renderPagination();
-        }
-    });
-    
-    // Initial render
-    renderPagination();
-})();
-</script>
+<script src="~/js/pages/roles.js" asp-append-version="true"></script>
 }

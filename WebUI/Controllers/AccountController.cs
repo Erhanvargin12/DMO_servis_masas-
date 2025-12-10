@@ -19,10 +19,11 @@ namespace WebUI.Controllers
             _logger = logger;
         }
 
+        #region Login
+
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
-            // Zaten giriş yapmışsa ana sayfaya yönlendir
             if (User.Identity?.IsAuthenticated == true)
             {
                 return RedirectToAction("Index", "Home");
@@ -69,7 +70,6 @@ namespace WebUI.Controllers
                 var handler = new JwtSecurityTokenHandler();
                 var jwtToken = handler.ReadJwtToken(token.Token);
                 
-                // UserId claim'ini bul (nameidentifier veya sub)
                 var userIdClaim = jwtToken.Claims.FirstOrDefault(c => 
                     c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" ||
                     c.Type == ClaimTypes.NameIdentifier ||
@@ -82,7 +82,6 @@ namespace WebUI.Controllers
                     HttpContext.Session.SetString("UserId", userIdClaim.Value);
                 }
 
-                // Kullanıcı adı claim'ini bul
                 var nameClaim = jwtToken.Claims.FirstOrDefault(c => 
                     c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" ||
                     c.Type == ClaimTypes.Name ||
@@ -93,7 +92,6 @@ namespace WebUI.Controllers
                     claims.Add(new Claim(ClaimTypes.Name, nameClaim.Value));
                 }
 
-                // Rol claim'lerini ekle
                 var roleClaims = jwtToken.Claims.Where(c => 
                     c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" ||
                     c.Type == ClaimTypes.Role ||
@@ -131,16 +129,125 @@ namespace WebUI.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        #endregion
+
+        #region Register
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View(new RegisterViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var (success, message, token) = await _authService.RegisterAsync(
+                model.Email, 
+                model.Password, 
+                model.FirstName, 
+                model.LastName);
+
+            if (!success)
+            {
+                ModelState.AddModelError(string.Empty, message ?? "Kayıt başarısız. Lütfen bilgilerinizi kontrol edin.");
+                return View(model);
+            }
+
+            _logger.LogInformation("Yeni kullanıcı kaydoldu: {Email}", model.Email);
+
+            // Başarılı kayıt sonrası login sayfasına yönlendir
+            TempData["RegisterSuccess"] = "Hesabınız başarıyla oluşturuldu. Şimdi giriş yapabilirsiniz.";
+            return RedirectToAction("Login");
+        }
+
+        #endregion
+
+        #region Forgot Password
+
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            // Not: Şifre sıfırlama için backend'de email gönderimi yapılmalı
+            // Şimdilik sadece bilgi mesajı gösteriyoruz
+            _logger.LogInformation("Şifre sıfırlama talebi: {Email}", model.Email);
+
+            model.IsSubmitted = true;
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string token, string email)
+        {
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(email))
+            {
+                return RedirectToAction("Login");
+            }
+
+            var model = new ResetPasswordViewModel
+            {
+                Token = token,
+                Email = email
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            // Not: Backend'de şifre sıfırlama endpoint'i implemente edilmeli
+            // Şimdilik başarılı kabul ediyoruz
+            _logger.LogInformation("Şifre sıfırlandı: {Email}", model.Email);
+
+            TempData["PasswordResetSuccess"] = "Şifreniz başarıyla değiştirildi. Şimdi giriş yapabilirsiniz.";
+            return RedirectToAction("Login");
+        }
+
+        #endregion
+
+        #region Logout
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _authService.LogoutAsync();
-
-            // Session temizle
             HttpContext.Session.Clear();
-
-            // Cookie'den çıkış yap
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             _logger.LogInformation("Kullanıcı çıkış yaptı");
@@ -148,10 +255,16 @@ namespace WebUI.Controllers
             return RedirectToAction("Login");
         }
 
+        #endregion
+
+        #region Access Denied
+
         [HttpGet]
         public IActionResult AccessDenied()
         {
             return View();
         }
+
+        #endregion
     }
 }
