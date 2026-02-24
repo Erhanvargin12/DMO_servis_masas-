@@ -66,8 +66,8 @@ public class AuthManager : IAuthService
 
     public IDataResult<User> Login(UserForLoginDto userForLoginDto)
     {
-        var userResult = _userService.GetAll(m => m.Mail == userForLoginDto.Email);
-        var userToCheck = userResult.Data?.FirstOrDefault();
+        var userResult = _userService.GetUser(u=>u.Mail == userForLoginDto.Email);
+        var userToCheck = userResult.Data;
         
         if (userToCheck == null)
         {

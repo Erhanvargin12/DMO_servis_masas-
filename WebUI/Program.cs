@@ -88,14 +88,15 @@ builder.Services.AddHttpClient<IMenuApiService, MenuApiService>(client =>
 });
 
 // Add services to the container.
-builder.Services.AddControllersWithViews()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
-    });
+builder.Services.AddControllersWithViews().AddJsonOptions(options =>{options.JsonSerializerOptions.PropertyNamingPolicy = null;});
 
 // HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+
+
+
 
 var app = builder.Build();
 

@@ -11,12 +11,14 @@ namespace WebUI.Controllers
     public class AccountController : Controller
     {
         private readonly IAuthService _authService;
+        private readonly ICurrentUserService _currentUser;
         private readonly ILogger<AccountController> _logger;
 
-        public AccountController(IAuthService authService, ILogger<AccountController> logger)
+        public AccountController(IAuthService authService, ILogger<AccountController> logger, ICurrentUserService currentUser)
         {
             _authService = authService;
             _logger = logger;
+            _currentUser = currentUser;
         }
 
         #region Login
@@ -24,7 +26,7 @@ namespace WebUI.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
-            if (User.Identity?.IsAuthenticated == true)
+            if (_currentUser.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -69,34 +71,23 @@ namespace WebUI.Controllers
             {
                 var handler = new JwtSecurityTokenHandler();
                 var jwtToken = handler.ReadJwtToken(token.Token);
+                string url = "http://schemas.microsoft.com/ws/2008/06/identity/claims/";
                 
-                var userIdClaim = jwtToken.Claims.FirstOrDefault(c => 
-                    c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" ||
-                    c.Type == ClaimTypes.NameIdentifier ||
-                    c.Type == "sub" ||
-                    c.Type == "nameid");
-                
+                var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == url+"nameidentifier" ||c.Type == ClaimTypes.NameIdentifier ||c.Type == "sub" ||c.Type == "nameid");
+                var nameClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == url + "name" || c.Type == ClaimTypes.Name || c.Type == "name");
+                var roleClaims = jwtToken.Claims.Where(c => c.Type == url + "role" || c.Type == ClaimTypes.Role || c.Type == "role");
+
                 if (userIdClaim != null)
                 {
                     claims.Add(new Claim("UserId", userIdClaim.Value));
                     HttpContext.Session.SetString("UserId", userIdClaim.Value);
                 }
-
-                var nameClaim = jwtToken.Claims.FirstOrDefault(c => 
-                    c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" ||
-                    c.Type == ClaimTypes.Name ||
-                    c.Type == "name");
                 
                 if (nameClaim != null)
                 {
                     claims.Add(new Claim(ClaimTypes.Name, nameClaim.Value));
                 }
 
-                var roleClaims = jwtToken.Claims.Where(c => 
-                    c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role" ||
-                    c.Type == ClaimTypes.Role ||
-                    c.Type == "role");
-                
                 foreach (var roleClaim in roleClaims)
                 {
                     claims.Add(new Claim(ClaimTypes.Role, roleClaim.Value));
@@ -114,10 +105,7 @@ namespace WebUI.Controllers
                 ExpiresUtc = token.Expiration
             };
 
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity),
-                authProperties);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,new ClaimsPrincipal(claimsIdentity),authProperties);
 
             _logger.LogInformation("Kullanıcı giriş yaptı: {Email}", model.Email);
 
@@ -136,7 +124,7 @@ namespace WebUI.Controllers
         [HttpGet]
         public IActionResult Register()
         {
-            if (User.Identity?.IsAuthenticated == true)
+            if (_currentUser.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -179,7 +167,7 @@ namespace WebUI.Controllers
         [HttpGet]
         public IActionResult ForgotPassword()
         {
-            if (User.Identity?.IsAuthenticated == true)
+            if (_currentUser.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }

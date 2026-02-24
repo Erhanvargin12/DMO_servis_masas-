@@ -8,6 +8,7 @@ using Core.Utilities.Business;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Microsoft.Win32;
 using System.Linq.Expressions;
 
 namespace Business.Concrete;
@@ -37,35 +38,6 @@ public class UserManager : IUserService
     }
 
     [SecuredOperation("Admin")]
-    public IResult Delete(User user)
-    {
-        IResult result = BusinessRules.Run(
-            CheckIfUserExists(user.Id)
-        );
-
-        if (result != null)
-        {
-            return result;
-        }
-
-        var existingUser = _userDal.Get(u => u.Id == user.Id);
-        _userDal.Delete(existingUser);
-        return new SuccessResult(Messages.UserDeleted);
-    }
-
-    // Auth işlemleri için SecuredOperation YOK - Login için gerekli
-    public IDataResult<List<User>> GetAll(Expression<Func<User, bool>> filter = null)
-    {
-        return new SuccessDataResult<List<User>>(_userDal.GetAll(filter), Messages.UsersList);
-    }
-
-    // Token oluşturmak için SecuredOperation YOK
-    public List<OperationClaim> GetClaims(User user)
-    {
-        return _userDal.GetClaims(user);
-    }
-
-    [SecuredOperation("Admin")]
     public IResult Update(User user)
     {
         IResult result = BusinessRules.Run(
@@ -92,6 +64,42 @@ public class UserManager : IUserService
         _userDal.Update(existingUser);
         return new SuccessResult(Messages.UserUpdated);
     }
+
+    [SecuredOperation("Admin")]
+    public IResult Delete(User user)
+    {
+        IResult result = BusinessRules.Run(
+            CheckIfUserExists(user.Id)
+        );
+
+        if (result != null)
+        {
+            return result;
+        }
+
+        var existingUser = _userDal.Get(u => u.Id == user.Id);
+        _userDal.Delete(existingUser);
+        return new SuccessResult(Messages.UserDeleted);
+    }
+
+    //[SecuredOperation("Admin")]
+    public IDataResult<List<User>> GetAll(Expression<Func<User, bool>> filter = null)
+    {
+        return new SuccessDataResult<List<User>>(_userDal.GetAll(filter), Messages.UsersList);
+    }
+    //Login işlemleri için SecuredOperation eklenmedi
+    public IDataResult<User> GetUser(Expression<Func<User, bool>> filter = null)
+    {
+        return new SuccessDataResult<User>(_userDal.Get(filter), Messages.UsersList);
+    }
+
+    // Token oluşturmak için SecuredOperation YOK
+    public List<OperationClaim> GetClaims(User user)
+    {
+        return _userDal.GetClaims(user);
+    }
+
+
 
     #region Business Rules
     private IResult CheckIfUserMailExists(string email)

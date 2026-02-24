@@ -7,7 +7,7 @@ using WebUI.Services.Abstract;
 namespace WebUI.Controllers
 {
     [Authorize]
-    [AdminAuthorize("Admin")]
+    [RoleAuthorize("Admin")]
     public class UsersController : Controller
     {
         private readonly IUserApiService _userApiService;

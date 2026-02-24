@@ -1,0 +1,661 @@
+@model WebUI.Models.SettingsViewModel
+@{
+    ViewData["Title"] = "Ayarlar";
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-header-title">Sistem Ayarları</h1>
+        <p class="page-header-subtitle">Uygulamayı kişiselleştirin ve tercihlerinizi yönetin</p>
+    </div>
+    <div class="page-header-actions">
+        <button type="button" class="btn btn-ghost" id="resetSettingsBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            Sıfırla
+        </button>
+        <button type="button" class="btn btn-primary" id="saveSettingsBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Kaydet
+        </button>
+    </div>
+</div>
+
+<!-- Settings Tabs -->
+<div class="settings-container">
+    <div class="settings-sidebar">
+        <nav class="settings-nav">
+            <button class="settings-nav-item active" data-tab="appearance">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24m-4.24 4.24l4.24 4.24M20 12h-6m-6 0H2"></path>
+                </svg>
+                <span>Görünüm</span>
+            </button>
+            <button class="settings-nav-item" data-tab="theme">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <span>Tema ve Renkler</span>
+            </button>
+            <button class="settings-nav-item" data-tab="typography">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                    <line x1="9" y1="20" x2="15" y2="20"></line>
+                    <line x1="12" y1="4" x2="12" y2="20"></line>
+                </svg>
+                <span>Yazı Tipi</span>
+            </button>
+            <button class="settings-nav-item" data-tab="layout">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+                <span>Yerleşim</span>
+            </button>
+            <button class="settings-nav-item" data-tab="tables">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                </svg>
+                <span>Tablolar</span>
+            </button>
+            <button class="settings-nav-item" data-tab="notifications">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span>Bildirimler</span>
+            </button>
+            <button class="settings-nav-item" data-tab="accessibility">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="4"></circle>
+                    <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line>
+                    <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line>
+                    <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line>
+                    <line x1="14.83" y1="9.17" x2="18.36" y2="5.64"></line>
+                    <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line>
+                </svg>
+                <span>Erişilebilirlik</span>
+            </button>
+            <button class="settings-nav-item" data-tab="advanced">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+                <span>Gelişmiş</span>
+            </button>
+        </nav>
+    </div>
+
+    <div class="settings-content">
+        <!-- Görünüm Tab -->
+        <div class="settings-tab active" id="appearance-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Genel Görünüm</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Kompakt Mod</span>
+                            <span class="setting-desc">Daha fazla içerik görmek için arayüzü küçült</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="compactMode" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Animasyonlar</span>
+                            <span class="setting-desc">Geçiş efektlerini ve animasyonları etkinleştir</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="showAnimations" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Köşe Yuvarlaklığı</span>
+                            <span class="setting-desc">Arayüz elemanlarının köşe yuvarlaklığı</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="borderRadius" min="0" max="20" value="6" class="range-input" />
+                            <span class="range-value">6px</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Gölge Yoğunluğu</span>
+                            <span class="setting-desc">Kartların ve elemanların gölge efekti</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="shadowIntensity" class="form-select">
+                                <option value="none">Gölge Yok</option>
+                                <option value="light">Hafif</option>
+                                <option value="medium" selected>Orta</option>
+                                <option value="strong">Güçlü</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tema ve Renkler Tab -->
+        <div class="settings-tab" id="theme-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Tema Seçimi</h2>
+                <div class="theme-selector">
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="light" checked />
+                        <div class="theme-preview theme-light">
+                            <div class="theme-preview-header"></div>
+                            <div class="theme-preview-content">
+                                <div class="theme-preview-sidebar"></div>
+                                <div class="theme-preview-main"></div>
+                            </div>
+                        </div>
+                        <span>Açık Tema</span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="dark" />
+                        <div class="theme-preview theme-dark">
+                            <div class="theme-preview-header"></div>
+                            <div class="theme-preview-content">
+                                <div class="theme-preview-sidebar"></div>
+                                <div class="theme-preview-main"></div>
+                            </div>
+                        </div>
+                        <span>Koyu Tema</span>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="auto" />
+                        <div class="theme-preview theme-auto">
+                            <div class="theme-preview-half-light">
+                                <div class="theme-preview-header"></div>
+                                <div class="theme-preview-content">
+                                    <div class="theme-preview-sidebar"></div>
+                                    <div class="theme-preview-main"></div>
+                                </div>
+                            </div>
+                            <div class="theme-preview-half-dark">
+                                <div class="theme-preview-header"></div>
+                                <div class="theme-preview-content">
+                                    <div class="theme-preview-sidebar"></div>
+                                    <div class="theme-preview-main"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <span>Otomatik</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2 class="settings-section-title">Renk Paleti</h2>
+                <div class="color-presets">
+                    <button class="color-preset active" data-preset="default">
+                        <div class="color-preset-preview">
+                            <span style="background: #0891b2"></span>
+                            <span style="background: #1e293b"></span>
+                            <span style="background: #f8f9fb"></span>
+                            <span style="background: #ffffff"></span>
+                        </div>
+                        <span>Varsayılan</span>
+                    </button>
+                    <button class="color-preset" data-preset="blue">
+                        <div class="color-preset-preview">
+                            <span style="background: #3b82f6"></span>
+                            <span style="background: #1e3a8a"></span>
+                            <span style="background: #eff6ff"></span>
+                            <span style="background: #ffffff"></span>
+                        </div>
+                        <span>Mavi</span>
+                    </button>
+                    <button class="color-preset" data-preset="purple">
+                        <div class="color-preset-preview">
+                            <span style="background: #8b5cf6"></span>
+                            <span style="background: #4c1d95"></span>
+                            <span style="background: #f5f3ff"></span>
+                            <span style="background: #ffffff"></span>
+                        </div>
+                        <span>Mor</span>
+                    </button>
+                    <button class="color-preset" data-preset="green">
+                        <div class="color-preset-preview">
+                            <span style="background: #10b981"></span>
+                            <span style="background: #14532d"></span>
+                            <span style="background: #f0fdf4"></span>
+                            <span style="background: #ffffff"></span>
+                        </div>
+                        <span>Yeşil</span>
+                    </button>
+                    <button class="color-preset" data-preset="orange">
+                        <div class="color-preset-preview">
+                            <span style="background: #f97316"></span>
+                            <span style="background: #7c2d12"></span>
+                            <span style="background: #fff7ed"></span>
+                            <span style="background: #ffffff"></span>
+                        </div>
+                        <span>Turuncu</span>
+                    </button>
+                    <button class="color-preset" data-preset="custom">
+                        <div class="color-preset-preview">
+                            <span style="background: linear-gradient(45deg, #667eea 0%, #764ba2 100%)"></span>
+                        </div>
+                        <span>Özel</span>
+                    </button>
+                </div>
+
+                <div class="custom-colors" style="display: none;">
+                    <div class="color-row">
+                        <div class="color-item">
+                            <label>Ana Renk</label>
+                            <div class="color-input-group">
+                                <input type="color" id="accentColor" value="#0891b2" />
+                                <input type="text" value="#0891b2" class="color-text" />
+                            </div>
+                        </div>
+                        <div class="color-item">
+                            <label>Sidebar Rengi</label>
+                            <div class="color-input-group">
+                                <input type="color" id="sidebarColor" value="#1e293b" />
+                                <input type="text" value="#1e293b" class="color-text" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="color-row">
+                        <div class="color-item">
+                            <label>Arka Plan</label>
+                            <div class="color-input-group">
+                                <input type="color" id="bgColor" value="#f8f9fb" />
+                                <input type="text" value="#f8f9fb" class="color-text" />
+                            </div>
+                        </div>
+                        <div class="color-item">
+                            <label>Kart Rengi</label>
+                            <div class="color-input-group">
+                                <input type="color" id="cardColor" value="#ffffff" />
+                                <input type="text" value="#ffffff" class="color-text" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yazı Tipi Tab -->
+        <div class="settings-tab" id="typography-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Yazı Tipi Ayarları</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Yazı Tipi Ailesi</span>
+                            <span class="setting-desc">Uygulama genelinde kullanılacak yazı tipi</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="fontFamily" class="form-select">
+                                <option value="system">Sistem Varsayılanı</option>
+                                <option value="inter">Inter</option>
+                                <option value="roboto">Roboto</option>
+                                <option value="poppins">Poppins</option>
+                                <option value="montserrat">Montserrat</option>
+                                <option value="opensans">Open Sans</option>
+                                <option value="lato">Lato</option>
+                                <option value="raleway">Raleway</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Yazı Boyutu</span>
+                            <span class="setting-desc">Temel yazı boyutu (px)</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="fontSize" min="12" max="18" value="14" class="range-input" />
+                            <span class="range-value">14px</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Satır Yüksekliği</span>
+                            <span class="setting-desc">Metin satırları arası boşluk</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="lineHeight" class="form-select">
+                                <option value="1.3">Sıkışık</option>
+                                <option value="1.5" selected>Normal</option>
+                                <option value="1.7">Geniş</option>
+                                <option value="2">Çok Geniş</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2 class="settings-section-title">Yazı Tipi Önizleme</h2>
+                <div class="font-preview">
+                    <h1>Başlık Örneği</h1>
+                    <p>Normal metin örneği. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                    <small>Küçük metin örneği</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yerleşim Tab -->
+        <div class="settings-tab" id="layout-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Sidebar Ayarları</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Sidebar Genişliği</span>
+                            <span class="setting-desc">Sol menü genişliği (px)</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="sidebarWidth" min="200" max="300" value="240" step="10" class="range-input" />
+                            <span class="range-value">240px</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Sidebar Stili</span>
+                            <span class="setting-desc">Sol menü görünüm stili</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="sidebarStyle" class="form-select">
+                                <option value="dark" selected>Koyu</option>
+                                <option value="light">Açık</option>
+                                <option value="gradient">Gradient</option>
+                                <option value="transparent">Şeffaf</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Menü Stili</span>
+                            <span class="setting-desc">Menü öğelerinin görünümü</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="menuStyle" class="form-select">
+                                <option value="default" selected>Varsayılan</option>
+                                <option value="rounded">Yuvarlak</option>
+                                <option value="pills">Hap</option>
+                                <option value="minimal">Minimal</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Varsayılan Olarak Kapalı</span>
+                            <span class="setting-desc">Sayfa yüklendiğinde sidebar kapalı olsun</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="sidebarCollapsed" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tablolar Tab -->
+        <div class="settings-tab" id="tables-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Tablo Ayarları</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Sayfa Başına Kayıt</span>
+                            <span class="setting-desc">Tablolarda gösterilecek varsayılan satır sayısı</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="pageSize" class="form-select">
+                                <option value="5">5</option>
+                                <option value="8" selected>8</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Kompakt Tablolar</span>
+                            <span class="setting-desc">Daha az boşluklu tablo görünümü</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="compactTables" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Tablo Kenarlıkları</span>
+                            <span class="setting-desc">Hücreler arası çizgileri göster</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="showTableBorders" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Zebra Çizgiler</span>
+                            <span class="setting-desc">Alternatif satır renklendirmesi</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="zebraStripes" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bildirimler Tab -->
+        <div class="settings-tab" id="notifications-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Bildirim Ayarları</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Bildirim Konumu</span>
+                            <span class="setting-desc">Toast bildirimlerin ekrandaki konumu</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="toastPosition" class="form-select">
+                                <option value="top-left">Sol Üst</option>
+                                <option value="top-center">Orta Üst</option>
+                                <option value="top-right" selected>Sağ Üst</option>
+                                <option value="bottom-left">Sol Alt</option>
+                                <option value="bottom-center">Orta Alt</option>
+                                <option value="bottom-right">Sağ Alt</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Görüntülenme Süresi</span>
+                            <span class="setting-desc">Bildirimin ekranda kalma süresi (ms)</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="toastDuration" min="1000" max="10000" value="3000" step="500" class="range-input" />
+                            <span class="range-value">3000ms</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Ses Efektleri</span>
+                            <span class="setting-desc">Bildirim seslerini etkinleştir</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="enableSounds" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Test Bildirimi</span>
+                            <span class="setting-desc">Ayarları test etmek için bildirim göster</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" id="testToastBtn">Test Et</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Erişilebilirlik Tab -->
+        <div class="settings-tab" id="accessibility-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Erişilebilirlik Ayarları</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Yüksek Kontrast</span>
+                            <span class="setting-desc">Görünürlük için renk kontrastını artır</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="highContrast" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Azaltılmış Hareket</span>
+                            <span class="setting-desc">Animasyonları ve geçişleri azalt</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="reducedMotion" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Büyük Metin</span>
+                            <span class="setting-desc">Tüm metinleri büyüt</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="largeText" />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Odak Göstergesi</span>
+                            <span class="setting-desc">Klavye navigasyonu için belirgin odak göstergesi</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="focusIndicator" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gelişmiş Tab -->
+        <div class="settings-tab" id="advanced-tab">
+            <div class="settings-section">
+                <h2 class="settings-section-title">Gelişmiş Ayarlar</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Ayarları Dışa Aktar</span>
+                            <span class="setting-desc">Mevcut ayarları JSON dosyası olarak indir</span>
+                        </div>
+                        <button type="button" class="btn btn-sm" id="exportSettingsBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Dışa Aktar
+                        </button>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Ayarları İçe Aktar</span>
+                            <span class="setting-desc">JSON dosyasından ayarları yükle</span>
+                        </div>
+                        <input type="file" id="importSettings" accept=".json" style="display: none;" />
+                        <button type="button" class="btn btn-sm" onclick="document.getElementById('importSettings').click()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            İçe Aktar
+                        </button>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Önbelleği Temizle</span>
+                            <span class="setting-desc">Tarayıcı önbelleğini temizle</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-danger" id="clearCacheBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Temizle
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2 class="settings-section-title">Performans</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Lazy Loading</span>
+                            <span class="setting-desc">Görüntüleri ve içerikleri gecikmeli yükle</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="lazyLoading" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span class="setting-name">Önbellek Kullan</span>
+                            <span class="setting-desc">Daha hızlı yükleme için önbelleği etkinleştir</span>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="useCache" checked />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/js/pages/settings.js" asp-append-version="true"></script>
+}

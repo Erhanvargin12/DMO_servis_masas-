@@ -215,7 +215,7 @@
                     <div class="form-group">
                         <label class="form-label">Üst Menü</label>
                         <select name="ParentId" class="form-input">
-                            <option value="">— Ana Menü —</option>
+                            <option value="0">Ana Kategori</option>
                             @foreach (var parent in parentMenus)
                             {
                                 <option value="@parent.Id">@parent.Name</option>

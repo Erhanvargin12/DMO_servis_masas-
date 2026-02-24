@@ -2,8 +2,7 @@
  * Menus Page JavaScript
  * Menü yönetimi sayfası için JavaScript işlevleri
  */
-(function() {
-    'use strict';
+(function() { 'use strict';
 
     // Constants
     var PAGE_SIZE = 10;
@@ -29,9 +28,7 @@
     var roleCheckboxes = document.querySelectorAll('.role-checkbox');
     var saveRolesBtn = document.getElementById('saveRolesBtn');
 
-    /**
-     * Pagination render
-     */
+    // Pagination render
     function renderPagination() {
         if (allRows.length === 0) return;
         
@@ -87,9 +84,7 @@
         paginationContainer.innerHTML = html;
     }
 
-    /**
-     * Filter rows based on search term
-     */
+    // Filter rows based on search term
     function filterRows(term) {
         currentPage = 1;
         
@@ -111,9 +106,7 @@
         renderPagination();
     }
 
-    /**
-     * Open roles modal
-     */
+    //Open roles modal
     function openRolesModal(menuId, menuName) {
         currentMenuId = menuId;
         
@@ -141,9 +134,7 @@
         rolesModal.classList.add('active');
     }
 
-    /**
-     * Save roles
-     */
+    // Save roles
     function saveRoles() {
         var selectedRoles = [];
         roleCheckboxes.forEach(function(cb) {
@@ -181,9 +172,7 @@
         });
     }
 
-    /**
-     * Close modal
-     */
+    //Close modal
     function closeModal(modal) {
         modal.classList.remove('active');
     }
@@ -218,19 +207,24 @@
     });
     
     // Save roles button
-    if (saveRolesBtn) {
+    if (saveRolesBtn)
+    {
         saveRolesBtn.addEventListener('click', saveRoles);
     }
     
     // Close modals
-    rolesModal.querySelectorAll('[data-modal-close]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+    rolesModal.querySelectorAll('[data-modal-close]').forEach(function (btn)
+    {
+        btn.addEventListener('click', function ()
+        {
             closeModal(rolesModal);
         });
     });
     
-    rolesModal.addEventListener('click', function(e) {
-        if (e.target === rolesModal) {
+    rolesModal.addEventListener('click', function (e)
+    {
+        if (e.target === rolesModal)
+        {
             closeModal(rolesModal);
         }
     });

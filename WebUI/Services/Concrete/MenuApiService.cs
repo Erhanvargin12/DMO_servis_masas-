@@ -28,7 +28,7 @@ public class MenuApiService : IMenuApiService
         }
     }
 
-    public async Task<List<MenuViewModel>> GetMenusByUserIdAsync(int userId)
+    public async Task<List<MenuViewModel>> GetMenusByUserIdAsync(string userId)
     {
         try
         {
@@ -111,7 +111,7 @@ public class MenuApiService : IMenuApiService
                 Description = menu.Description,
                 Icon = menu.Icon,
                 Url = menu.Url,
-                ParentId = menu.ParentId,
+                ParentId = menu.ParentId == 0 ? null : menu.ParentId,
                 DisplayOrder = menu.DisplayOrder,
                 IsActive = menu.IsActive
             };

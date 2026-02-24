@@ -4,7 +4,7 @@ namespace WebUI.Services.Abstract;
 
 public interface IMenuApiService
 {
-    Task<List<MenuViewModel>> GetMenusByUserIdAsync(int userId);
+    Task<List<MenuViewModel>> GetMenusByUserIdAsync(string userId);
     Task<List<MenuViewModel>> GetAllAsync();
     Task<MenuViewModel?> GetByIdAsync(int id);
     Task<(bool Success, string? Message)> AddAsync(MenuViewModel menu);

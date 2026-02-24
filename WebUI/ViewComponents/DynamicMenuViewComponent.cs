@@ -7,40 +7,29 @@ namespace WebUI.ViewComponents;
 public class DynamicMenuViewComponent : ViewComponent
 {
     private readonly IMenuApiService _menuApiService;
+    private readonly ICurrentUserService _currentUserService;
 
-    public DynamicMenuViewComponent(IMenuApiService menuApiService)
+    public DynamicMenuViewComponent(IMenuApiService menuApiService, ICurrentUserService currentUserService)
     {
         _menuApiService = menuApiService;
+        _currentUserService = currentUserService;
     }
 
     public async Task<IViewComponentResult> InvokeAsync()
     {
-        var userId = GetCurrentUserId();
-        
+        var userId = _currentUserService.UserId;
+
         List<MenuViewModel> menus;
-        
-        if (userId > 0)
+
+        if (!string.IsNullOrEmpty(userId))
         {
-            // Kullanıcının yetkilerine göre menüleri getir
             menus = await _menuApiService.GetMenusByUserIdAsync(userId);
         }
         else
         {
-            // Yetkisiz kullanıcı - boş menü
             menus = new List<MenuViewModel>();
         }
 
         return View(menus);
     }
-
-    private int GetCurrentUserId()
-    {
-        var userIdClaim = HttpContext.User.FindFirst("UserId");
-        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
-        {
-            return userId;
-        }
-        return 0;
-    }
 }
-

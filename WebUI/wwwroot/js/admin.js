@@ -281,22 +281,186 @@
 
     // ===== Theme Manager =====
     const Theme = {
+        defaults: {
+            theme: 'light',
+            accentColor: '#0ea5e9',     // default preset (teal/soft)
+            sidebarColor: '#0f172a',
+            bgColor: '#f8fafc',
+            cardColor: '#ffffff',
+            preset: 'default',
+            useCustomColors: false,
+            fontSize: 14,
+            borderRadius: 6,
+            lineHeight: '1.5',
+            compactMode: false,
+            compactTables: false,
+            zebraStripes: false,
+            showAnimations: true,
+            highContrast: false,
+            largeText: false
+        },
+
+        // Aynı paletler (light/dark varyant) - settings.js ile uyumlu
+        colorPresets: {
+            default: {
+                accent: '#0ea5e9',
+                sidebar: '#0f172a',
+                bg: '#f8fafc',
+                card: '#ffffff',
+                accentDark: '#38bdf8',
+                sidebarDark: '#0b1220',
+                bgDark: '#0f172a',
+                cardDark: '#111827'
+            },
+            aurora: {
+                accent: '#8b5cf6',
+                sidebar: '#0b1021',
+                bg: '#f5f3ff',
+                card: '#ffffff',
+                accentDark: '#a78bfa',
+                sidebarDark: '#0b1021',
+                bgDark: '#0f172a',
+                cardDark: '#0f172a'
+            },
+            emerald: {
+                accent: '#22c55e',
+                sidebar: '#0f1f17',
+                bg: '#f1f5f3',
+                card: '#ffffff',
+                accentDark: '#34d399',
+                sidebarDark: '#0c1510',
+                bgDark: '#0f1f17',
+                cardDark: '#0f1f17'
+            },
+            sunrise: {
+                accent: '#f97316',
+                sidebar: '#31102b',
+                bg: '#fff7ed',
+                card: '#ffffff',
+                accentDark: '#fb923c',
+                sidebarDark: '#2a0d24',
+                bgDark: '#1b0a16',
+                cardDark: '#1f0d1a'
+            },
+            ocean: {
+                accent: '#2563eb',
+                sidebar: '#0b1a2e',
+                bg: '#eaf2ff',
+                card: '#ffffff',
+                accentDark: '#3b82f6',
+                sidebarDark: '#0a1626',
+                bgDark: '#0b1a2e',
+                cardDark: '#0f2135'
+            },
+            mono: {
+                accent: '#6b7280',
+                sidebar: '#1f2937',
+                bg: '#f6f7f9',
+                card: '#ffffff',
+                accentDark: '#9ca3af',
+                sidebarDark: '#111827',
+                bgDark: '#0f172a',
+                cardDark: '#0f172a'
+            }
+        },
+
+        loadSettings() {
+            try {
+                const stored = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                const settings = { ...this.defaults, ...stored };
+
+                // Geçersiz preset ise default'a dön
+                if (settings.preset && !this.colorPresets[settings.preset]) {
+                    settings.preset = 'default';
+                }
+
+                // Zorunlu alanlar eksikse defaults ile tamamla
+                ['accentColor', 'sidebarColor', 'bgColor', 'cardColor', 'theme'].forEach(k => {
+                    if (!settings[k]) settings[k] = this.defaults[k];
+                });
+
+                return settings;
+            } catch {
+                return { ...this.defaults };
+            }
+        },
+
+        saveSettings(settings) {
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+        },
+
+        applyGlobal(settings) {
+            const root = document.documentElement;
+            const isDark = settings.theme === 'dark' || (settings.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+            // Tema
+            root.removeAttribute('data-theme');
+            if (isDark) root.setAttribute('data-theme', 'dark');
+
+            // Renkler: preset + dark varyant (custom ise verilen renkler)
+            let accent = settings.accentColor;
+            let sidebar = settings.sidebarColor;
+            let bg = settings.bgColor;
+            let card = settings.cardColor;
+
+            const presetName = settings.preset || 'default';
+            const preset = (!settings.useCustomColors && this.colorPresets[presetName]) ? this.colorPresets[presetName] : null;
+
+            if (preset && !settings.useCustomColors) {
+                accent = isDark ? (preset.accentDark || preset.accent) : preset.accent;
+                sidebar = isDark ? (preset.sidebarDark || preset.sidebar) : preset.sidebar;
+                bg = isDark ? (preset.bgDark || preset.bg) : preset.bg;
+                card = isDark ? (preset.cardDark || preset.card) : preset.card;
+            }
+
+            root.style.setProperty('--accent', accent);
+            root.style.setProperty('--bg-sidebar', sidebar);
+            root.style.setProperty('--bg-body', bg);
+            root.style.setProperty('--bg-card', card);
+
+            // Font ve layout
+            root.style.fontSize = (settings.fontSize || 14) + 'px';
+            root.style.setProperty('--line-height', settings.lineHeight || '1.5');
+            root.style.setProperty('--radius', (settings.borderRadius || 6) + 'px');
+            root.style.setProperty('--radius-sm', Math.max((settings.borderRadius || 6) - 2, 0) + 'px');
+            root.style.setProperty('--radius-lg', ((settings.borderRadius || 6) + 2) + 'px');
+            root.style.setProperty('--radius-xl', ((settings.borderRadius || 6) + 6) + 'px');
+
+            // Animasyonlar
+            if (!settings.showAnimations) {
+                root.style.setProperty('--transition', '0s');
+            } else {
+                root.style.setProperty('--transition', '0.15s ease');
+            }
+
+            // Compact sınıfları
+            document.body.classList.toggle('compact-mode', !!settings.compactMode);
+            document.body.classList.toggle('compact-tables', !!settings.compactTables);
+            document.body.classList.toggle('zebra-stripes', !!settings.zebraStripes);
+            document.body.classList.toggle('high-contrast', !!settings.highContrast);
+            document.body.classList.toggle('large-text', !!settings.largeText);
+        },
+
         init: function() {
-            var saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', saved);
+            const settings = this.loadSettings();
+            this.applyGlobal(settings);
         },
 
         toggle: function() {
-            var current = document.documentElement.getAttribute('data-theme');
-            var next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('theme', next);
+            const settings = this.loadSettings();
+            const currentTheme = settings.theme || 'light';
+            const next = currentTheme === 'dark' ? 'light' : 'dark';
+            settings.theme = next;
+            this.saveSettings(settings);
+            this.applyGlobal(settings);
             return next;
         },
 
         set: function(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
+            const settings = this.loadSettings();
+            settings.theme = theme;
+            this.saveSettings(settings);
+            this.applyGlobal(settings);
         }
     };
 
