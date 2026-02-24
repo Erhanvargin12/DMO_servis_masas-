@@ -12,8 +12,10 @@
         init: function() {
             if (!this.container) {
                 this.container = document.createElement('div');
-                this.container.className = 'toast-container';
                 this.container.id = 'toastContainer';
+                var pos = 'top-right';
+                try { var s = JSON.parse(localStorage.getItem('appSettings') || '{}'); if (s.toastPosition) pos = s.toastPosition; } catch(e) {}
+                this.container.className = 'toast-container toast-pos-' + pos;
                 document.body.appendChild(this.container);
             }
         },
@@ -100,12 +102,88 @@
 
     // ===== Modal System =====
     const Modal = {
+        _getStorageKey: function(modal) {
+            var form = modal.querySelector('form');
+            if (!form) return null;
+            return 'modal_draft_' + (form.action || modal.id);
+        },
+
+        _saveDraft: function(modal) {
+            var key = this._getStorageKey(modal);
+            if (!key) return;
+            var form = modal.querySelector('form');
+            if (!form) return;
+
+            var idInput = form.querySelector('input[name="Id"]');
+            // Sadece yeni kayıt (Id=0) için kaydet
+            if (idInput && idInput.value !== '0') return;
+
+            var data = {};
+            form.querySelectorAll('input, select, textarea').forEach(function(el) {
+                if (!el.name || el.name === '__RequestVerificationToken' || el.type === 'hidden') return;
+                if (el.type === 'checkbox') {
+                    data[el.name] = el.checked;
+                } else {
+                    data[el.name] = el.value;
+                }
+            });
+
+            try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+        },
+
+        _restoreDraft: function(modal) {
+            var key = this._getStorageKey(modal);
+            if (!key) return false;
+            var saved = null;
+            try { saved = localStorage.getItem(key); } catch(e) {}
+            if (!saved) return false;
+
+            var data = null;
+            try { data = JSON.parse(saved); } catch(e) { return false; }
+
+            var form = modal.querySelector('form');
+            if (!form) return false;
+
+            var hasData = false;
+            form.querySelectorAll('input, select, textarea').forEach(function(el) {
+                if (!el.name || el.name === '__RequestVerificationToken' || el.type === 'hidden') return;
+                if (data[el.name] === undefined) return;
+                if (el.type === 'checkbox') {
+                    el.checked = data[el.name];
+                } else {
+                    el.value = data[el.name];
+                }
+                if (data[el.name] !== '' && data[el.name] !== false) hasData = true;
+            });
+
+            return hasData;
+        },
+
+        _clearDraft: function(modal) {
+            var key = this._getStorageKey(modal);
+            if (!key) return;
+            try { localStorage.removeItem(key); } catch(e) {}
+        },
+
+        _bindDraftSave: function(modal) {
+            var self = this;
+            var form = modal.querySelector('form');
+            if (!form || form._draftBound) return;
+            form._draftBound = true;
+
+            form.querySelectorAll('input, select, textarea').forEach(function(el) {
+                el.addEventListener('input', function() { self._saveDraft(modal); });
+                el.addEventListener('change', function() { self._saveDraft(modal); });
+            });
+        },
+
         open: function(modalId) {
             var modal = typeof modalId === 'string' ? document.getElementById(modalId) : modalId;
             if (!modal) return;
             
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            this._bindDraftSave(modal);
             
             setTimeout(function() {
                 var input = modal.querySelector('input:not([type="hidden"]):not([type="checkbox"])');
@@ -152,6 +230,33 @@
             if (submitBtn && submitBtn.dataset.createText) {
                 submitBtn.textContent = submitBtn.dataset.createText;
             }
+
+            // Draft varsa geri yükle ve bildir
+            var self = this;
+            var restored = this._restoreDraft(modal);
+            if (restored) {
+                setTimeout(function() {
+                    var banner = modal.querySelector('.draft-banner');
+                    if (!banner) {
+                        banner = document.createElement('div');
+                        banner.className = 'draft-banner';
+                        banner.innerHTML =
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' +
+                            '<span>Kaydedilmemiş taslak geri yüklendi</span>' +
+                            '<button type="button" class="draft-discard">Temizle</button>';
+                        var modalBody = modal.querySelector('.modal-body') || form;
+                        modalBody.insertBefore(banner, modalBody.firstChild);
+
+                        banner.querySelector('.draft-discard').addEventListener('click', function() {
+                            self._clearDraft(modal);
+                            form.reset();
+                            if (idInput) idInput.value = '0';
+                            banner.remove();
+                        });
+                    }
+                    banner.style.display = 'flex';
+                }, 50);
+            }
         },
 
         loadData: function(modal, itemId) {
@@ -163,6 +268,10 @@
             
             var form = modal.querySelector('form');
             if (!form) return;
+
+            // Düzenleme modunda draft banner'ı gizle
+            var banner = modal.querySelector('.draft-banner');
+            if (banner) banner.style.display = 'none';
 
             try {
                 var rawData = row.getAttribute('data-item');
@@ -283,13 +392,14 @@
     const Theme = {
         defaults: {
             theme: 'light',
-            accentColor: '#0ea5e9',     // default preset (teal/soft)
+            accentColor: '#0ea5e9',
             sidebarColor: '#0f172a',
             bgColor: '#f8fafc',
             cardColor: '#ffffff',
             preset: 'default',
             useCustomColors: false,
             fontSize: 14,
+            fontFamily: 'system',
             borderRadius: 6,
             lineHeight: '1.5',
             compactMode: false,
@@ -297,70 +407,49 @@
             zebraStripes: false,
             showAnimations: true,
             highContrast: false,
-            largeText: false
+            largeText: false,
+            sidebarWidth: 240,
+            sidebarStyle: 'dark',
+            menuStyle: 'default',
+            topbarStyle: 'solid',
+            shadowIntensity: 'medium',
+            toastPosition: 'top-right',
+            toastDuration: 4000,
+            tableHoverRow: true,
+            stickyTableHeader: false,
+            tableRowNumbers: false,
+            confirmDelete: true,
+            customCss: ''
         },
 
-        // Aynı paletler (light/dark varyant) - settings.js ile uyumlu
         colorPresets: {
             default: {
-                accent: '#0ea5e9',
-                sidebar: '#0f172a',
-                bg: '#f8fafc',
-                card: '#ffffff',
-                accentDark: '#38bdf8',
-                sidebarDark: '#0b1220',
-                bgDark: '#0f172a',
-                cardDark: '#111827'
+                accent: '#0ea5e9', sidebar: '#0f172a', bg: '#f8fafc', card: '#ffffff',
+                accentDark: '#38bdf8', sidebarDark: '#0b1220', bgDark: '#0f172a', cardDark: '#111827'
             },
             aurora: {
-                accent: '#8b5cf6',
-                sidebar: '#0b1021',
-                bg: '#f5f3ff',
-                card: '#ffffff',
-                accentDark: '#a78bfa',
-                sidebarDark: '#0b1021',
-                bgDark: '#0f172a',
-                cardDark: '#0f172a'
+                accent: '#8b5cf6', sidebar: '#0b1021', bg: '#f5f3ff', card: '#ffffff',
+                accentDark: '#a78bfa', sidebarDark: '#0b1021', bgDark: '#0f172a', cardDark: '#0f172a'
             },
             emerald: {
-                accent: '#22c55e',
-                sidebar: '#0f1f17',
-                bg: '#f1f5f3',
-                card: '#ffffff',
-                accentDark: '#34d399',
-                sidebarDark: '#0c1510',
-                bgDark: '#0f1f17',
-                cardDark: '#0f1f17'
+                accent: '#22c55e', sidebar: '#0f1f17', bg: '#f1f5f3', card: '#ffffff',
+                accentDark: '#34d399', sidebarDark: '#0c1510', bgDark: '#0f1f17', cardDark: '#0f1f17'
             },
             sunrise: {
-                accent: '#f97316',
-                sidebar: '#31102b',
-                bg: '#fff7ed',
-                card: '#ffffff',
-                accentDark: '#fb923c',
-                sidebarDark: '#2a0d24',
-                bgDark: '#1b0a16',
-                cardDark: '#1f0d1a'
+                accent: '#f97316', sidebar: '#31102b', bg: '#fff7ed', card: '#ffffff',
+                accentDark: '#fb923c', sidebarDark: '#2a0d24', bgDark: '#1b0a16', cardDark: '#1f0d1a'
             },
             ocean: {
-                accent: '#2563eb',
-                sidebar: '#0b1a2e',
-                bg: '#eaf2ff',
-                card: '#ffffff',
-                accentDark: '#3b82f6',
-                sidebarDark: '#0a1626',
-                bgDark: '#0b1a2e',
-                cardDark: '#0f2135'
+                accent: '#2563eb', sidebar: '#0b1a2e', bg: '#eaf2ff', card: '#ffffff',
+                accentDark: '#3b82f6', sidebarDark: '#0a1626', bgDark: '#0b1a2e', cardDark: '#0f2135'
             },
             mono: {
-                accent: '#6b7280',
-                sidebar: '#1f2937',
-                bg: '#f6f7f9',
-                card: '#ffffff',
-                accentDark: '#9ca3af',
-                sidebarDark: '#111827',
-                bgDark: '#0f172a',
-                cardDark: '#0f172a'
+                accent: '#6b7280', sidebar: '#1f2937', bg: '#f6f7f9', card: '#ffffff',
+                accentDark: '#9ca3af', sidebarDark: '#111827', bgDark: '#0f172a', cardDark: '#0f172a'
+            },
+            rose: {
+                accent: '#f43f5e', sidebar: '#1f0a15', bg: '#fff1f2', card: '#ffffff',
+                accentDark: '#fb7185', sidebarDark: '#1a0812', bgDark: '#1f0a15', cardDark: '#290e1c'
             }
         },
 
@@ -433,12 +522,85 @@
                 root.style.setProperty('--transition', '0.15s ease');
             }
 
-            // Compact sınıfları
+            // Sidebar genişliği
+            root.style.setProperty('--sidebar-width', (settings.sidebarWidth || 240) + 'px');
+
+            // Gölge yoğunluğu
+            var shadowMap = {
+                'none':   { sm: 'none', base: 'none', lg: 'none' },
+                'light':  { sm: '0 1px 2px rgba(0,0,0,0.02)', base: '0 2px 4px rgba(0,0,0,0.04)', lg: '0 4px 12px rgba(0,0,0,0.06)' },
+                'medium': { sm: '0 1px 2px rgba(0,0,0,0.04)', base: '0 2px 8px rgba(0,0,0,0.06)', lg: '0 8px 24px rgba(0,0,0,0.08)' },
+                'strong': { sm: '0 2px 4px rgba(0,0,0,0.08)', base: '0 4px 12px rgba(0,0,0,0.12)', lg: '0 12px 32px rgba(0,0,0,0.16)' }
+            };
+            var shadows = shadowMap[settings.shadowIntensity || 'medium'];
+            root.style.setProperty('--shadow-sm', shadows.sm);
+            root.style.setProperty('--shadow', shadows.base);
+            root.style.setProperty('--shadow-lg', shadows.lg);
+
+            // Font ailesi
+            var fontMap = {
+                'inter':       { name: 'Inter',        url: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap' },
+                'roboto':      { name: 'Roboto',       url: 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap' },
+                'poppins':     { name: 'Poppins',      url: 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap' },
+                'montserrat':  { name: 'Montserrat',   url: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap' },
+                'nunito':      { name: 'Nunito',       url: 'https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap' },
+                'opensans':    { name: 'Open Sans',    url: 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap' }
+            };
+            if (settings.fontFamily && settings.fontFamily !== 'system') {
+                var fi = fontMap[settings.fontFamily];
+                if (fi) {
+                    root.style.setProperty('--font-family', '"' + fi.name + '", sans-serif');
+                    if (!document.querySelector('link[data-gfont="' + settings.fontFamily + '"]')) {
+                        var link = document.createElement('link');
+                        link.rel = 'stylesheet'; link.href = fi.url;
+                        link.setAttribute('data-gfont', settings.fontFamily);
+                        document.head.appendChild(link);
+                    }
+                }
+            } else {
+                root.style.removeProperty('--font-family');
+            }
+
+            // Sidebar stili
+            document.body.classList.remove('sidebar-style-dark','sidebar-style-light','sidebar-style-gradient','sidebar-style-transparent');
+            document.body.classList.add('sidebar-style-' + (settings.sidebarStyle || 'dark'));
+
+            // Menü stili
+            document.body.classList.remove('menu-style-default','menu-style-rounded','menu-style-pills','menu-style-minimal');
+            document.body.classList.add('menu-style-' + (settings.menuStyle || 'default'));
+
+            // Topbar stili
+            document.body.classList.remove('topbar-solid','topbar-glass','topbar-minimal');
+            document.body.classList.add('topbar-' + (settings.topbarStyle || 'solid'));
+
+            // Toast pozisyonu - Toast container başlatılmışsa güncelle
+            var toastEl = document.getElementById('toastContainer');
+            if (toastEl && settings.toastPosition) {
+                toastEl.className = 'toast-container toast-pos-' + settings.toastPosition;
+            }
+
+            // Body sınıfları
             document.body.classList.toggle('compact-mode', !!settings.compactMode);
             document.body.classList.toggle('compact-tables', !!settings.compactTables);
             document.body.classList.toggle('zebra-stripes', !!settings.zebraStripes);
             document.body.classList.toggle('high-contrast', !!settings.highContrast);
             document.body.classList.toggle('large-text', !!settings.largeText);
+            document.body.classList.toggle('table-hover-row', settings.tableHoverRow !== false);
+            document.body.classList.toggle('sticky-table-header', !!settings.stickyTableHeader);
+            document.body.classList.toggle('table-row-numbers', !!settings.tableRowNumbers);
+
+            // Custom CSS
+            var customStyle = document.getElementById('admin-custom-css');
+            if (settings.customCss) {
+                if (!customStyle) {
+                    customStyle = document.createElement('style');
+                    customStyle.id = 'admin-custom-css';
+                    document.head.appendChild(customStyle);
+                }
+                customStyle.textContent = settings.customCss;
+            } else if (customStyle) {
+                customStyle.textContent = '';
+            }
         },
 
         init: function() {
@@ -610,6 +772,60 @@
                 e.preventDefault();
                 Form.submit(form);
             });
+        });
+
+        // ===== Submenu Accordion =====
+        initSubmenus();
+    }
+
+    function initSubmenus() {
+        var openGroups = [];
+        try { openGroups = JSON.parse(localStorage.getItem('openMenuGroups') || '[]'); } catch(e) {}
+
+        // Auto-open group that contains the active link
+        document.querySelectorAll('.submenu .menu-link.active, .submenu .submenu-link.active').forEach(function(activeLink) {
+            var group = activeLink.closest('.menu-group');
+            if (group) {
+                group.classList.add('open');
+                var text = group.querySelector('.menu-text');
+                if (text) {
+                    var label = text.textContent.trim();
+                    if (!openGroups.includes(label)) openGroups.push(label);
+                }
+            }
+        });
+
+        // Restore previously open groups
+        document.querySelectorAll('[data-toggle="submenu"]').forEach(function(link) {
+            var text = link.querySelector('.menu-text');
+            if (text && openGroups.includes(text.textContent.trim())) {
+                var group = link.closest('.menu-group');
+                if (group) group.classList.add('open');
+            }
+        });
+
+        // Toggle on click
+        document.addEventListener('click', function(e) {
+            var link = e.target.closest('[data-toggle="submenu"]');
+            if (!link) return;
+            e.preventDefault();
+
+            var group = link.closest('.menu-group');
+            if (!group) return;
+
+            var isOpen = group.classList.toggle('open');
+            var label = (link.querySelector('.menu-text') || {}).textContent;
+            if (label) {
+                label = label.trim();
+                var saved = [];
+                try { saved = JSON.parse(localStorage.getItem('openMenuGroups') || '[]'); } catch(e) {}
+                if (isOpen) {
+                    if (!saved.includes(label)) saved.push(label);
+                } else {
+                    saved = saved.filter(function(s) { return s !== label; });
+                }
+                try { localStorage.setItem('openMenuGroups', JSON.stringify(saved)); } catch(e) {}
+            }
         });
     }
 

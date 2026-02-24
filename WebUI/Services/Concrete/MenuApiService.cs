@@ -154,7 +154,7 @@ public class MenuApiService : IMenuApiService
                 Description = menu.Description,
                 Icon = menu.Icon,
                 Url = menu.Url,
-                ParentId = menu.ParentId,
+                ParentId = menu.ParentId == 0 ? null : menu.ParentId,
                 DisplayOrder = menu.DisplayOrder,
                 IsActive = menu.IsActive
             };
@@ -213,6 +213,28 @@ public class MenuApiService : IMenuApiService
         {
             _logger.LogError(ex, "Menü silinirken hata oluştu");
             return (false, "Bağlantı hatası oluştu");
+        }
+    }
+
+    public async Task<List<string>> GetInactiveUrlsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("menu/getinactiveurls");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = JsonConvert.DeserializeObject<ApiDataResponse<List<string>>>(content);
+                return result?.Data ?? new List<string>();
+            }
+
+            return new List<string>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Pasif menü URL'leri getirilirken hata oluştu");
+            return new List<string>();
         }
     }
 

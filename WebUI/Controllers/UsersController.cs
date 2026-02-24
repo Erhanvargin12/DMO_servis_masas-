@@ -51,12 +51,12 @@ namespace WebUI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save([FromBody] UserViewModel model)
+        public async Task<IActionResult> Save(UserViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                return Json(new { success = false, message = string.Join(", ", errors) });
+                TempData["ErrorMessage"] = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return RedirectToAction(nameof(Index));
             }
 
             bool success;
@@ -71,25 +71,32 @@ namespace WebUI.Controllers
                 (success, message) = await _userApiService.UpdateAsync(model);
             }
 
-            return Json(new { success, message });
+            if (success)
+                TempData["SuccessMessage"] = message;
+            else
+                TempData["ErrorMessage"] = message;
+
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete([FromBody] DeleteRequest request)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (request?.Id <= 0)
+            if (id <= 0)
             {
-                return Json(new { success = false, message = "Geçersiz kullanıcı" });
+                TempData["ErrorMessage"] = "Geçersiz kullanıcı";
+                return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _userApiService.DeleteAsync(request.Id);
-            return Json(new { success, message });
-        }
+            var (success, message) = await _userApiService.DeleteAsync(id);
 
-        public class DeleteRequest
-        {
-            public int Id { get; set; }
+            if (success)
+                TempData["SuccessMessage"] = message;
+            else
+                TempData["ErrorMessage"] = message;
+
+            return RedirectToAction(nameof(Index));
         }
 
         #region Rol Yönetimi

@@ -68,7 +68,7 @@ namespace WebUI.Services.Concrete
                     user.FirstName,
                     user.LastName,
                     user.Mail,
-                    Password = "123456",
+                    Password = !string.IsNullOrWhiteSpace(user.Password) ? user.Password : "Abc123!",
                     user.Status,
                     user.RegistirationId,
                     user.OrganizationUnitId,
@@ -177,6 +177,37 @@ namespace WebUI.Services.Concrete
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Kullanıcı silinirken hata oluştu");
+                return (false, "Bağlantı hatası oluştu");
+            }
+        }
+
+        public async Task<(bool Success, string? Message)> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+        {
+            try
+            {
+                SetAuthHeader();
+                var dto = new { UserId = userId, CurrentPassword = currentPassword, NewPassword = newPassword };
+                var json = JsonConvert.SerializeObject(dto);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync("user/changepassword", content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, "Şifre başarıyla değiştirildi");
+                }
+
+                if (!string.IsNullOrEmpty(responseContent) && responseContent.TrimStart().StartsWith("{"))
+                {
+                    var result = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
+                    return (false, result?.Message ?? "Bir hata oluştu");
+                }
+
+                return (false, responseContent ?? "Bir hata oluştu");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Şifre değiştirilirken hata oluştu");
                 return (false, "Bağlantı hatası oluştu");
             }
         }

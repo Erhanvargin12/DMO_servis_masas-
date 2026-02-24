@@ -1,28 +1,29 @@
-﻿@{
+﻿@model WebUI.Models.DashboardViewModel
+@{
     ViewData["Title"] = "Dashboard";
 }
 
 <!-- Stats -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-label">Kullanıcılar</div>
-        <div class="stat-value">1,248</div>
-        <div class="stat-change up">+12% bu ay</div>
+        <div class="stat-label">Toplam Kullanıcı</div>
+        <div class="stat-value">@Model.TotalUsers</div>
+        <div class="stat-change">Kayıtlı hesap</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">Aktif Oturum</div>
-        <div class="stat-value">156</div>
-        <div class="stat-change up">+8% bu hafta</div>
+        <div class="stat-label">Aktif Kullanıcı</div>
+        <div class="stat-value">@Model.ActiveUsers</div>
+        <div class="stat-change up">@(Model.TotalUsers > 0 ? $"%{(int)((double)Model.ActiveUsers / Model.TotalUsers * 100)} aktif" : "—")</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">API İsteği</div>
-        <div class="stat-value">24.5K</div>
-        <div class="stat-change down">-3% dünden</div>
+        <div class="stat-label">Toplam Rol</div>
+        <div class="stat-value">@Model.TotalRoles</div>
+        <div class="stat-change">Tanımlı rol</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">Uptime</div>
-        <div class="stat-value">99.9%</div>
-        <div class="stat-change">Stabil</div>
+        <div class="stat-label">Pasif Kullanıcı</div>
+        <div class="stat-value">@(Model.TotalUsers - Model.ActiveUsers)</div>
+        <div class="stat-change down">Devre dışı hesap</div>
     </div>
 </div>
 
@@ -54,7 +55,17 @@
                     </div>
                     <span>Rol Yönetimi</span>
                 </a>
-                <a href="#" class="action-item">
+                <a href="/Menus" class="action-item">
+                    <div class="action-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </div>
+                    <span>Menü Yönetimi</span>
+                </a>
+                <a href="/Settings" class="action-item">
                     <div class="action-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="3"/>
@@ -63,53 +74,36 @@
                     </div>
                     <span>Sistem Ayarları</span>
                 </a>
-                <a href="#" class="action-item">
-                    <div class="action-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                    </div>
-                    <span>Log Kayıtları</span>
-                </a>
             </div>
         </div>
     </div>
 
-    <!-- Recent Activity -->
+    <!-- Özet -->
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Son Aktiviteler</h3>
-            <a href="#" class="btn btn-ghost btn-sm">Tümünü Gör</a>
+            <h3 class="card-title">Sistem Özeti</h3>
         </div>
         <div class="card-body">
             <div class="activity-list">
                 <div class="activity-item">
                     <div class="activity-dot green"></div>
                     <div>
-                        <div class="activity-text">Yeni kullanıcı kaydoldu</div>
-                        <div class="activity-time">2 dakika önce</div>
+                        <div class="activity-text">@Model.TotalUsers kayıtlı kullanıcı mevcut</div>
+                        <div class="activity-time">@Model.ActiveUsers aktif, @(Model.TotalUsers - Model.ActiveUsers) pasif</div>
                     </div>
                 </div>
                 <div class="activity-item">
                     <div class="activity-dot blue"></div>
                     <div>
-                        <div class="activity-text">Admin rolü güncellendi</div>
-                        <div class="activity-time">15 dakika önce</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-dot orange"></div>
-                    <div>
-                        <div class="activity-text">Sistem ayarları değiştirildi</div>
-                        <div class="activity-time">1 saat önce</div>
+                        <div class="activity-text">@Model.TotalRoles rol tanımlanmış</div>
+                        <div class="activity-time">Kullanıcılara atanabilir</div>
                     </div>
                 </div>
                 <div class="activity-item">
                     <div class="activity-dot"></div>
                     <div>
-                        <div class="activity-text">5 kullanıcı çıkış yaptı</div>
-                        <div class="activity-time">3 saat önce</div>
+                        <div class="activity-text">Profil bilgilerinizi güncelleyin</div>
+                        <div class="activity-time"><a href="/Profile">Profilime Git →</a></div>
                     </div>
                 </div>
             </div>

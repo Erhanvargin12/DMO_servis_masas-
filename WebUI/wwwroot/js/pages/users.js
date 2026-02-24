@@ -237,6 +237,22 @@
         });
     }
     
+    // Şifre alanı: düzenleme modunda gizle
+    var userModal = document.getElementById('userModal');
+    if (userModal) {
+        var observer = new MutationObserver(function() {
+            var idInput = userModal.querySelector('input[name="Id"]');
+            var passwordGroup = document.getElementById('passwordGroup');
+            var passwordInput = document.getElementById('passwordInput');
+            if (!passwordGroup || !passwordInput) return;
+            
+            var isEdit = idInput && parseInt(idInput.value) > 0;
+            passwordGroup.style.display = isEdit ? 'none' : '';
+            passwordInput.required = !isEdit;
+        });
+        observer.observe(userModal, { attributes: true, attributeFilter: ['class'] });
+    }
+
     // Initialize
     renderPagination();
     

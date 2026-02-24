@@ -43,6 +43,15 @@ public class MenuManager : IMenuService
         return new SuccessDataResult<List<MenuDto>>(menus, Messages.MenusListed);
     }
 
+    // Pasif menü URL'lerini döndürür - kimlik doğrulama gerektirmez
+    public IDataResult<List<string>> GetInactiveMenuUrls()
+    {
+        var urls = _menuDal.GetAll(m => !m.IsActive && m.Url != null)
+            .Select(m => m.Url!)
+            .ToList();
+        return new SuccessDataResult<List<string>>(urls);
+    }
+
     [SecuredOperation("Admin")]
     public IResult Add(Menu menu)
     {

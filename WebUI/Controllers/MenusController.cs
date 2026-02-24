@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using WebUI.Filters;
 using WebUI.Models;
 using WebUI.Services.Abstract;
@@ -13,15 +14,18 @@ namespace WebUI.Controllers
         private readonly IMenuApiService _menuApiService;
         private readonly IRoleApiService _roleApiService;
         private readonly ILogger<MenusController> _logger;
+        private readonly IMemoryCache _cache;
 
         public MenusController(
             IMenuApiService menuApiService,
             IRoleApiService roleApiService,
-            ILogger<MenusController> logger)
+            ILogger<MenusController> logger,
+            IMemoryCache cache)
         {
             _menuApiService = menuApiService;
             _roleApiService = roleApiService;
             _logger = logger;
+            _cache = cache;
         }
 
         public async Task<IActionResult> Index()
@@ -41,11 +45,12 @@ namespace WebUI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save([FromBody] MenuViewModel model)
+        public async Task<IActionResult> Save(MenuViewModel model)
         {
             if (string.IsNullOrEmpty(model.Name))
             {
-                return Json(new { success = false, message = "Menü adı zorunludur" });
+                TempData["ErrorMessage"] = "Menü adı zorunludur";
+                return RedirectToAction(nameof(Index));
             }
 
             bool success;
@@ -60,7 +65,15 @@ namespace WebUI.Controllers
                 (success, message) = await _menuApiService.UpdateAsync(model);
             }
 
-            return Json(new { success, message });
+            if (success)
+            {
+                TempData["SuccessMessage"] = message;
+                _cache.Remove("InactiveMenuUrls");
+            }
+            else
+                TempData["ErrorMessage"] = message;
+
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -72,6 +85,7 @@ namespace WebUI.Controllers
             if (success)
             {
                 TempData["SuccessMessage"] = message;
+                _cache.Remove("InactiveMenuUrls");
             }
             else
             {

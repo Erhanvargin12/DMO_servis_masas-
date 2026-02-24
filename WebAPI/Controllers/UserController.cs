@@ -102,5 +102,34 @@ namespace WebAPI.Controllers
             }
             return BadRequest(result);
         }
+
+        [HttpPost("changepassword")]
+        public IActionResult ChangePassword(ChangePasswordDto dto)
+        {
+            var userResult = _userService.GetUser(u => u.Id == dto.UserId);
+            if (!userResult.Success || userResult.Data == null)
+            {
+                return BadRequest(new { Success = false, Message = "Kullanıcı bulunamadı" });
+            }
+
+            var user = userResult.Data;
+
+            if (!HashingHelper.VerifyPasswordHash(dto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
+            {
+                return BadRequest(new { Success = false, Message = "Mevcut şifre hatalı" });
+            }
+
+            HashingHelper.CreatePasswordHash(dto.NewPassword, out byte[] newHash, out byte[] newSalt);
+            user.PasswordHash = newHash;
+            user.PasswordSalt = newSalt;
+            user.UpdateAt = DateTime.Now;
+
+            var result = _userService.Update(user);
+            if (result.Success)
+            {
+                return Ok(new { Success = true, Message = "Şifre başarıyla değiştirildi" });
+            }
+            return BadRequest(new { Success = false, Message = result.Message });
+        }
     }
 }

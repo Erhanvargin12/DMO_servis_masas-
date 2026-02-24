@@ -418,6 +418,25 @@
     color: var(--text-muted);
 }
 
+/* Custom CSS Editor */
+.custom-css-editor {
+    width: 100%;
+    min-height: 160px;
+    padding: 12px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Monaco, 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    resize: vertical;
+    outline: none;
+    transition: border-color var(--transition);
+}
+.custom-css-editor:focus { border-color: var(--accent); }
+.custom-css-editor::placeholder { color: #475569; }
+
 /* Responsive */
 @media (max-width: 992px) {
     .settings-container {

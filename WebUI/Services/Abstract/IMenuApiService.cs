@@ -14,4 +14,5 @@ public interface IMenuApiService
     // Rol işlemleri
     Task<List<int>> GetMenuRolesAsync(int menuId);
     Task<(bool Success, string? Message)> UpdateMenuRolesAsync(int menuId, List<int> roleIds);
+    Task<List<string>> GetInactiveUrlsAsync();
 }

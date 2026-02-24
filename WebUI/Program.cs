@@ -90,6 +90,9 @@ builder.Services.AddHttpClient<IMenuApiService, MenuApiService>(client =>
 // Add services to the container.
 builder.Services.AddControllersWithViews().AddJsonOptions(options =>{options.JsonSerializerOptions.PropertyNamingPolicy = null;});
 
+// Memory Cache
+builder.Services.AddMemoryCache();
+
 // HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -118,6 +121,9 @@ app.UseAuthorization();
 
 // Token refresh middleware - Authentication'dan sonra, Authorization'dan sonra
 app.UseTokenRefresh();
+
+// Menü erişim kontrolü - pasif menülere admin dışı erişimi engelle
+app.UseMenuAccess();
 
 app.MapControllerRoute(
     name: "default",

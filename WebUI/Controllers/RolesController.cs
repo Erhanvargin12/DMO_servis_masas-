@@ -43,12 +43,12 @@ namespace WebUI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save([FromBody] RoleViewModel model)
+        public async Task<IActionResult> Save(RoleViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                return Json(new { success = false, message = string.Join(", ", errors) });
+                TempData["ErrorMessage"] = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return RedirectToAction(nameof(Index));
             }
 
             bool success;
@@ -63,25 +63,32 @@ namespace WebUI.Controllers
                 (success, message) = await _roleApiService.UpdateAsync(model);
             }
 
-            return Json(new { success, message });
+            if (success)
+                TempData["SuccessMessage"] = message;
+            else
+                TempData["ErrorMessage"] = message;
+
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete([FromBody] DeleteRoleRequest request)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (request?.Id <= 0)
+            if (id <= 0)
             {
-                return Json(new { success = false, message = "Geçersiz rol" });
+                TempData["ErrorMessage"] = "Geçersiz rol";
+                return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _roleApiService.DeleteAsync(request.Id);
-            return Json(new { success, message });
-        }
-    }
+            var (success, message) = await _roleApiService.DeleteAsync(id);
 
-    public class DeleteRoleRequest
-    {
-        public int Id { get; set; }
+            if (success)
+                TempData["SuccessMessage"] = message;
+            else
+                TempData["ErrorMessage"] = message;
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

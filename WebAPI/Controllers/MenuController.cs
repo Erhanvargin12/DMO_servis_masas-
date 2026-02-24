@@ -39,6 +39,17 @@ namespace WebAPI.Controllers
             return BadRequest(result);
         }
 
+        [HttpGet("getinactiveurls")]
+        public IActionResult GetInactiveUrls()
+        {
+            var result = _menuService.GetInactiveMenuUrls();
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
+
         [HttpGet("getbyuserid/{userId}")]
         public IActionResult GetByUserId(int userId)
         {

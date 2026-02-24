@@ -22,71 +22,75 @@
 {
     foreach (var menu in Model)
     {
-        <div class="menu-section">
-            @if (!string.IsNullOrEmpty(menu.Description))
-            {
-                <div class="menu-label">@menu.Description</div>
-            }
-            
-            @if (menu.Children != null && menu.Children.Any())
-            {
-                @foreach (var child in menu.Children)
-                {
-                    var hasSubChildren = child.Children != null && child.Children.Any();
-                    
-                    if (hasSubChildren)
-                    {
-                        <div class="menu-group">
-                            <a href="javascript:void(0)" class="menu-link has-submenu" data-toggle="submenu">
-                                @Html.Raw(GetIcon(child.Icon))
-                                <span class="menu-text">@child.Name</span>
-                                <svg class="submenu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </a>
-                            <div class="submenu">
-                                @foreach (var subChild in child.Children!)
-                                {
-                                    <a href="@(subChild.Url ?? "#")" class="menu-link submenu-link">
-                                        @Html.Raw(GetIcon(subChild.Icon))
-                                        <span class="menu-text">@subChild.Name</span>
-                                    </a>
-                                }
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <a href="@(child.Url ?? "#")" class="menu-link">
-                            @Html.Raw(GetIcon(child.Icon))
-                            <span class="menu-text">@child.Name</span>
-                        </a>
-                    }
-                }
-            }
-            else if (!string.IsNullOrEmpty(menu.Url))
-            {
-                <a href="@menu.Url" class="menu-link">
+        var hasChildren = menu.Children != null && menu.Children.Any();
+
+        if (hasChildren)
+        {
+            <!-- Üst menü: accordion grup -->
+            <div class="menu-group">
+                <a href="javascript:void(0)" class="menu-link has-submenu" data-toggle="submenu" data-menu-id="@menu.Id">
                     @Html.Raw(GetIcon(menu.Icon))
                     <span class="menu-text">@menu.Name</span>
+                    <svg class="submenu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                 </a>
-            }
-        </div>
+                <div class="submenu" data-parent-menu-id="@menu.Id">
+                    @foreach (var child in menu.Children!.OrderBy(c => c.DisplayOrder))
+                    {
+                        var hasSubChildren = child.Children != null && child.Children.Any();
+
+                        if (hasSubChildren)
+                        {
+                            <div class="menu-group">
+                                <a href="javascript:void(0)" class="menu-link has-submenu submenu-link" data-toggle="submenu" data-menu-id="@child.Id">
+                                    @Html.Raw(GetIcon(child.Icon))
+                                    <span class="menu-text">@child.Name</span>
+                                    <svg class="submenu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </a>
+                                <div class="submenu" data-parent-menu-id="@child.Id">
+                                    @foreach (var sub in child.Children!.OrderBy(s => s.DisplayOrder))
+                                    {
+                                        <a href="@(sub.Url ?? "#")" class="menu-link submenu-link">
+                                            @Html.Raw(GetIcon(sub.Icon))
+                                            <span class="menu-text">@sub.Name</span>
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <a href="@(child.Url ?? "#")" class="menu-link submenu-link">
+                                @Html.Raw(GetIcon(child.Icon))
+                                <span class="menu-text">@child.Name</span>
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(menu.Url))
+        {
+            <!-- Bağımsız direkt link -->
+            <a href="@menu.Url" class="menu-link">
+                @Html.Raw(GetIcon(menu.Icon))
+                <span class="menu-text">@menu.Name</span>
+            </a>
+        }
     }
 }
 else
 {
-    <!-- Yetkisiz kullanıcı - sadece Dashboard -->
-    <div class="menu-section">
-        <div class="menu-label">Genel</div>
-        <a href="/" class="menu-link">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            <span class="menu-text">Dashboard</span>
-        </a>
-    </div>
+    <a href="/" class="menu-link">
+        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span class="menu-text">Dashboard</span>
+    </a>
 }
