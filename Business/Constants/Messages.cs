@@ -67,6 +67,36 @@ public static class Messages
     public const string MenuHasChildren = "Bu menünün alt menüleri var, önce onları silin!";
     #endregion
 
+    #region Talep Messages
+    public const string TaleplerListelendi = "Talepler listelendi.";
+    public const string TalepOlusturuldu = "Talep başarıyla oluşturuldu!";
+    public const string TalepGuncellendi = "Talep başarıyla güncellendi!";
+    public const string TalepSilindi = "Talep başarıyla silindi!";
+    public const string TalepBulunamadi = "Talep bulunamadı!";
+    public const string TalepBaslikGecersiz = "Talep başlığı en az 5 karakter olmalıdır!";
+    public const string TalepDurumuGuncellendi = "Talep durumu güncellendi!";
+    public const string TalepAtandi = "Talep kullanıcıya atandı!";
+    public const string TalepSevkedildi = "Talep başarıyla sevk edildi!";
+    public const string SevkHedefGerekli = "Sevk için hedef kullanıcı veya rol seçilmelidir!";
+
+    public const string YanitEklendi = "Yanıt başarıyla eklendi!";
+    public const string YanitSilindi = "Yanıt silindi!";
+    public const string YanitBulunamadi = "Yanıt bulunamadı!";
+    public const string YanitIcerikBos = "Yanıt içeriği boş olamaz!";
+
+    public const string ChatMesajEklendi = "Mesaj gönderildi!";
+    public const string ChatMesajBos = "Mesaj boş olamaz!";
+
+    public const string EkEklendi = "Dosya başarıyla eklendi!";
+    public const string EkSilindi = "Dosya silindi!";
+    public const string EkBulunamadi = "Dosya bulunamadı!";
+
+    public const string KategoriEklendi = "Kategori başarıyla eklendi!";
+    public const string KategoriGuncellendi = "Kategori güncellendi!";
+    public const string KategoriSilindi = "Kategori silindi!";
+    public const string KategoriBulunamadi = "Kategori bulunamadı!";
+    #endregion
+
     #region MenuOperationClaim Messages
     public const string MenuOperationClaimsListed = "Menü yetkileri listelendi.";
     public const string MenuOperationClaimAdded = "Menüye yetki atandı!";

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileProviders;
 using WebUI.Middleware;
 using WebUI.Models;
 using WebUI.Services.Abstract;
@@ -87,6 +88,16 @@ builder.Services.AddHttpClient<IMenuApiService, MenuApiService>(client =>
     ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
 
+builder.Services.AddHttpClient<ITalepApiService, TalepApiService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(apiTimeout);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+});
+
 // Add services to the container.
 builder.Services.AddControllersWithViews().AddJsonOptions(options =>{options.JsonSerializerOptions.PropertyNamingPolicy = null;});
 
@@ -122,6 +133,14 @@ app.UseStatusCodePagesWithReExecute("/Error/{0}");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// Area'ya özel statik dosyaları sun - UseRouting'den ÖNCE (auth bypass)
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "Areas")),
+    RequestPath = "/area-assets"
+});
+
 app.UseRouting();
 
 app.UseSession();
@@ -133,6 +152,11 @@ app.UseTokenRefresh();
 
 // Menü erişim kontrolü - pasif menülere admin dışı erişimi engelle
 app.UseMenuAccess();
+
+// Area route - Areas/Talepler gibi modüller için
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
 app.MapControllerRoute(
     name: "default",

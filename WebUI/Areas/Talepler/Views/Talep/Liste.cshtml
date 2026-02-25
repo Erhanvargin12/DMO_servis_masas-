@@ -1,0 +1,184 @@
+@model WebUI.Areas.Talepler.Models.TalepListeViewModel
+@{
+    ViewData["Title"] = "Talep Listesi";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/talepler.css" asp-append-version="true" />
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <div class="mgmt-page-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
+        </div>
+        <div>
+            <div class="mgmt-page-title">Talep Yönetimi</div>
+            <div class="mgmt-page-subtitle">Tüm talepleri görüntüleyin ve yönetin</div>
+        </div>
+    </div>
+    <a href="@Url.Action("Olustur", "Talep", new { area = "Talepler" })" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Yeni Talep
+    </a>
+</div>
+
+<!-- Filtre Formu -->
+<div class="data-table" style="margin-bottom: 0; border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0;">
+    <form method="get" asp-action="Liste" asp-controller="Talep" asp-area="Talepler" class="talep-filter-bar">
+        <div class="talep-filter-row">
+            <div class="form-group" style="flex:1; min-width:200px;">
+                <div class="data-table-search" style="width:100%;">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" name="search" value="@Model.SearchTerm"
+                           placeholder="Başlık veya açıklama ara..." autocomplete="off" />
+                </div>
+            </div>
+            <div class="form-group">
+                <select name="durum" class="form-input">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="1" @(Model.DurumFilter == 1 ? "selected" : "")>Açık</option>
+                    <option value="2" @(Model.DurumFilter == 2 ? "selected" : "")>İşleniyor</option>
+                    <option value="3" @(Model.DurumFilter == 3 ? "selected" : "")>Beklemede</option>
+                    <option value="4" @(Model.DurumFilter == 4 ? "selected" : "")>Kapalı</option>
+                    <option value="5" @(Model.DurumFilter == 5 ? "selected" : "")>İptal</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <select name="oncelik" class="form-input">
+                    <option value="">Tüm Öncelikler</option>
+                    <option value="1" @(Model.OncelikFilter == 1 ? "selected" : "")>Düşük</option>
+                    <option value="2" @(Model.OncelikFilter == 2 ? "selected" : "")>Normal</option>
+                    <option value="3" @(Model.OncelikFilter == 3 ? "selected" : "")>Yüksek</option>
+                    <option value="4" @(Model.OncelikFilter == 4 ? "selected" : "")>Kritik</option>
+                </select>
+            </div>
+            <div class="talep-filter-actions">
+                <button type="submit" class="btn btn-primary btn-sm">Filtrele</button>
+                @if (Model.SearchTerm != null || Model.DurumFilter.HasValue || Model.OncelikFilter.HasValue)
+                {
+                    <a href="@Url.Action("Liste", "Talep", new { area = "Talepler" })" class="btn btn-sm">Temizle</a>
+                }
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Talepler Tablosu -->
+<div class="data-table" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>Talepler</span>
+            <span class="stat-chip">@Model.TotalCount kayıt</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="table mgmt-table">
+            <thead>
+                <tr>
+                    <th width="35%">Talep</th>
+                    <th width="12%">Kategori</th>
+                    <th width="10%">Öncelik</th>
+                    <th width="10%">Durum</th>
+                    <th width="13%">Oluşturan</th>
+                    <th width="10%">Tarih</th>
+                    <th width="10%"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Talepler.Any())
+                {
+                    foreach (var talep in Model.Talepler)
+                    {
+                        <tr>
+                            <td>
+                                <div class="entity-info">
+                                    <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = talep.Id })"
+                                       class="entity-name talep-link">@talep.Baslik</a>
+                                    <span class="entity-meta">
+                                        #@talep.Id
+                                        @if (talep.AtananAdi != null)
+                                        {
+                                            <span>• Atanan: @talep.AtananAdi</span>
+                                        }
+                                    </span>
+                                </div>
+                            </td>
+                            <td><span class="entity-id">@talep.KategoriAdi</span></td>
+                            <td><span class="badge @talep.OncelikCss">@talep.OncelikAdi</span></td>
+                            <td><span class="badge @talep.DurumCss">@talep.DurumAdi</span></td>
+                            <td class="entity-desc">@talep.OlusturanAdi</td>
+                            <td class="text-muted">@talep.OlusturmaTarihi.ToString("dd.MM.yy")</td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = talep.Id })"
+                                       class="btn btn-icon btn-ghost btn-sm" title="Detay">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </a>
+                                    @if (!talep.Kapali)
+                                    {
+                                        <a href="@Url.Action("Yanitla", "Talep", new { area = "Talepler", id = talep.Id })"
+                                           class="btn btn-icon btn-ghost btn-sm" title="Yanıtla">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                            </svg>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7">
+                            <div class="mgmt-empty">
+                                <div class="mgmt-empty-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    </svg>
+                                </div>
+                                <p class="mgmt-empty-title">
+                                    @(string.IsNullOrEmpty(Model.SearchTerm) ? "Talep bulunamadı" : $"'{Model.SearchTerm}' için sonuç bulunamadı")
+                                </p>
+                                <p class="mgmt-empty-text">
+                                    @(string.IsNullOrEmpty(Model.SearchTerm) ? "Yeni talep oluşturmak için butonu kullanın" : "Filtreleri değiştirerek tekrar deneyin")
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @{
+        var pagination = new WebUI.Models.PaginationModel
+        {
+            PageNumber = Model.PageNumber,
+            PageSize = Model.PageSize,
+            TotalCount = Model.TotalCount,
+            Controller = "Talep",
+            Action = "Liste",
+            Search = Model.SearchTerm
+        };
+    }
+    <partial name="_Pagination" model="pagination" />
+</div>
+

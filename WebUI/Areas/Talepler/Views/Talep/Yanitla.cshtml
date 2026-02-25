@@ -1,0 +1,87 @@
+@model WebUI.Areas.Talepler.Models.TalepYanitlaViewModel
+@{
+    ViewData["Title"] = "Talep Yanıtla";
+    var talep = Model.Talep;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/talepler.css" asp-append-version="true" />
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = Model.TalepId })" class="btn btn-ghost btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </a>
+        <div>
+            <div class="mgmt-page-title">Talep Yanıtla</div>
+            <div class="mgmt-page-subtitle">
+                @if (talep != null)
+                {
+                    <span>#@talep.Id – @talep.Baslik</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (talep != null)
+{
+    <div class="data-table talep-section" style="margin-bottom: 20px;">
+        <div class="talep-section-header">
+            <span class="talep-section-title">Talep Özeti</span>
+            <span class="badge @talep.DurumCss">@talep.DurumAdi</span>
+        </div>
+        <div class="talep-section-body">
+            <div class="talep-aciklama-text">@talep.Aciklama</div>
+            <div style="margin-top: 8px; font-size: 0.8rem; color: var(--color-text-muted);">
+                @talep.OlusturanAdi — @talep.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")
+            </div>
+        </div>
+    </div>
+}
+
+<div class="content-narrow">
+    <div class="data-table">
+        <div class="data-table-header">
+            <div class="data-table-title">Yanıt Ekle</div>
+        </div>
+        <div style="padding: 24px;">
+            <form asp-area="Talepler" asp-controller="Talep" asp-action="Yanitla" method="post"
+                  enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="TalepId" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-error" style="margin-bottom: 16px;"></div>
+
+                <div class="form-group">
+                    <label asp-for="Icerik" class="form-label required"></label>
+                    <textarea asp-for="Icerik" class="form-input form-textarea" rows="8"
+                              placeholder="Yanıtınızı yazın..."></textarea>
+                    <span asp-validation-for="Icerik" class="form-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Ekler (Opsiyonel)</label>
+                    <input type="file" name="Ekler" multiple class="form-input"
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip" />
+                    <span class="form-help">Yanıtınıza dosya ekleyebilirsiniz</span>
+                </div>
+
+                <div class="form-actions">
+                    <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = Model.TalepId })" class="btn">İptal</a>
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Yanıt Gönder
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

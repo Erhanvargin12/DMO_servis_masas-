@@ -1,0 +1,79 @@
+@model WebUI.Areas.Talepler.Models.TalepSevkViewModel2
+@{
+    ViewData["Title"] = "Talep Sevk Et";
+    var talep = Model.Talep;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/talepler.css" asp-append-version="true" />
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = Model.TalepId })" class="btn btn-ghost btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </a>
+        <div>
+            <div class="mgmt-page-title">Talep Sevk Et</div>
+            @if (talep != null)
+            {
+                <div class="mgmt-page-subtitle">#@talep.Id – @talep.Baslik</div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="content-narrow">
+    <div class="data-table">
+        <div class="data-table-header">
+            <div class="data-table-title">Sevk Bilgileri</div>
+        </div>
+        <div style="padding: 24px;">
+            <form asp-area="Talepler" asp-controller="Talep" asp-action="Sevk" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="TalepId" />
+
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    Talep belirli bir kullanıcıya veya role sevk edilebilir. En az birini seçin.
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="HedefKullaniciId" class="form-label"></label>
+                    <select asp-for="HedefKullaniciId" asp-items="Model.KullaniciListesi" class="form-input">
+                        <option value="">Kullanıcı seçin (opsiyonel)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="HedefRolId" class="form-label"></label>
+                    <select asp-for="HedefRolId" asp-items="Model.RolListesi" class="form-input">
+                        <option value="">Rol seçin (opsiyonel)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Aciklama" class="form-label"></label>
+                    <textarea asp-for="Aciklama" class="form-input form-textarea" rows="3"
+                              placeholder="Sevk notu (opsiyonel)"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = Model.TalepId })" class="btn">İptal</a>
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="5 12 19 12"/><polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                        Sevk Et
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

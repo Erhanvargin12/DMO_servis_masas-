@@ -31,6 +31,15 @@ public class AutofacBusinessModule : Module
 
         builder.RegisterType<EfRefreshTokenDal>().As<IRefreshTokenDal>().SingleInstance();
 
+        builder.RegisterType<TalepManager>().As<ITalepService>().SingleInstance();
+        builder.RegisterType<EfTalepDal>().As<ITalepDal>().SingleInstance();
+        builder.RegisterType<EfTalepKategoriDal>().As<ITalepKategoriDal>().SingleInstance();
+        builder.RegisterType<EfTalepYanitDal>().As<ITalepYanitDal>().SingleInstance();
+        builder.RegisterType<EfTalepChatDal>().As<ITalepChatDal>().SingleInstance();
+        builder.RegisterType<EfTalepAtamaDal>().As<ITalepAtamaDal>().SingleInstance();
+        builder.RegisterType<EfTalepSevkDal>().As<ITalepSevkDal>().SingleInstance();
+        builder.RegisterType<EfTalepEkDal>().As<ITalepEkDal>().SingleInstance();
+
         builder.RegisterType<AuthManager>().As<IAuthService>().SingleInstance();
         builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 

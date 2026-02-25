@@ -1,0 +1,69 @@
+@model WebUI.Areas.Talepler.Models.TalepAtamaViewModel2
+@{
+    ViewData["Title"] = "Talep Ata";
+    var talep = Model.Talep;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/talepler.css" asp-append-version="true" />
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = Model.TalepId })" class="btn btn-ghost btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+        </a>
+        <div>
+            <div class="mgmt-page-title">Talep Ata</div>
+            @if (talep != null)
+            {
+                <div class="mgmt-page-subtitle">#@talep.Id – @talep.Baslik</div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="content-narrow">
+    <div class="data-table">
+        <div class="data-table-header">
+            <div class="data-table-title">Kullanıcı Ata</div>
+        </div>
+        <div style="padding: 24px;">
+            <form asp-area="Talepler" asp-controller="Talep" asp-action="Atama" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="TalepId" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-error" style="margin-bottom: 16px;"></div>
+
+                <div class="form-group">
+                    <label asp-for="AtananKullaniciId" class="form-label required"></label>
+                    <select asp-for="AtananKullaniciId" asp-items="Model.KullaniciListesi" class="form-input">
+                        <option value="">Kullanıcı seçin</option>
+                    </select>
+                    <span asp-validation-for="AtananKullaniciId" class="form-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Aciklama" class="form-label"></label>
+                    <textarea asp-for="Aciklama" class="form-input form-textarea" rows="3"
+                              placeholder="Atama notu (opsiyonel)"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <a href="@Url.Action("Detay", "Talep", new { area = "Talepler", id = Model.TalepId })" class="btn">İptal</a>
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Kullanıcı Ata
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
