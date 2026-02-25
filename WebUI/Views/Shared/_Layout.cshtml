@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BackendCore</title>
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
-    @if (ViewData["Title"] == "Ayarlar")
-    {
-        <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
-    }
 </head>
-<body>
+<body data-user="@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "guest")">
     <div class="admin-wrapper">
         <partial name="_Sidebar" />
         
@@ -33,7 +29,6 @@
                 if (window.AdminUI && window.AdminUI.Toast) {
                     window.AdminUI.Toast.success('@Html.Raw(TempData["SuccessMessage"]?.ToString()?.Replace("'", "\\'"))');
                 }
-                // Başarılı işlem sonrası tüm modal draft'larını temizle
                 try {
                     var keys = Object.keys(localStorage).filter(function(k) { return k.startsWith('modal_draft_'); });
                     keys.forEach(function(k) { localStorage.removeItem(k); });

@@ -3,32 +3,31 @@
     ViewData["Title"] = "Profilim";
 }
 
-<!-- Page Header -->
 <div class="page-header">
     <div class="page-header-left">
         <h1 class="page-header-title">Profilim</h1>
-        <p class="page-header-subtitle">Hesap bilgilerinizi ve şifrenizi yönetin</p>
+        <p class="page-header-subtitle">Hesap bilgilerinizi yönetin</p>
     </div>
 </div>
 
-<div class="grid grid-2" style="align-items: start;">
-
-    <!-- Profil Bilgileri -->
+<div style="max-width: 640px;">
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Kişisel Bilgiler</h3>
-        </div>
         <div class="card-body">
-            <div class="profile-avatar-section" style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
-                <div class="cell-avatar" style="width:56px;height:56px;font-size:22px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">
+
+            <!-- Kullanıcı özeti -->
+            <div class="profile-user-card">
+                <div class="profile-avatar">
                     @Model.FirstName[..1].ToUpper()
                 </div>
                 <div>
-                    <div style="font-weight:600;font-size:16px;">@Model.FullName</div>
-                    <div style="color:var(--text-muted);font-size:13px;">@Model.Mail</div>
-                    <div style="color:var(--text-muted);font-size:12px;margin-top:2px;">Üyelik: @Model.CreateAt.ToString("dd.MM.yyyy")</div>
+                    <div class="profile-user-name">@Model.FullName</div>
+                    <div class="profile-user-email">@Model.Mail</div>
+                    <div class="profile-user-since">Üyelik: @Model.CreateAt.ToString("dd.MM.yyyy")</div>
                 </div>
             </div>
+
+            <!-- Kişisel bilgiler -->
+            <div class="form-section-title">Kişisel Bilgiler</div>
 
             <form asp-controller="Profile" asp-action="UpdateInfo" method="post">
                 @Html.AntiForgeryToken()
@@ -48,24 +47,17 @@
                 </div>
                 <div class="form-group mb-0">
                     <button type="submit" class="btn btn-primary">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                            <polyline points="17 21 17 13 7 13 7 21"/>
-                            <polyline points="7 3 7 8 15 8"/>
-                        </svg>
-                        Güncelle
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Bilgileri Güncelle
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
 
-    <!-- Şifre Değiştir -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Şifre Değiştir</h3>
-        </div>
-        <div class="card-body">
+            <div class="form-divider"></div>
+
+            <!-- Şifre değiştir -->
+            <div class="form-section-title">Şifre Değiştir</div>
+
             <form asp-controller="Profile" asp-action="ChangePassword" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="UserId" value="@Model.Id" />
@@ -73,26 +65,24 @@
                     <label class="form-label required">Mevcut Şifre</label>
                     <input type="password" name="CurrentPassword" class="form-input" placeholder="••••••••" required autocomplete="current-password" />
                 </div>
-                <div class="form-group">
-                    <label class="form-label required">Yeni Şifre</label>
-                    <input type="password" name="NewPassword" class="form-input" placeholder="En az 6 karakter" required minlength="6" autocomplete="new-password" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label required">Yeni Şifre (Tekrar)</label>
-                    <input type="password" name="ConfirmPassword" class="form-input" placeholder="Şifreyi tekrar girin" required autocomplete="new-password" />
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Yeni Şifre</label>
+                        <input type="password" name="NewPassword" class="form-input" placeholder="En az 6 karakter" required minlength="6" autocomplete="new-password" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Şifre Tekrar</label>
+                        <input type="password" name="ConfirmPassword" class="form-input" placeholder="Tekrar girin" required autocomplete="new-password" />
+                    </div>
                 </div>
                 <div class="form-group mb-0">
                     <button type="submit" class="btn btn-primary">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                        Şifreyi Değiştir
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Şifreyi Güncelle
                     </button>
                 </div>
             </form>
+
         </div>
     </div>
-
 </div>
-
