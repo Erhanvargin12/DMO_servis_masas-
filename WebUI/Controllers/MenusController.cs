@@ -28,10 +28,20 @@ namespace WebUI.Controllers
             _cache = cache;
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // Listeleme
+        // ─────────────────────────────────────────────────────────────────────
+
         public async Task<IActionResult> Index()
         {
             var menus = await _menuApiService.GetAllAsync();
             var roles = await _roleApiService.GetAllAsync();
+
+            // Tüm menüler için rolleri sıralı çek (HttpClient thread-safety)
+            foreach (var menu in menus)
+            {
+                menu.AssignedRoleIds = await _menuApiService.GetMenuRolesAsync(menu.Id);
+            }
 
             var model = new MenuListViewModel
             {
@@ -42,6 +52,10 @@ namespace WebUI.Controllers
 
             return View(model);
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // CRUD
+        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -57,13 +71,9 @@ namespace WebUI.Controllers
             string? message;
 
             if (model.Id == 0)
-            {
                 (success, message) = await _menuApiService.AddAsync(model);
-            }
             else
-            {
                 (success, message) = await _menuApiService.UpdateAsync(model);
-            }
 
             if (success)
             {
@@ -71,7 +81,9 @@ namespace WebUI.Controllers
                 _cache.Remove("InactiveMenuUrls");
             }
             else
+            {
                 TempData["ErrorMessage"] = message;
+            }
 
             return RedirectToAction(nameof(Index));
         }
@@ -95,38 +107,34 @@ namespace WebUI.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetMenuRoles(int menuId)
-        {
-            var roles = await _menuApiService.GetMenuRolesAsync(menuId);
-            return Json(new { success = true, data = roles });
-        }
+        // ─────────────────────────────────────────────────────────────────────
+        // Rol Atama (Modal üzerinden POST, ayrı sayfa yok)
+        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveRoles([FromBody] SaveMenuRolesRequest request)
+        public async Task<IActionResult> AssignRoles(int menuId, List<int>? selectedRoleIds)
         {
-            if (request.MenuId <= 0)
+            if (menuId <= 0)
             {
-                return Json(new { success = false, message = "Geçersiz menü" });
+                TempData["ErrorMessage"] = "Geçersiz menü";
+                return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _menuApiService.UpdateMenuRolesAsync(request.MenuId, request.RoleIds ?? new List<int>());
-            return Json(new { success, message });
+            var (success, message) = await _menuApiService.UpdateMenuRolesAsync(
+                menuId, selectedRoleIds ?? new List<int>());
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = message ?? "Roller güncellendi";
+                _cache.Remove("InactiveMenuUrls");
+            }
+            else
+            {
+                TempData["ErrorMessage"] = message ?? "Bir hata oluştu";
+            }
+
+            return RedirectToAction(nameof(Index));
         }
     }
-
-    public class SaveMenuRolesRequest
-    {
-        public int MenuId { get; set; }
-        public List<int>? RoleIds { get; set; }
-    }
-
-    public class MenuListViewModel
-    {
-        public List<MenuViewModel> Menus { get; set; } = new();
-        public List<RoleViewModel> Roles { get; set; } = new();
-        public int TotalCount { get; set; }
-    }
 }
-

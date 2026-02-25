@@ -32,12 +32,15 @@
             <span class="stat-chip">@Model.TotalCount kayıt</span>
         </div>
         <div class="data-table-actions">
-            <div class="data-table-search">
+            <!-- Server-side arama formu -->
+            <form method="get" asp-action="Index" asp-controller="Roles" class="data-table-search">
                 <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
-                <input type="text" placeholder="Rol ara..." id="tableSearch" autocomplete="off" />
-            </div>
+                <input type="text" name="search" value="@Model.SearchTerm"
+                       placeholder="Rol adı veya açıklama ara..."
+                       autocomplete="off" />
+            </form>
         </div>
     </div>
 
@@ -56,7 +59,8 @@
                 {
                     @foreach (var role in Model.Roles)
                     {
-                        <tr data-item-id="@role.Id" data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(role, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
+                        <tr data-item-id="@role.Id"
+                            data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(role, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
                             <td><span class="entity-id">#@role.Id</span></td>
                             <td>
                                 <div class="entity-cell">
@@ -102,8 +106,12 @@
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                                     </svg>
                                 </div>
-                                <p class="mgmt-empty-title">Rol bulunamadı</p>
-                                <p class="mgmt-empty-text">Yeni rol eklemek için butonu kullanın</p>
+                                <p class="mgmt-empty-title">
+                                    @(string.IsNullOrEmpty(Model.SearchTerm) ? "Rol bulunamadı" : $"'{Model.SearchTerm}' için sonuç bulunamadı")
+                                </p>
+                                <p class="mgmt-empty-text">
+                                    @(string.IsNullOrEmpty(Model.SearchTerm) ? "Yeni rol eklemek için butonu kullanın" : "Farklı bir arama terimi deneyin")
+                                </p>
                             </div>
                         </td>
                     </tr>
@@ -112,17 +120,17 @@
         </table>
     </div>
 
-    <div class="data-table-footer">
-        <div class="data-table-info" id="paginationInfo">Toplam @Model.TotalCount rol</div>
-        <div class="data-table-pagination" id="pagination"></div>
-    </div>
+    <!-- Server-side Pagination -->
+    <partial name="_Pagination" model="Model.ToPagination()" />
 </div>
 
-<!-- Role Modal -->
+<!-- Role Modal (Ekle / Düzenle) -->
 <div class="modal-overlay" id="roleModal">
     <div class="modal modal-sm">
         <div class="modal-header">
-            <h3 class="modal-title" data-create-title="Yeni Rol Ekle" data-edit-title="Rol Düzenle">Yeni Rol Ekle</h3>
+            <h3 class="modal-title"
+                data-create-title="Yeni Rol Ekle"
+                data-edit-title="Rol Düzenle">Yeni Rol Ekle</h3>
             <button type="button" class="modal-close" data-modal-close>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -135,16 +143,19 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label required">Rol Adı</label>
-                    <input type="text" name="Name" class="form-input" placeholder="Örn: Admin, Editor, Viewer" required />
+                    <input type="text" name="Name" class="form-input"
+                           placeholder="Örn: Admin, Editor, Viewer" required />
                 </div>
                 <div class="form-group mb-0">
                     <label class="form-label">Açıklama</label>
-                    <textarea name="Description" class="form-input form-textarea" rows="3" placeholder="Rol açıklaması (isteğe bağlı)"></textarea>
+                    <textarea name="Description" class="form-input form-textarea" rows="3"
+                              placeholder="Rol açıklaması (isteğe bağlı)"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn" data-modal-close>İptal</button>
-                <button type="submit" class="btn btn-primary" data-create-text="Kaydet" data-edit-text="Güncelle">Kaydet</button>
+                <button type="submit" class="btn btn-primary"
+                        data-create-text="Kaydet" data-edit-text="Güncelle">Kaydet</button>
             </div>
         </form>
     </div>
@@ -161,7 +172,7 @@
                 </svg>
             </button>
         </div>
-        <form asp-controller="Roles" asp-action="Delete" method="post" id="deleteRoleForm">
+        <form asp-controller="Roles" asp-action="Delete" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" id="deleteModalItemId" value="" />
             <div class="modal-body">

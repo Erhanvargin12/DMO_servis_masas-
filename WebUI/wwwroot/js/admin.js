@@ -365,6 +365,69 @@
         });
     }
 
+    // ── Touch: swipe to open/close sidebar on mobile ─────────────────────────
+    function initTouchSidebar() {
+        var startX = 0, startY = 0;
+        var EDGE = 40;   // px from left edge to trigger open
+        var MIN  = 50;   // minimum horizontal swipe distance
+
+        document.addEventListener('touchstart', function (e) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', function (e) {
+            if (window.innerWidth > 768) return;
+            var dx = e.changedTouches[0].clientX - startX;
+            var dy = e.changedTouches[0].clientY - startY;
+            // Reject diagonal / vertical swipes
+            if (Math.abs(dy) > Math.abs(dx)) return;
+            if (Math.abs(dx) < MIN) return;
+
+            var sb = document.getElementById('sidebar');
+            var ov = document.getElementById('mobileOverlay');
+            if (!sb) return;
+
+            if (dx > 0 && startX < EDGE && !sb.classList.contains('open')) {
+                // Swipe right from left edge → open
+                sb.classList.add('open');
+                if (ov) ov.classList.add('active');
+            } else if (dx < 0 && sb.classList.contains('open')) {
+                // Swipe left while open → close
+                sb.classList.remove('open');
+                if (ov) ov.classList.remove('active');
+            }
+        }, { passive: true });
+    }
+
+    // ── Resize: restore sidebar state on viewport change ─────────────────────
+    function initResize() {
+        var timer;
+        window.addEventListener('resize', function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                var sb = document.getElementById('sidebar');
+                var ov = document.getElementById('mobileOverlay');
+                if (!sb) return;
+
+                if (window.innerWidth > 768) {
+                    // Switching to desktop: close mobile drawer, restore collapsed pref
+                    sb.classList.remove('open');
+                    if (ov) ov.classList.remove('active');
+                    document.body.style.overflow = '';
+                    if (localStorage.getItem(Sidebar._key()) === 'true') {
+                        sb.classList.add('collapsed');
+                    } else {
+                        sb.classList.remove('collapsed');
+                    }
+                } else {
+                    // Switching to mobile: strip collapsed (it means hidden, not narrow)
+                    sb.classList.remove('collapsed');
+                }
+            }, 120);
+        });
+    }
+
     // ── Profile Dropdown ──────────────────────────────────────────────────────
     var ProfileDropdown = {
         init: function () {
@@ -384,6 +447,8 @@
         Sidebar.init();
         ProfileDropdown.init();
         initSubmenus();
+        initTouchSidebar();
+        initResize();
 
         // Sidebar toggle
         var stg = document.getElementById('sidebarToggle');

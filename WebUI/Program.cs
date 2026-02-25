@@ -106,9 +106,18 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    // Beklenmeyen sunucu hatalarını yakala (500)
+    app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+else
+{
+    // Development'ta da 500 sayfasını etkinleştir
+    app.UseExceptionHandler("/Error");
+}
+
+// HTTP 403, 404 vb. durum kodları için özel sayfalar
+app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

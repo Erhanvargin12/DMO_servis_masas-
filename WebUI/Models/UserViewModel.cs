@@ -38,15 +38,44 @@ namespace WebUI.Models
         public DateTime CreateAt { get; set; }
         public DateTime? UpdateAt { get; set; }
 
-        // Display için
         public string FullName => $"{FirstName} {LastName}";
+
+        // Sayfa yüklenirken atanan roller (modal için)
+        public List<int> AssignedRoleIds { get; set; } = new();
     }
 
+    /// <summary>
+    /// Kullanıcı listesi sayfası view modeli.
+    /// Users içinde sadece mevcut sayfanın kayıtları bulunur (server-side pagination).
+    /// </summary>
     public class UserListViewModel
     {
         public List<UserViewModel> Users { get; set; } = new();
-        public List<RoleViewModel> Roles { get; set; } = new();
+        public List<RoleViewModel> AllRoles { get; set; } = new();
         public string? SearchTerm { get; set; }
+
+        // Pagination
         public int TotalCount { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
+        public bool HasPreviousPage => PageNumber > 1;
+        public bool HasNextPage => PageNumber < TotalPages;
+
+        public PaginationModel ToPagination(string controller = "Users")
+            => PaginationModel.From(PageNumber, PageSize, TotalCount, controller, search: SearchTerm);
+    }
+
+    /// <summary>
+    /// Kullanıcıya rol atama sayfası view modeli.
+    /// Server-rendered, AJAX kullanılmaz.
+    /// </summary>
+    public class AssignUserRolesViewModel
+    {
+        public int UserId { get; set; }
+        public string UserFullName { get; set; } = "";
+        public string UserMail { get; set; } = "";
+        public List<RoleViewModel> AllRoles { get; set; } = new();
+        public List<int> SelectedRoleIds { get; set; } = new();
     }
 }

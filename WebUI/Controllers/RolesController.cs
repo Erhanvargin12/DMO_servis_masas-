@@ -10,6 +10,8 @@ namespace WebUI.Controllers
     [RoleAuthorize("Admin")]
     public class RolesController : Controller
     {
+        private const int DefaultPageSize = 10;
+
         private readonly IRoleApiService _roleApiService;
         private readonly ILogger<RolesController> _logger;
 
@@ -19,27 +21,39 @@ namespace WebUI.Controllers
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index(string? search)
-        {
-            var roles = await _roleApiService.GetAllAsync();
+        // ─────────────────────────────────────────────────────────────────────
+        // Listeleme + Server-side Pagination
+        // ─────────────────────────────────────────────────────────────────────
 
-            if (!string.IsNullOrEmpty(search))
+        public async Task<IActionResult> Index(string? search, int page = 1)
+        {
+            var allRoles = await _roleApiService.GetAllAsync();
+
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                roles = roles.Where(r =>
+                allRoles = allRoles.Where(r =>
                     r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
                     (r.Description?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
                 ).ToList();
             }
 
+            var paged = PagedResult<RoleViewModel>.Create(allRoles, page, DefaultPageSize);
+
             var model = new RoleListViewModel
             {
-                Roles = roles,
+                Roles = paged.Items,
                 SearchTerm = search,
-                TotalCount = roles.Count
+                TotalCount = paged.TotalCount,
+                PageNumber = paged.PageNumber,
+                PageSize = paged.PageSize
             };
 
             return View(model);
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // CRUD
+        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -47,7 +61,8 @@ namespace WebUI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = string.Join(", ",
+                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 return RedirectToAction(nameof(Index));
             }
 
@@ -55,13 +70,9 @@ namespace WebUI.Controllers
             string? message;
 
             if (model.Id == 0)
-            {
                 (success, message) = await _roleApiService.AddAsync(model);
-            }
             else
-            {
                 (success, message) = await _roleApiService.UpdateAsync(model);
-            }
 
             if (success)
                 TempData["SuccessMessage"] = message;

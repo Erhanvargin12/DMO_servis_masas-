@@ -1,31 +1,33 @@
 /**
- * Menus Page — Tree table + roles modal
+ * Menus Page — Menü Yönetimi
+ *
+ * Sorumluluk:
+ *   - Menü ağacı toggle (parent/child satır açma-kapama)
+ *   - Tree durumunu sessionStorage'da saklama
+ *   - Client-side pagination (tree yapısı nedeniyle server-side değil)
+ *   - Client-side arama (tree yapısı nedeniyle server-side değil)
+ *   - Rol atama modal açma/doldurma
  */
 (function () {
     'use strict';
 
     var PAGE_SIZE = 10;
     var currentPage = 1;
-    var currentMenuId = 0;
     var searchTerm = '';
 
-    var searchInput        = document.getElementById('tableSearch');
-    var tableBody          = document.querySelector('#menusTable tbody');
-    var paginationInfo     = document.getElementById('paginationInfo');
-    var paginationContainer= document.getElementById('pagination');
-    var countBadge         = document.querySelector('.data-table-count');
+    var searchInput         = document.getElementById('tableSearch');
+    var tableBody           = document.querySelector('#menusTable tbody');
+    var paginationInfo      = document.getElementById('paginationInfo');
+    var paginationContainer = document.getElementById('pagination');
+    var countBadge          = document.querySelector('.stat-chip');
 
-    var rolesModal    = document.getElementById('rolesModal');
-    var roleMenuIcon  = document.getElementById('roleMenuIcon');
-    var roleMenuName  = document.getElementById('roleMenuName');
-    var roleCheckboxes= document.querySelectorAll('.role-checkbox');
-    var saveRolesBtn  = document.getElementById('saveRolesBtn');
+    if (!tableBody) return;
 
-    // Tüm parent ve child satırları
     var allParentRows = Array.from(tableBody.querySelectorAll('.menu-row-parent'));
     var emptyRow      = tableBody.querySelector('.empty-row');
 
     // ─── Tree Toggle ──────────────────────────────────────────────────────────
+
     function getChildRows(groupId) {
         return Array.from(tableBody.querySelectorAll('tr[data-group="' + groupId + '"]'));
     }
@@ -51,7 +53,7 @@
     }
 
     function initTree() {
-        // Tüm child satırları gizle
+        // Tüm child satırları başlangıçta gizle
         Array.from(tableBody.querySelectorAll('.menu-row-child')).forEach(function (r) {
             r.style.display = 'none';
         });
@@ -76,7 +78,8 @@
             : expandGroup(groupId, parentRow, true);
     });
 
-    // ─── Pagination (yalnızca parent satırlar sayılır) ────────────────────────
+    // ─── Pagination ───────────────────────────────────────────────────────────
+
     function getFilteredParents() {
         if (!searchTerm) return allParentRows.slice();
         return allParentRows.filter(function (row) {
@@ -95,14 +98,11 @@
         var start      = (currentPage - 1) * PAGE_SIZE;
         var end        = start + PAGE_SIZE;
 
-        // Tüm parent satırları gizle
         allParentRows.forEach(function (r) { r.style.display = 'none'; });
-        // Tüm child satırları gizle (tree ile yönetilecek)
         Array.from(tableBody.querySelectorAll('.menu-row-child, .menu-row-orphan')).forEach(function (r) {
             r.style.display = 'none';
         });
 
-        // Aktif sayfadaki parent'ları göster + child'larını duruma göre aç
         filtered.slice(start, end).forEach(function (parentRow) {
             parentRow.style.display = '';
             var gid = parentRow.getAttribute('data-group-id');
@@ -111,7 +111,6 @@
             }
         });
 
-        // Orphan'lar her zaman görünür
         Array.from(tableBody.querySelectorAll('.menu-row-orphan')).forEach(function (r) {
             r.style.display = '';
         });
@@ -120,105 +119,94 @@
 
         var showStart = filtered.length > 0 ? start + 1 : 0;
         var showEnd   = Math.min(end, filtered.length);
-        if (countBadge)    countBadge.textContent    = filtered.length + ' kayıt';
-        if (paginationInfo) paginationInfo.textContent = showStart + '-' + showEnd + ' / ' + filtered.length + ' menü';
+        if (countBadge)     countBadge.textContent    = filtered.length + ' kayıt';
+        if (paginationInfo) paginationInfo.textContent = showStart + '–' + showEnd + ' / ' + filtered.length + ' menü';
 
         if (!paginationContainer) return;
         if (totalPages <= 1) { paginationContainer.innerHTML = ''; return; }
 
         var html = '';
-        html += btn(currentPage === 1, currentPage - 1, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>');
+        html += pageBtn(currentPage === 1, currentPage - 1,
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>');
         for (var i = 1; i <= totalPages; i++) {
-            if (totalPages <= 7 || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                html += '<button class="btn btn-sm ' + (i === currentPage ? 'btn-primary' : 'btn-ghost') + '" data-page="' + i + '">' + i + '</button>';
+            if (totalPages <= 7 || i === 1 || i === totalPages || Math.abs(i - currentPage) <= 1) {
+                html += '<button class="btn btn-sm ' + (i === currentPage ? 'btn-primary' : 'btn-ghost') +
+                        '" ' + (i === currentPage ? 'disabled' : 'data-page="' + i + '"') + '>' + i + '</button>';
             } else if (i === currentPage - 2 || i === currentPage + 2) {
                 html += '<span class="pagination-ellipsis">…</span>';
             }
         }
-        html += btn(currentPage === totalPages, currentPage + 1, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>');
+        html += pageBtn(currentPage === totalPages, currentPage + 1,
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>');
         paginationContainer.innerHTML = html;
     }
 
-    function btn(disabled, page, inner) {
-        return '<button class="btn btn-sm btn-ghost" ' + (disabled ? 'disabled' : 'data-page="' + page + '"') + '>' + inner + '</button>';
+    function pageBtn(disabled, page, inner) {
+        return '<button class="btn btn-sm btn-ghost" ' +
+               (disabled ? 'disabled' : 'data-page="' + page + '"') +
+               '>' + inner + '</button>';
     }
 
     if (paginationContainer) {
         paginationContainer.addEventListener('click', function (e) {
             var b = e.target.closest('button[data-page]');
-            if (b && !b.disabled) { currentPage = parseInt(b.getAttribute('data-page')); renderPagination(); }
+            if (b && !b.disabled) {
+                currentPage = parseInt(b.getAttribute('data-page'));
+                renderPagination();
+            }
         });
     }
 
     if (searchInput) {
         searchInput.addEventListener('input', function () {
-            searchTerm = this.value.toLowerCase().trim();
+            searchTerm  = this.value.toLowerCase().trim();
             currentPage = 1;
             renderPagination();
         });
     }
 
-    // ─── Roles Modal ──────────────────────────────────────────────────────────
-    function openRolesModal(menuId, menuName) {
-        currentMenuId = menuId;
-        if (roleMenuIcon) roleMenuIcon.textContent = menuName.charAt(0).toUpperCase();
-        if (roleMenuName) roleMenuName.textContent  = menuName;
-        roleCheckboxes.forEach(function (cb) { cb.checked = false; });
-
-        fetch('/Menus/GetMenuRoles?menuId=' + menuId)
-            .then(function (r) { return r.json(); })
-            .then(function (result) {
-                if (result.success && result.data) {
-                    result.data.forEach(function (roleId) {
-                        var cb = document.querySelector('.role-checkbox[value="' + roleId + '"]');
-                        if (cb) cb.checked = true;
-                    });
-                }
-            })
-            .catch(function (err) { console.error('Rol getirme hatası:', err); });
-
-        if (rolesModal) rolesModal.classList.add('active');
-    }
-
-    function saveRoles() {
-        var selected = [];
-        roleCheckboxes.forEach(function (cb) { if (cb.checked) selected.push(parseInt(cb.value)); });
-
-        var token = document.querySelector('input[name="__RequestVerificationToken"]');
-
-        fetch('/Menus/SaveRoles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token ? token.value : '' },
-            body: JSON.stringify({ menuId: currentMenuId, roleIds: selected })
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (result) {
-            if (result.success) {
-                if (window.AdminUI && AdminUI.Toast) AdminUI.Toast.success(result.message || 'Roller güncellendi');
-                if (rolesModal) rolesModal.classList.remove('active');
-            } else {
-                if (window.AdminUI && AdminUI.Toast) AdminUI.Toast.error(result.message || 'Bir hata oluştu');
-            }
-        })
-        .catch(function () {
-            if (window.AdminUI && AdminUI.Toast) AdminUI.Toast.error('Bağlantı hatası');
-        });
-    }
-
-    document.querySelectorAll('[data-role-modal]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            openRolesModal(parseInt(this.getAttribute('data-role-modal')), this.getAttribute('data-menu-name') || 'Menü');
-        });
-    });
-
-    if (saveRolesBtn) saveRolesBtn.addEventListener('click', saveRoles);
-
+    // ─── Rol Atama Modal ──────────────────────────────────────────────────────
+    var rolesModal = document.getElementById('rolesModal');
     if (rolesModal) {
-        rolesModal.querySelectorAll('[data-modal-close]').forEach(function (b) {
-            b.addEventListener('click', function () { rolesModal.classList.remove('active'); });
-        });
-        rolesModal.addEventListener('click', function (e) {
-            if (e.target === rolesModal) rolesModal.classList.remove('active');
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-assign-roles]');
+            if (!btn) return;
+            e.preventDefault();
+
+            var itemId = btn.getAttribute('data-item-id');
+            var row    = document.querySelector('tr[data-item-id="' + itemId + '"]');
+            if (!row) return;
+
+            // Atanmış rol ID'lerini oku
+            var roleIds = [];
+            try { roleIds = JSON.parse(row.getAttribute('data-role-ids') || '[]'); } catch (ex) {}
+
+            // Menü bilgisini oku
+            var menuData = {};
+            try { menuData = JSON.parse(row.getAttribute('data-item') || '{}'); } catch (ex) {}
+
+            // Hidden field
+            var idField = document.getElementById('rolesModalMenuId');
+            if (idField) idField.value = itemId;
+
+            // Menü adı / URL
+            var nameEl = document.getElementById('rolesModalName');
+            var metaEl = document.getElementById('rolesModalMeta');
+            if (nameEl) nameEl.textContent = menuData.Name || '—';
+            if (metaEl) metaEl.textContent = menuData.Url  || 'URL yok';
+
+            // Checkboxları güncelle
+            rolesModal.querySelectorAll('.role-checkbox').forEach(function (cb) {
+                cb.checked = roleIds.indexOf(parseInt(cb.value)) !== -1;
+            });
+
+            // Modalı aç
+            if (window.AdminUI && window.AdminUI.Modal) {
+                window.AdminUI.Modal.open(rolesModal);
+            } else {
+                rolesModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
         });
     }
 

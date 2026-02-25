@@ -10,12 +10,14 @@ namespace WebUI.Controllers
     [RoleAuthorize("Admin")]
     public class UsersController : Controller
     {
+        private const int DefaultPageSize = 10;
+
         private readonly IUserApiService _userApiService;
         private readonly IRoleApiService _roleApiService;
         private readonly ILogger<UsersController> _logger;
 
         public UsersController(
-            IUserApiService userApiService, 
+            IUserApiService userApiService,
             IRoleApiService roleApiService,
             ILogger<UsersController> logger)
         {
@@ -24,30 +26,49 @@ namespace WebUI.Controllers
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index(string? search)
-        {
-            var users = await _userApiService.GetAllAsync();
-            var roles = await _roleApiService.GetAllAsync();
+        // ─────────────────────────────────────────────────────────────────────
+        // Listeleme + Server-side Pagination
+        // ─────────────────────────────────────────────────────────────────────
 
-            if (!string.IsNullOrEmpty(search))
+        public async Task<IActionResult> Index(string? search, int page = 1)
+        {
+            var allUsers = await _userApiService.GetAllAsync();
+            var allRoles = await _roleApiService.GetAllAsync();
+
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                users = users.Where(u =>
+                allUsers = allUsers.Where(u =>
                     u.FirstName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
                     u.LastName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
                     u.Mail.Contains(search, StringComparison.OrdinalIgnoreCase)
                 ).ToList();
             }
 
+            var paged = PagedResult<UserViewModel>.Create(allUsers, page, DefaultPageSize);
+
+            // Mevcut sayfa kullanıcıları için rolleri sıralı çek (HttpClient thread-safety)
+            foreach (var user in paged.Items)
+            {
+                var roles = await _userApiService.GetUserRolesAsync(user.Id);
+                user.AssignedRoleIds = roles.Select(r => r.OperationClaimId).ToList();
+            }
+
             var model = new UserListViewModel
             {
-                Users = users,
-                Roles = roles,
+                Users = paged.Items,
+                AllRoles = allRoles,
                 SearchTerm = search,
-                TotalCount = users.Count
+                TotalCount = paged.TotalCount,
+                PageNumber = paged.PageNumber,
+                PageSize = paged.PageSize
             };
 
             return View(model);
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // CRUD (Create / Update / Delete)
+        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -55,7 +76,8 @@ namespace WebUI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = string.Join(", ",
+                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 return RedirectToAction(nameof(Index));
             }
 
@@ -63,13 +85,9 @@ namespace WebUI.Controllers
             string? message;
 
             if (model.Id == 0)
-            {
                 (success, message) = await _userApiService.AddAsync(model);
-            }
             else
-            {
                 (success, message) = await _userApiService.UpdateAsync(model);
-            }
 
             if (success)
                 TempData["SuccessMessage"] = message;
@@ -99,35 +117,29 @@ namespace WebUI.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        #region Rol Yönetimi
-
-        [HttpGet]
-        public async Task<IActionResult> GetUserRoles(int userId)
-        {
-            var userRoles = await _userApiService.GetUserRolesAsync(userId);
-            var roleIds = userRoles.Select(r => r.OperationClaimId).ToList();
-            return Json(new { success = true, data = roleIds });
-        }
+        // ─────────────────────────────────────────────────────────────────────
+        // Rol Atama (Modal üzerinden POST, ayrı sayfa yok)
+        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveRoles([FromBody] SaveUserRolesRequest request)
+        public async Task<IActionResult> AssignRoles(int userId, List<int>? selectedRoleIds)
         {
-            if (request.UserId <= 0)
+            if (userId <= 0)
             {
-                return Json(new { success = false, message = "Geçersiz kullanıcı" });
+                TempData["ErrorMessage"] = "Geçersiz kullanıcı";
+                return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _userApiService.UpdateUserRolesAsync(request.UserId, request.RoleIds ?? new List<int>());
-            return Json(new { success, message });
+            var (success, message) = await _userApiService.UpdateUserRolesAsync(
+                userId, selectedRoleIds ?? new List<int>());
+
+            if (success)
+                TempData["SuccessMessage"] = message ?? "Roller güncellendi";
+            else
+                TempData["ErrorMessage"] = message ?? "Bir hata oluştu";
+
+            return RedirectToAction(nameof(Index));
         }
-
-        #endregion
-    }
-
-    public class SaveUserRolesRequest
-    {
-        public int UserId { get; set; }
-        public List<int>? RoleIds { get; set; }
     }
 }

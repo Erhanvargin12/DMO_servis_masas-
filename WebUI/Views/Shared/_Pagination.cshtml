@@ -1,0 +1,108 @@
+@model WebUI.Models.PaginationModel
+@*
+    Reusable sayfalama bileşeni.
+    Kullanım:
+      @await Html.PartialAsync("_Pagination", new PaginationModel { ... })
+    veya:
+      <partial name="_Pagination" model="paginationModel" />
+*@
+
+@if (Model == null) { return; }
+
+@{
+    var start = Model.TotalCount > 0 ? (Model.PageNumber - 1) * Model.PageSize + 1 : 0;
+    var end = Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount);
+}
+
+<div class="data-table-footer">
+    <div class="data-table-info">
+        @if (Model.TotalCount == 0)
+        {
+            <span>Kayıt bulunamadı</span>
+        }
+        else if (Model.TotalPages <= 1)
+        {
+            <span>Toplam @Model.TotalCount kayıt</span>
+        }
+        else
+        {
+            <span>@start–@end / @Model.TotalCount kayıt</span>
+        }
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="data-table-pagination">
+            @* Geri butonu *@
+            @if (Model.HasPreviousPage)
+            {
+                <a href="@Url.Action(Model.Action, Model.Controller, new { page = Model.PageNumber - 1, search = Model.Search })"
+                   class="btn btn-sm btn-ghost" aria-label="Önceki sayfa">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </a>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-ghost" disabled aria-label="Önceki sayfa">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+            }
+
+            @* Sayfa numaraları *@
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                var isCurrent = i == Model.PageNumber;
+                var showPage = Model.TotalPages <= 7
+                               || i == 1
+                               || i == Model.TotalPages
+                               || Math.Abs(i - Model.PageNumber) <= 1;
+                var showEllipsis = !showPage && (i == Model.PageNumber - 2 || i == Model.PageNumber + 2);
+
+                if (showPage)
+                {
+                    if (isCurrent)
+                    {
+                        <button class="btn btn-sm btn-primary" disabled aria-current="page">@i</button>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action(Model.Action, Model.Controller, new { page = i, search = Model.Search })"
+                           class="btn btn-sm btn-ghost">@i</a>
+                    }
+                }
+                else if (showEllipsis)
+                {
+                    <span class="pagination-ellipsis">…</span>
+                }
+            }
+
+            @* İleri butonu *@
+            @if (Model.HasNextPage)
+            {
+                <a href="@Url.Action(Model.Action, Model.Controller, new { page = Model.PageNumber + 1, search = Model.Search })"
+                   class="btn btn-sm btn-ghost" aria-label="Sonraki sayfa">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </a>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-ghost" disabled aria-label="Sonraki sayfa">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="data-table-pagination"></div>
+    }
+</div>
+
