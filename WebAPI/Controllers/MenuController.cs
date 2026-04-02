@@ -9,12 +9,9 @@ namespace WebAPI.Controllers
     public class MenuController : ControllerBase
     {
         private readonly IMenuService _menuService;
-        private readonly IMenuOperationClaimService _menuOperationClaimService;
-
-        public MenuController(IMenuService menuService, IMenuOperationClaimService menuOperationClaimService)
+        public MenuController(IMenuService menuService)
         {
             _menuService = menuService;
-            _menuOperationClaimService = menuOperationClaimService;
         }
 
         [HttpGet("getall")]
@@ -39,10 +36,10 @@ namespace WebAPI.Controllers
             return BadRequest(result);
         }
 
-        [HttpGet("getinactiveurls")]
-        public IActionResult GetInactiveUrls()
+        [HttpGet("get-menu-details")]
+        public IActionResult GetMenuDetails()
         {
-            var result = _menuService.GetInactiveMenuUrls();
+            var result = _menuService.GetMenuDetails();
             if (result.Success)
             {
                 return Ok(result);
@@ -50,10 +47,10 @@ namespace WebAPI.Controllers
             return BadRequest(result);
         }
 
-        [HttpGet("getbyuserid/{userId}")]
-        public IActionResult GetByUserId(int userId)
+        [HttpGet("get-user-menus/{id}")]
+        public IActionResult GetMenusByUserId(int id)
         {
-            var result = _menuService.GetMenusByUserId(userId);
+            var result = _menuService.GetMenusByUserId(id);
             if (result.Success)
             {
                 return Ok(result);
@@ -87,39 +84,6 @@ namespace WebAPI.Controllers
         public IActionResult Delete(Menu menu)
         {
             var result = _menuService.Delete(menu);
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            return BadRequest(result);
-        }
-
-        [HttpGet("getclaims/{menuId}")]
-        public IActionResult GetClaims(int menuId)
-        {
-            var result = _menuOperationClaimService.GetByMenuId(menuId);
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            return BadRequest(result);
-        }
-
-        [HttpPost("addclaim")]
-        public IActionResult AddClaim(MenuOperationClaim menuOperationClaim)
-        {
-            var result = _menuOperationClaimService.Add(menuOperationClaim);
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            return BadRequest(result);
-        }
-
-        [HttpPost("deleteclaim")]
-        public IActionResult DeleteClaim(MenuOperationClaim menuOperationClaim)
-        {
-            var result = _menuOperationClaimService.Delete(menuOperationClaim);
             if (result.Success)
             {
                 return Ok(result);

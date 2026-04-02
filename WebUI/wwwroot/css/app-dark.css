@@ -1,0 +1,258 @@
+/* =============================================================================
+   admin-dark.css — BackendCore Admin Panel
+   Dark Theme Overrides · Slate-based, premium
+   Loaded alongside admin.css. Activated via [data-theme="dark"] on <body>.
+   ============================================================================= */
+
+[data-theme="dark"] {
+    /* Backgrounds — slate blue-dark, NOT pitch black */
+    --bg-body:      #13151f;
+    --bg-card:      #1c1f2e;
+    --bg-sidebar:   #0f1119;
+    --bg-input:     #252a3c;
+    --bg-hover:     #282d42;
+    --bg-secondary: #181b29;
+
+    /* Text */
+    --text-primary:   #e4e7f4;
+    --text-secondary: #848daa;
+    --text-muted:     #525c78;
+    --text-inverse:   #ffffff;
+
+    /* Accent — Indigo (slightly lighter for dark bg readability) */
+    --accent:       #6366f1;
+    --accent-hover: #818cf8;
+    --accent-light: rgba(99, 102, 241, 0.14);
+    --accent-rgb:   99, 102, 241;
+
+    /* Borders */
+    --border:       #282e46;
+    --border-light: #1e2338;
+
+    /* Status — slightly lighter for dark bg */
+    --success:       #10b981;
+    --success-light: rgba(16, 185, 129, 0.12);
+    --error:         #f87171;
+    --error-light:   rgba(248, 113, 113, 0.12);
+    --warning:       #fbbf24;
+    --warning-light: rgba(251, 191, 36, 0.12);
+    --info:          #60a5fa;
+    --info-light:    rgba(96, 165, 250, 0.12);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.20);
+    --shadow:    0 4px 14px rgba(0, 0, 0, 0.40), 0 2px 4px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.50), 0 3px 8px rgba(0, 0, 0, 0.30);
+    --shadow-xl: 0 20px 52px rgba(0, 0, 0, 0.60), 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* ─── Sidebar: dark theme flavor ────────────────────────────────────────────── */
+[data-theme="dark"] .sidebar {
+    background: var(--bg-sidebar);
+    border-right-color: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .sidebar-header {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .sidebar-footer {
+    border-top-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .submenu {
+    border-left-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .submenu-link.active {
+    background: rgba(99, 102, 241, 0.25);
+}
+
+/* ─── Top Navbar ─────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .top-navbar {
+    background: var(--bg-card);
+    border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .profile-name {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .profile-btn {
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+/* ─── Cards / Tables ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] .data-table {
+    background: var(--bg-card);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .table th {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border);
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .table td {
+    border-bottom-color: var(--border-light);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .menu-row-parent td {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .menu-row-child td {
+    background: var(--bg-card);
+}
+
+/* ─── Modal backdrop ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] .modal-overlay {
+    background: rgba(5, 7, 18, 0.70);
+}
+
+[data-theme="dark"] .modal {
+    background: var(--bg-card);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .modal-footer {
+    background: var(--bg-secondary);
+    border-top-color: var(--border);
+}
+
+/* ─── Form inputs ─────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+    background: var(--bg-input);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-input::placeholder,
+[data-theme="dark"] .form-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────────── */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--border);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #3a4060;
+}
+
+/* ─── Profile menu ────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .profile-menu {
+    background: var(--bg-card);
+    border-color: var(--border);
+}
+
+/* ─── Toast ───────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .toast {
+    background: var(--bg-card);
+    border-color: var(--border);
+}
+
+/* ─── Data table search ───────────────────────────────────────────────────────── */
+[data-theme="dark"] .data-table-search input {
+    background: var(--bg-input);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+
+/* ─── Role list items ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] .role-item {
+    background: var(--bg-secondary);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .role-item:has(.role-checkbox:checked) {
+    background: var(--accent-light);
+    border-color: var(--accent);
+}
+
+/* ─── Assign entity info ──────────────────────────────────────────────────────── */
+[data-theme="dark"] .assign-entity-info {
+    background: var(--bg-secondary);
+    border-color: var(--border);
+}
+
+/* ─── Tree toggle button ──────────────────────────────────────────────────────── */
+[data-theme="dark"] .tree-toggle-btn,
+[data-theme="dark"] .menu-tree-toggle {
+    background: var(--bg-input);
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
+/* ─── Stat chip ───────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .stat-chip,
+[data-theme="dark"] .data-table-count {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+/* ─── Child count badge ───────────────────────────────────────────────────────── */
+[data-theme="dark"] .child-count-badge {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+/* ─── Mobile overlay ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] .mobile-overlay {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+/* ─── Table Pager ──────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .pager-btn {
+    background: var(--bg-secondary);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .pager-btn:hover:not(:disabled):not(.active) {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+[data-theme="dark"] .table-pager-size select,
+[data-theme="dark"] .table-page-size-select {
+    background-color: var(--bg-secondary);
+    border-color: var(--border);
+    color: var(--text-primary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23525c78' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* ─── File Drop Zone (dark) ────────────────────────────────────────────────────── */
+[data-theme="dark"] .file-drop-zone {
+    background: var(--bg-secondary);
+    border-color: var(--border);
+}
+[data-theme="dark"] .file-drop-zone:hover,
+[data-theme="dark"] .file-drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+[data-theme="dark"] .file-list-item {
+    background: var(--bg-secondary);
+    border-color: var(--border);
+}
+
+/* ─── Ticket priority & status badges (dark) ───────────────────────────────────── */
+[data-theme="dark"] .badge-priority-low     { background: rgba(5,150,105,.18);   color: #34d399; border-color: rgba(5,150,105,.3); }
+[data-theme="dark"] .badge-priority-medium  { background: rgba(217,119,6,.18);   color: #fbbf24; border-color: rgba(217,119,6,.3); }
+[data-theme="dark"] .badge-priority-high    { background: rgba(220,38,38,.18);   color: #f87171; border-color: rgba(220,38,38,.3); }
+[data-theme="dark"] .badge-priority-critical{ background: rgba(139,0,0,.25);     color: #fca5a5; border-color: rgba(185,28,28,.4); }
+[data-theme="dark"] .badge-status-open      { background: rgba(37,99,235,.18);   color: #93c5fd; border-color: rgba(37,99,235,.3); }
+[data-theme="dark"] .badge-status-assigned  { background: rgba(99,102,241,.18);  color: #a5b4fc; border-color: rgba(99,102,241,.3); }
+[data-theme="dark"] .badge-status-progress  { background: rgba(217,119,6,.18);   color: #fbbf24; border-color: rgba(217,119,6,.3); }
+[data-theme="dark"] .badge-status-waiting   { background: rgba(100,116,139,.18); color: #94a3b8; border-color: rgba(100,116,139,.3); }
+[data-theme="dark"] .badge-status-resolved  { background: rgba(5,150,105,.18);   color: #34d399; border-color: rgba(5,150,105,.3); }
+[data-theme="dark"] .badge-status-closed    { background: rgba(71,85,105,.2);    color: #94a3b8; border-color: rgba(71,85,105,.3); }
+

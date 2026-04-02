@@ -27,7 +27,7 @@ namespace WebAPI.Controllers
             var userToLogin = _authService.Login(userForLoginDto);
             if (!userToLogin.Success)
             {
-                return BadRequest(new { Success = false, Message = userToLogin.Message });
+                return BadRequest("Giriş Hatası");
             }
 
             var ipAddress = GetIpAddress();
@@ -35,18 +35,11 @@ namespace WebAPI.Controllers
             
             if (result.Success)
             {
-                // Refresh token'ı HTTP-only Secure cookie'ye kaydet
                 SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiration);
-                
-                // Response'da sadece access token döndür (refresh token cookie'de)
-                return Ok(new
-                {
-                    Token = result.Data.Token,
-                    Expiration = result.Data.Expiration
-                });
+                return Ok(result);
             }
 
-            return BadRequest(new { Success = false, Message = result.Message });
+            return BadRequest(result.Message);
         }
 
         [HttpPost("register")]

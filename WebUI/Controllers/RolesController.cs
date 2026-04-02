@@ -1,59 +1,41 @@
+using Core.Utilities.Results;
+using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WebUI.Filters;
-using WebUI.Models;
-using WebUI.Services.Abstract;
+using WebUI.Core.Filters;
+using WebUI.Core.Services.Abstract;
+using WebUI.Core.Services.Concrete;
+using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers
 {
     [Authorize]
     [RoleAuthorize("Admin")]
-    public class RolesController : Controller
+    public class RolesController : BaseController
     {
-        private const int DefaultPageSize = 10;
-
-        private readonly IRoleApiService _roleApiService;
-        private readonly ILogger<RolesController> _logger;
-
-        public RolesController(IRoleApiService roleApiService, ILogger<RolesController> logger)
+        public RolesController(IApiClient apiClient) : base(apiClient){}
+        
+        public async Task<IActionResult> Index(string? search)
         {
-            _roleApiService = roleApiService;
-            _logger = logger;
-        }
+            var allRoles = await SendRequest<List<OperationClaim>>("operationclaim/getall");
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Listeleme + Server-side Pagination
-        // ─────────────────────────────────────────────────────────────────────
-
-        public async Task<IActionResult> Index(string? search, int page = 1)
-        {
-            var allRoles = await _roleApiService.GetAllAsync();
+            var roles = allRoles.Data;
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                allRoles = allRoles.Where(r =>
-                    r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    (r.Description?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
-                ).ToList();
+                roles = roles.Where(r => r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                                        (r.Description?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
             }
-
-            var paged = PagedResult<RoleViewModel>.Create(allRoles, page, DefaultPageSize);
 
             var model = new RoleListViewModel
             {
-                Roles = paged.Items,
+                Roles = roles,
                 SearchTerm = search,
-                TotalCount = paged.TotalCount,
-                PageNumber = paged.PageNumber,
-                PageSize = paged.PageSize
+                TotalCount = roles.Count
             };
 
             return View(model);
         }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // CRUD
-        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -61,23 +43,21 @@ namespace WebUI.Controllers
         {
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = string.Join(", ",
-                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = string.Join(", ",ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 return RedirectToAction(nameof(Index));
             }
 
-            bool success;
-            string? message;
+            IDataResult<OperationClaim> result;
 
             if (model.Id == 0)
-                (success, message) = await _roleApiService.AddAsync(model);
+                result = await SendRequest<OperationClaim>("operationclaim/add",model,HttpMethod.Post);
             else
-                (success, message) = await _roleApiService.UpdateAsync(model);
+                result = await SendRequest<OperationClaim>("operationclaim/update", model, HttpMethod.Post);
 
-            if (success)
-                TempData["SuccessMessage"] = message;
+            if (result.Success)
+                TempData["SuccessMessage"] = result.Message;
             else
-                TempData["ErrorMessage"] = message;
+                TempData["ErrorMessage"] = result.Message;
 
             return RedirectToAction(nameof(Index));
         }
@@ -92,12 +72,14 @@ namespace WebUI.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _roleApiService.DeleteAsync(id);
+            var entity = await SendRequest<OperationClaim>($"operationclaim/getbyid/{id}");
 
-            if (success)
-                TempData["SuccessMessage"] = message;
+            var result = await SendRequest<OperationClaim>($"operationclaim/delete", entity.Data, HttpMethod.Post);
+
+            if (result.Success)
+                TempData["SuccessMessage"] = result.Message;
             else
-                TempData["ErrorMessage"] = message;
+                TempData["ErrorMessage"] = result.Message;
 
             return RedirectToAction(nameof(Index));
         }

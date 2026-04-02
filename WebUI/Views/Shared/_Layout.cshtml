@@ -4,46 +4,53 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BackendCore</title>
-    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/app-dark.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body data-user="@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "guest")">
     <div class="admin-wrapper">
         <partial name="_Sidebar" />
-        
         <div class="main-content">
             <partial name="_TopNavbar" />
-            
-            <main class="page-content">
-                @RenderBody()
-            </main>
+            <main class="page-content">@RenderBody()</main>
         </div>
     </div>
 
-    <script src="~/js/admin.js" asp-append-version="true"></script>
+    <script src="~/js/app.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    @{
+        var sidebarTicketCount = Context.Session.GetInt32("SidebarTicketCount");
+    }
+    @if (sidebarTicketCount.HasValue)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.AdminUI) AdminUI.setMenuBadge('/Tickets', @sidebarTicketCount.Value);
+            });
+        </script>
+    }
 
     @if (TempData["SuccessMessage"] != null)
     {
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (window.AdminUI && window.AdminUI.Toast) {
-                    window.AdminUI.Toast.success('@Html.Raw(TempData["SuccessMessage"]?.ToString()?.Replace("'", "\\'"))');
-                }
+            document.addEventListener('DOMContentLoaded', function () {
+                AdminUI.Toast.success('@Html.Raw(TempData["SuccessMessage"]?.ToString()?.Replace("'", "\\'"))');
                 try {
-                    var keys = Object.keys(localStorage).filter(function(k) { return k.startsWith('modal_draft_'); });
-                    keys.forEach(function(k) { localStorage.removeItem(k); });
-                } catch(e) {}
+                    Object.keys(localStorage)
+                        .filter(function (k) { return k.startsWith('modal_draft_'); })
+                        .forEach(function (k) { localStorage.removeItem(k); });
+                } catch (e) {}
             });
         </script>
     }
     @if (TempData["ErrorMessage"] != null)
     {
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (window.AdminUI && window.AdminUI.Toast) {
-                    window.AdminUI.Toast.error('@Html.Raw(TempData["ErrorMessage"]?.ToString()?.Replace("'", "\\'"))');
-                }
+            document.addEventListener('DOMContentLoaded', function () {
+                AdminUI.Toast.error('@Html.Raw(TempData["ErrorMessage"]?.ToString()?.Replace("'", "\\'"))');
             });
         </script>
     }

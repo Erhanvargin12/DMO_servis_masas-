@@ -57,3 +57,5 @@ VALUES ('Admin','Yönetim Yetkisi'), ('User','Temel Kullanıcı Yetkisi'), ('Ins
 INSERT INTO UserOperationClaims (UserId, OperationClaimId)
 VALUES (1,1),(1,2);
 GO
+
+

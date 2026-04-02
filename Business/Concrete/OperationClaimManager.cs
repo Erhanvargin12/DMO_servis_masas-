@@ -18,7 +18,7 @@ public class OperationClaimManager : IOperationClaimService
         _operationClaimDal = operationClaimDal;
     }
 
-    [SecuredOperation("Admin")]
+    //[SecuredOperation("Admin")]
     public IDataResult<List<OperationClaim>> GetAll(Expression<Func<OperationClaim, bool>> filter = null)
     {
         return new SuccessDataResult<List<OperationClaim>>(_operationClaimDal.GetAll(filter), Messages.OperationClaimsListed);
@@ -72,7 +72,7 @@ public class OperationClaimManager : IOperationClaimService
         return new SuccessResult(Messages.OperationClaimUpdated);
     }
 
-    [SecuredOperation("Admin")]
+    //[SecuredOperation("Admin")]
     public IResult Delete(OperationClaim operationClaim)
     {
         IResult result = BusinessRules.Run(

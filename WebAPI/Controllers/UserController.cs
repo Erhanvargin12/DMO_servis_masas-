@@ -31,10 +31,10 @@ namespace WebAPI.Controllers
         [HttpGet("getbyid/{id}")]
         public IActionResult GetById(int id)
         {
-            var result = _userService.GetAll(u => u.Id == id);
-            if (result.Success && result.Data.Any())
+            var result = _userService.GetUser(u => u.Id == id);
+            if (result.Success)
             {
-                return Ok(new { Success = true, Data = result.Data.First() });
+                return Ok(result);
             }
             return BadRequest(new { Success = false, Message = "Kullanıcı bulunamadı" });
         }

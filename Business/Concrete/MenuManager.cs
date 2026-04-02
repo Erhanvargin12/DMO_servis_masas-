@@ -1,5 +1,4 @@
-using Business.Abstract;
-using Business.BusinessAspects.Autofac;
+﻿using Business.Abstract;
 using Business.Constants;
 using Core.Utilities.Business;
 using Core.Utilities.Results;
@@ -10,22 +9,27 @@ using System.Linq.Expressions;
 
 namespace Business.Concrete;
 
+
 public class MenuManager : IMenuService
 {
     private readonly IMenuDal _menuDal;
+    private readonly IMenuOperationClaimDal _menuOperationClaimDal;
+    private readonly IOperationClaimDal _operationClaimDal;
+    private readonly IUserOperationClaimDal _userOperationClaimDal;
 
-    public MenuManager(IMenuDal menuDal)
+    public MenuManager(IMenuDal menuDal, IMenuOperationClaimDal menuOperationClaimDal, IOperationClaimDal operationClaimDal, IUserOperationClaimDal userOperationClaimDal)
     {
         _menuDal = menuDal;
+        _menuOperationClaimDal = menuOperationClaimDal;
+        _operationClaimDal = operationClaimDal;
+        _userOperationClaimDal = userOperationClaimDal;
+
     }
 
-    [SecuredOperation("Admin")]
     public IDataResult<List<Menu>> GetAll(Expression<Func<Menu, bool>> filter = null)
     {
         return new SuccessDataResult<List<Menu>>(_menuDal.GetAll(filter), Messages.MenusListed);
     }
-
-    [SecuredOperation("Admin")]
     public IDataResult<Menu> GetById(int id)
     {
         var result = _menuDal.Get(m => m.Id == id);
@@ -35,29 +39,53 @@ public class MenuManager : IMenuService
         }
         return new SuccessDataResult<Menu>(result);
     }
+    public IDataResult<List<MenuDto>> GetMenuDetails()
+    {
+        var menus = _menuDal.GetAll();
+        var menuClaims = _menuOperationClaimDal.GetAll();
+        var operationClaims = _operationClaimDal.GetAll();
 
-    // Bu metod yetkisiz kullanıcılar için de çalışmalı (menü gösterimi için)
+        var dto = menus.Where(m => m.ParentId == null)
+            .OrderBy(x=>x.DisplayOrder)
+            .Select(menu => new MenuDto
+            {
+                Parent = menu,
+                Childrens = GetChildrenAndClaimsByParentId(menu.Id),
+                Claims = _menuOperationClaimDal.GetAll(c => c.MenuId == menu.Id)
+            })
+            .ToList();
+
+        return new SuccessDataResult<List<MenuDto>>(dto, Messages.MenusListed);
+    }
     public IDataResult<List<MenuDto>> GetMenusByUserId(int userId)
     {
-        var menus = _menuDal.GetMenusByUserId(userId);
-        return new SuccessDataResult<List<MenuDto>>(menus, Messages.MenusListed);
+
+        var userClaims = _userOperationClaimDal.GetAll(c => c.UserId == userId).ToList();
+        var menus = _menuDal.GetAll();
+        var menuClaims = _menuOperationClaimDal.GetAll();
+
+        var userMenus = userClaims.SelectMany(uc => menus
+                                  .Where(m => menuClaims
+                                  .Any(mc => mc.OperationClaimId == uc.OperationClaimId && mc.MenuId == m.Id)))
+                                  .Distinct()
+                                  .ToList();
+
+        var dto = userMenus.Where(um => um.ParentId == null)
+                           .OrderBy(x => x.DisplayOrder)
+                           .Select(userMenu => new MenuDto
+                           {
+                               Parent = userMenu, 
+                               Childrens = GetChildrenAndClaimsByParentId(userMenu.Id),
+                               Claims = menuClaims.Where(c => c.MenuId == userMenu.Id).ToList()
+                           }).ToList();
+
+
+        return new SuccessDataResult<List<MenuDto>>(dto, Messages.MenusListed);
     }
 
-    // Pasif menü URL'lerini döndürür - kimlik doğrulama gerektirmez
-    public IDataResult<List<string>> GetInactiveMenuUrls()
-    {
-        var urls = _menuDal.GetAll(m => !m.IsActive && m.Url != null)
-            .Select(m => m.Url!)
-            .ToList();
-        return new SuccessDataResult<List<string>>(urls);
-    }
-
-    [SecuredOperation("Admin")]
     public IResult Add(Menu menu)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfMenuNameExists(menu.Name, menu.ParentId)
-        );
+        IResult result = BusinessRules.Run(CheckIfMenuNameExists(menu.Name, menu.ParentId));
 
         if (result != null)
         {
@@ -68,14 +96,9 @@ public class MenuManager : IMenuService
         _menuDal.Add(menu);
         return new SuccessResult(Messages.MenuAdded);
     }
-
-    [SecuredOperation("Admin")]
     public IResult Update(Menu menu)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfMenuExists(menu.Id),
-            CheckIfMenuNameExistsForUpdate(menu.Id, menu.Name, menu.ParentId)
-        );
+        IResult result = BusinessRules.Run(CheckIfMenuExists(menu.Id), CheckIfMenuNameExistsForUpdate(menu.Id, menu.Name, menu.ParentId));
 
         if (result != null)
         {
@@ -95,8 +118,6 @@ public class MenuManager : IMenuService
         _menuDal.Update(existingMenu);
         return new SuccessResult(Messages.MenuUpdated);
     }
-
-    [SecuredOperation("Admin")]
     public IResult Delete(Menu menu)
     {
         IResult result = BusinessRules.Run(
@@ -114,8 +135,8 @@ public class MenuManager : IMenuService
         return new SuccessResult(Messages.MenuDeleted);
     }
 
-    #region Business Rules
 
+    #region Business Rules
     private IResult CheckIfMenuNameExists(string name, int? parentId)
     {
         var exists = _menuDal.GetAll(m => m.Name == name && m.ParentId == parentId).Any();
@@ -125,7 +146,6 @@ public class MenuManager : IMenuService
         }
         return new SuccessResult();
     }
-
     private IResult CheckIfMenuNameExistsForUpdate(int id, string name, int? parentId)
     {
         var exists = _menuDal.GetAll(m => m.Name == name && m.ParentId == parentId && m.Id != id).Any();
@@ -135,7 +155,6 @@ public class MenuManager : IMenuService
         }
         return new SuccessResult();
     }
-
     private IResult CheckIfMenuExists(int id)
     {
         var menu = _menuDal.Get(m => m.Id == id);
@@ -145,7 +164,6 @@ public class MenuManager : IMenuService
         }
         return new SuccessResult();
     }
-
     private IResult CheckIfMenuHasChildren(int id)
     {
         var hasChildren = _menuDal.GetAll(m => m.ParentId == id).Any();
@@ -155,6 +173,15 @@ public class MenuManager : IMenuService
         }
         return new SuccessResult();
     }
-
+    private List<MenuChildrenDto> GetChildrenAndClaimsByParentId(int menuId)
+    {
+        var childrens = _menuDal.GetAll(c => c.ParentId == menuId);
+        var dto = childrens.Select(child => new MenuChildrenDto
+        {
+            Children = child,
+            Claims = _menuOperationClaimDal.GetAll(c => c.MenuId == child.Id)
+        }).ToList();
+        return dto;
+    }
     #endregion
 }

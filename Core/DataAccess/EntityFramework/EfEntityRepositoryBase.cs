@@ -45,5 +45,4 @@ public class EfEntityRepositoryBase<TEntity, TContext> : IEntityRepository<TEnti
             ? _context.Set<TEntity>().ToList()
             : _context.Set<TEntity>().Where(filter).ToList();
     }
-
 }

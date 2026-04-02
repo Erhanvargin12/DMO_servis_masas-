@@ -1,99 +1,70 @@
+using Core.Utilities.Results;
+using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WebUI.Filters;
-using WebUI.Models;
-using WebUI.Services.Abstract;
+using System.Data;
+using WebUI.Core.Filters;
+using WebUI.Core.Services.Abstract;
+using WebUI.Core.Services.Concrete;
+using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers
 {
     [Authorize]
     [RoleAuthorize("Admin")]
-    public class UsersController : Controller
+    public class UsersController : BaseController
     {
-        private const int DefaultPageSize = 10;
-
-        private readonly IUserApiService _userApiService;
-        private readonly IRoleApiService _roleApiService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(
-            IUserApiService userApiService,
-            IRoleApiService roleApiService,
-            ILogger<UsersController> logger)
+        public UsersController(ILogger<UsersController> logger, IApiClient apiClient) : base(apiClient)
         {
-            _userApiService = userApiService;
-            _roleApiService = roleApiService;
             _logger = logger;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Listeleme + Server-side Pagination
-        // ─────────────────────────────────────────────────────────────────────
-
-        public async Task<IActionResult> Index(string? search, int page = 1)
+        public async Task<IActionResult> Index(string? search)
         {
-            var allUsers = await _userApiService.GetAllAsync();
-            var allRoles = await _roleApiService.GetAllAsync();
+            var allUsers = await SendRequest<List<User>>("user/getall");
+            var allRoles = await SendRequest<List<OperationClaim>>("operationclaim/getall");
+            var userRoles = await SendRequest<List<UserOperationClaim>>("useroperationclaim/getall");
+
+            var users = allUsers.Data.Select(u => new UserManagementViewModel
+            {
+                User = u,
+                UserRoles = userRoles.Data.Where(ur => ur.UserId == u.Id).ToList()
+            }).ToList();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                allUsers = allUsers.Where(u =>
-                    u.FirstName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    u.LastName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                    u.Mail.Contains(search, StringComparison.OrdinalIgnoreCase)
-                ).ToList();
-            }
-
-            var paged = PagedResult<UserViewModel>.Create(allUsers, page, DefaultPageSize);
-
-            // Mevcut sayfa kullanıcıları için rolleri sıralı çek (HttpClient thread-safety)
-            foreach (var user in paged.Items)
-            {
-                var roles = await _userApiService.GetUserRolesAsync(user.Id);
-                user.AssignedRoleIds = roles.Select(r => r.OperationClaimId).ToList();
+                users = users.Where(u => u.User.FirstName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                                         u.User.LastName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                                         u.User.Mail.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
             var model = new UserListViewModel
             {
-                Users = paged.Items,
-                AllRoles = allRoles,
+                Users = users,
+                AllRoles = allRoles.Data,
                 SearchTerm = search,
-                TotalCount = paged.TotalCount,
-                PageNumber = paged.PageNumber,
-                PageSize = paged.PageSize
+                TotalCount = users.Count
             };
 
             return View(model);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // CRUD (Create / Update / Delete)
-        // ─────────────────────────────────────────────────────────────────────
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save(UserViewModel model)
+        public async Task<IActionResult> Save(UserViewModel user)
         {
+            IDataResult<User> result;
+
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = string.Join(", ",
-                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 return RedirectToAction(nameof(Index));
             }
 
-            bool success;
-            string? message;
-
-            if (model.Id == 0)
-                (success, message) = await _userApiService.AddAsync(model);
-            else
-                (success, message) = await _userApiService.UpdateAsync(model);
-
-            if (success)
-                TempData["SuccessMessage"] = message;
-            else
-                TempData["ErrorMessage"] = message;
-
+            result = await SendRequest<User>(user.Id == 0 ? "user/add" : "user/update", user, HttpMethod.Post);
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
             return RedirectToAction(nameof(Index));
         }
 
@@ -107,19 +78,14 @@ namespace WebUI.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _userApiService.DeleteAsync(id);
+            var entity = await SendRequest<User>($"user/getbyid/{id}");
+            var result = await SendRequest<List<User>>($"user/delete", entity.Data, HttpMethod.Post);
 
-            if (success)
-                TempData["SuccessMessage"] = message;
-            else
-                TempData["ErrorMessage"] = message;
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
 
             return RedirectToAction(nameof(Index));
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Rol Atama (Modal üzerinden POST, ayrı sayfa yok)
-        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -131,14 +97,28 @@ namespace WebUI.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _userApiService.UpdateUserRolesAsync(
-                userId, selectedRoleIds ?? new List<int>());
+            var userRoles = await SendRequest<List<UserOperationClaim>>($"useroperationclaim/getbyuserid/{userId}", HttpMethod.Get);
 
-            if (success)
-                TempData["SuccessMessage"] = message ?? "Roller güncellendi";
-            else
-                TempData["ErrorMessage"] = message ?? "Bir hata oluştu";
+            foreach (var roleId in selectedRoleIds)
+            {
+                if (!userRoles.Data.Any(x => x.OperationClaimId == roleId))
+                {
+                    var userClaim = new UserOperationClaim { UserId = userId, OperationClaimId = roleId };
+                    var result = await SendRequest<UserOperationClaim>("useroperationclaim/add", userClaim, HttpMethod.Post);
 
+                    TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+                }
+            }
+            foreach (var role in userRoles.Data)
+            {
+                if (!selectedRoleIds.Contains(role.OperationClaimId))
+                {
+                    var userClaim = new UserOperationClaim { Id = role.Id, UserId = userId, OperationClaimId = role.OperationClaimId };
+                    var result = await SendRequest<int>($"useroperationclaim/delete", userClaim, HttpMethod.Post);
+
+                    TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+                }
+            }
             return RedirectToAction(nameof(Index));
         }
     }

@@ -1,89 +1,58 @@
+using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using WebUI.Filters;
-using WebUI.Models;
-using WebUI.Services.Abstract;
+using WebUI.Core.Filters;
+using WebUI.Core.Services.Abstract;
+using WebUI.Core.Services.Concrete;
+using WebUI.Models.DTOs;
+using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers
 {
     [Authorize]
     [RoleAuthorize("Admin")]
-    public class MenusController : Controller
+    public class MenusController : BaseController
     {
-        private readonly IMenuApiService _menuApiService;
-        private readonly IRoleApiService _roleApiService;
-        private readonly ILogger<MenusController> _logger;
         private readonly IMemoryCache _cache;
 
-        public MenusController(
-            IMenuApiService menuApiService,
-            IRoleApiService roleApiService,
-            ILogger<MenusController> logger,
-            IMemoryCache cache)
+        public MenusController(IMemoryCache cache, IApiClient apiClient) : base(apiClient)
         {
-            _menuApiService = menuApiService;
-            _roleApiService = roleApiService;
-            _logger = logger;
             _cache = cache;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Listeleme
-        // ─────────────────────────────────────────────────────────────────────
-
         public async Task<IActionResult> Index()
         {
-            var menus = await _menuApiService.GetAllAsync();
-            var roles = await _roleApiService.GetAllAsync();
+            var menus = await SendRequest<List<MenuDto>>("menu/get-menu-details");
+            var roles = await SendRequest<List<OperationClaim>>("operationclaim/getall");
+            var claims = await SendRequest<List<MenuOperationClaim>>("menuoperationclaim/getall");
 
-            // Tüm menüler için rolleri sıralı çek (HttpClient thread-safety)
-            foreach (var menu in menus)
+            var model = new MenuViewModel
             {
-                menu.AssignedRoleIds = await _menuApiService.GetMenuRolesAsync(menu.Id);
-            }
-
-            var model = new MenuListViewModel
-            {
-                Menus = menus,
-                Roles = roles,
-                TotalCount = menus.Count
+                Menu = menus.Data,
+                Roles = roles.Data,
+                Orphans = new List<Menu>(),
+                TotalCount = menus.Data.Count
             };
-
             return View(model);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // CRUD
-        // ─────────────────────────────────────────────────────────────────────
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save(MenuViewModel model)
+        public async Task<IActionResult> Save(Menu menu)
         {
-            if (string.IsNullOrEmpty(model.Name))
+            if (string.IsNullOrWhiteSpace(menu.Name))
             {
                 TempData["ErrorMessage"] = "Menü adı zorunludur";
                 return RedirectToAction(nameof(Index));
             }
 
-            bool success;
-            string? message;
+            var result = await SendRequest<Menu>(menu.Id == 0 ? "menu/add" : "menu/update", menu, HttpMethod.Post);
 
-            if (model.Id == 0)
-                (success, message) = await _menuApiService.AddAsync(model);
-            else
-                (success, message) = await _menuApiService.UpdateAsync(model);
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
 
-            if (success)
-            {
-                TempData["SuccessMessage"] = message;
+            if (result.Success)
                 _cache.Remove("InactiveMenuUrls");
-            }
-            else
-            {
-                TempData["ErrorMessage"] = message;
-            }
 
             return RedirectToAction(nameof(Index));
         }
@@ -92,24 +61,15 @@ namespace WebUI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var (success, message) = await _menuApiService.DeleteAsync(id);
+            var result= await SendRequest<Menu>("menu/delete", new Menu {Id=id}, HttpMethod.Post);
 
-            if (success)
-            {
-                TempData["SuccessMessage"] = message;
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+
+            if (result.Success)
                 _cache.Remove("InactiveMenuUrls");
-            }
-            else
-            {
-                TempData["ErrorMessage"] = message;
-            }
 
             return RedirectToAction(nameof(Index));
         }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Rol Atama (Modal üzerinden POST, ayrı sayfa yok)
-        // ─────────────────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -121,18 +81,11 @@ namespace WebUI.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var (success, message) = await _menuApiService.UpdateMenuRolesAsync(
-                menuId, selectedRoleIds ?? new List<int>());
-
-            if (success)
-            {
-                TempData["SuccessMessage"] = message ?? "Roller güncellendi";
+            var result = await SendRequest<List<UserOperationClaim>>($"menuoperationclaim/update/", new MenuOperationClaimUpdateDto {MenuId = menuId, RoleIds = selectedRoleIds}, HttpMethod.Post);
+            if (result.Success)
                 _cache.Remove("InactiveMenuUrls");
-            }
-            else
-            {
-                TempData["ErrorMessage"] = message ?? "Bir hata oluştu";
-            }
+
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
 
             return RedirectToAction(nameof(Index));
         }

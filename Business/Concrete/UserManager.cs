@@ -20,8 +20,6 @@ public class UserManager : IUserService
     {
         _userDal = userDal;
     }
-
-    // Auth işlemleri için SecuredOperation YOK - Login/Register için gerekli
     public IResult Add(User user)
     {
         IResult result = BusinessRules.Run(
@@ -81,19 +79,14 @@ public class UserManager : IUserService
         _userDal.Delete(existingUser);
         return new SuccessResult(Messages.UserDeleted);
     }
-
-    //[SecuredOperation("Admin")]
     public IDataResult<List<User>> GetAll(Expression<Func<User, bool>> filter = null)
     {
         return new SuccessDataResult<List<User>>(_userDal.GetAll(filter), Messages.UsersList);
     }
-    //Login işlemleri için SecuredOperation eklenmedi
     public IDataResult<User> GetUser(Expression<Func<User, bool>> filter = null)
     {
         return new SuccessDataResult<User>(_userDal.Get(filter), Messages.UsersList);
     }
-
-    // Token oluşturmak için SecuredOperation YOK
     public List<OperationClaim> GetClaims(User user)
     {
         return _userDal.GetClaims(user);

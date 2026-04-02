@@ -1,0 +1,328 @@
+@model WebUI.Areas.Tickets.Models.TicketViewModel
+@{
+    ViewData["Title"] = "Talepler";
+
+    string StatusBadge(int? id) => id switch
+    {
+        1 => "badge-status-open",
+        2 => "badge-status-assigned",
+        3 => "badge-status-progress",
+        4 => "badge-status-waiting",
+        5 => "badge-status-resolved",
+        6 => "badge-status-closed",
+        _ => ""
+    };
+    string StatusLabel(int? id) => id switch
+    {
+        1 => "Açık",
+        2 => "Atandı",
+        3 => "İşlemde",
+        4 => "Beklemede",
+        5 => "Çözüldü",
+        6 => "Kapatıldı",
+        _ => "—"
+    };
+    string PriorityBadge(int id) => id switch
+    {
+        1 => "badge-priority-low",
+        2 => "badge-priority-medium",
+        3 => "badge-priority-high",
+        4 => "badge-priority-critical",
+        _ => ""
+    };
+    string PriorityLabel(int id) => id switch
+    {
+        1 => "Düşük",
+        2 => "Orta",
+        3 => "Yüksek",
+        4 => "Kritik",
+        _ => "—"
+    };
+    string TabUrl(string tabName) => Url.Action("Index", "Ticket", new
+    {
+        area     = "Tickets",
+        tab      = tabName,
+        search   = Model.SearchTerm,
+        status   = Model.StatusFilter,
+        priority = Model.PriorityFilter
+    })!;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/pages/tickets.js" asp-append-version="true"></script>
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <div class="mgmt-page-icon">
+            <i class="fa-solid fa-ticket"></i>
+        </div>
+        <div>
+            <div class="mgmt-page-title">Talepler</div>
+            <div class="mgmt-page-subtitle">
+                @if (Model.ActiveTab == "delegated" && Model.Delegation != null)
+                {
+                    <span style="color:var(--warning);">
+                        <i class="fa-solid fa-user-shield" style="margin-right:4px;"></i>
+                        @Model.Delegation.DelegatorName adına vekâlet
+                    </span>
+                }
+                else
+                {
+                    <span>Toplam @Model.OwnCount kayıt</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="mgmt-page-header-right">
+        <button type="button" class="btn btn-primary btn-sm" data-modal-open="newTicketModal">
+            <i class="fa-solid fa-plus"></i>
+            Yeni Talep
+        </button>
+    </div>
+</div>
+
+@* ── Vekalet Tabları (sadece vekâlet varsa göster) ──────────────────────── *@
+@if (Model.Delegation != null)
+{
+    <div class="data-tabs">
+        <a href="@TabUrl("own")" class="data-tab @(Model.ActiveTab == "own" ? "active" : "")">
+            <i class="fa-solid fa-inbox"></i>
+            Kendi Taleplerim
+            <span class="tab-count">@Model.OwnCount</span>
+        </a>
+        <a href="@TabUrl("delegated")" class="data-tab @(Model.ActiveTab == "delegated" ? "active" : "")">
+            <i class="fa-solid fa-user-shield"></i>
+            @Model.Delegation.DelegatorName Adına
+            <span class="tab-count warn">@Model.DelegatedCount</span>
+            <span class="tab-badge">Vekâlet</span>
+        </a>
+    </div>
+
+    @* Vekâlet tab'ındayken bilgi banner'ı *@
+    @if (Model.ActiveTab == "delegated")
+    {
+        <div class="delegation-banner">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+                @if (Model.Delegation.DelegationType == "manager")
+                {
+                    <strong>@Model.Delegation.BranchName</strong>
+                    <span>şubesine ait tüm ticketları görüntülüyorsunuz (@Model.Delegation.DelegatorName müdür vekâleti).</span>
+                }
+                else
+                {
+                    <strong>@Model.Delegation.DelegatorName</strong>
+                    <span>adlı personelin kişisel ticketlarını görüntülüyorsunuz (personel vekâleti).</span>
+                }
+            </div>
+        </div>
+    }
+}
+
+<!-- Filtre Çubuğu -->
+<div class="data-table" style="margin-bottom:10px;">
+    <div class="filter-wrap">
+        <form method="get" asp-action="Index" asp-controller="Ticket" asp-area="Tickets"
+              class="filter-form" id="ticketFilterForm">
+            @* Tab parametresini form ile birlikte koru *@
+            <input type="hidden" name="tab" value="@Model.ActiveTab" />
+            <div class="filter-row">
+                <div class="data-table-search filter-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" name="search" value="@Model.SearchTerm" id="ticketSearch"
+                           placeholder="Ticket no, başlık veya açıklama ara..." autocomplete="off" />
+                </div>
+                <div class="filter-select">
+                    <select name="status" class="form-input" id="statusFilter">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="1" selected="@(Model.StatusFilter == "1" ? "selected" : null)">Açık</option>
+                        <option value="2" selected="@(Model.StatusFilter == "2" ? "selected" : null)">Atandı</option>
+                        <option value="3" selected="@(Model.StatusFilter == "3" ? "selected" : null)">İşlemde</option>
+                        <option value="4" selected="@(Model.StatusFilter == "4" ? "selected" : null)">Beklemede</option>
+                        <option value="5" selected="@(Model.StatusFilter == "5" ? "selected" : null)">Çözüldü</option>
+                        <option value="6" selected="@(Model.StatusFilter == "6" ? "selected" : null)">Kapatıldı</option>
+                    </select>
+                </div>
+                <div class="filter-select">
+                    <select name="priority" class="form-input" id="priorityFilter">
+                        <option value="">Tüm Öncelikler</option>
+                        <option value="1" selected="@(Model.PriorityFilter == "1" ? "selected" : null)">Düşük</option>
+                        <option value="2" selected="@(Model.PriorityFilter == "2" ? "selected" : null)">Orta</option>
+                        <option value="3" selected="@(Model.PriorityFilter == "3" ? "selected" : null)">Yüksek</option>
+                        <option value="4" selected="@(Model.PriorityFilter == "4" ? "selected" : null)">Kritik</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary filter-btn">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Ara
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.PriorityFilter))
+                    {
+                        <a href="@Url.Action("Index", "Ticket", new { area = "Tickets", tab = Model.ActiveTab })"
+                           class="btn filter-btn">
+                            <i class="fa-solid fa-xmark"></i>
+                            Temizle
+                        </a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tablo -->
+<div class="data-table">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>
+                @(Model.ActiveTab == "delegated" && Model.Delegation != null
+                    ? Model.Delegation.DelegatorName + " — Talepleri"
+                    : "Taleplerim")
+            </span>
+            <span class="stat-chip"></span>
+        </div>
+        <div class="data-table-actions"></div>
+    </div>
+
+    <div class="table-container">
+        <table class="table mgmt-table" id="ticketsTable"
+               data-paginate data-page-size="10">
+            <thead>
+                <tr>
+                    <th data-sort="text" class="col-hide-md">Talep No</th>
+                    <th data-sort="text">Başlık</th>
+                    <th data-sort="text">İçerik</th>
+                    <th data-sort="text">Durum</th>
+                    <th data-sort="text">Öncelik</th>
+                    <th data-sort="date" class="col-hide-md">Oluşturma</th>
+                    <th class="col-hide-md">Atanan</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.FilteredTickets.Any())
+                {
+                    @foreach (var t in Model.FilteredTickets)
+                    {
+                        var detayUrl = Url.Action("Detail", "Ticket", new { area = "Tickets", id = t.Id });
+                        <tr class="table-row-link" data-href="@detayUrl" style="cursor:pointer;">
+                            <td class="col-hide-md" data-label="No">
+                                <span class="entity-badge-text">@t.TicketNo</span>
+                            </td>
+                            <td data-label="Başlık">
+                                <div class="cell-info">
+                                    <span class="cell-title">@t.Title</span>
+                                </div>
+                            </td>
+                            <td data-label="Başlık">
+                                <div class="cell-info">
+                                    <span class="cell-sub" title="@t.Description">@(t.Description.Length > 60 ? t.Description[..60] + "…" : t.Description)</span>
+                                </div>
+                            </td>
+                            <td data-label="Durum">
+                                <span class="badge @StatusBadge(t.StatusId)">@StatusLabel(t.StatusId)</span>
+                            </td>
+                            <td data-label="Öncelik">
+                                <span class="badge @PriorityBadge(t.PriorityId)">@PriorityLabel(t.PriorityId)</span>
+                            </td>
+                            <td class="col-hide-md" data-label="Tarih">@t.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="col-hide-md" data-label="Atanan">
+                                @if (t.AssignedUserId.HasValue)
+                                {
+                                    <span class="badge badge-status-assigned">Atandı</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size:0.8rem;">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="mgmt-empty">
+                            <div class="mgmt-empty-icon"><i class="fa-solid fa-ticket"></i></div>
+                            <div class="mgmt-empty-text">Talep bulunamadı</div>
+                            <div class="mgmt-empty-sub">Filtre kriterlerini değiştirmeyi deneyin</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="data-table-footer">
+        <div class="data-table-info"></div>
+    </div>
+</div>
+
+<!-- New Ticket Modal -->
+<div class="modal-overlay" id="newTicketModal">
+    <div class="modal modal-md">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-plus" style="margin-right:8px;color:var(--accent);"></i>
+                Yeni Talep Oluştur
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="Ticket" asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Başlık</label>
+                    <input type="text" name="Title" class="form-input"
+                           placeholder="Talep başlığını kısaca yazın" required />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Öncelik</label>
+                        <select name="PriorityId" class="form-input">
+                            <option value="1">Düşük</option>
+                            <option value="2" selected>Orta</option>
+                            <option value="3">Yüksek</option>
+                            <option value="4">Kritik</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Açıklama</label>
+                    <textarea name="Description" class="form-input form-textarea" rows="5"
+                              placeholder="Sorunu veya isteğinizi detaylı olarak açıklayın..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        Dosya Ekle <span class="text-muted" style="font-weight:400;">(opsiyonel)</span>
+                    </label>
+                    <div class="file-drop-zone" data-file-drop>
+                        <input type="file" name="Attachments" multiple
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip" />
+                        <div class="file-drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div class="file-drop-title">
+                            Dosyaları buraya sürükleyin veya <span>seçmek için tıklayın</span>
+                        </div>
+                        <div class="file-drop-hint">PDF, Word, Excel, görsel, zip &nbsp;·&nbsp; maks. 10 MB/dosya</div>
+                    </div>
+                    <div class="file-list" data-file-list></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    Oluştur
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

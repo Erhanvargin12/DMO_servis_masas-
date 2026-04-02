@@ -3,22 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace WebUI.Controllers
 {
-    /// <summary>
-    /// HTTP hata sayfalarını yönetir.
-    /// Program.cs'de UseStatusCodePagesWithReExecute ve UseExceptionHandler ile birlikte çalışır.
-    /// </summary>
     public class ErrorController : Controller
     {
         private readonly ILogger<ErrorController> _logger;
-
         public ErrorController(ILogger<ErrorController> logger)
         {
             _logger = logger;
         }
 
-        /// <summary>
-        /// HTTP durum kodu tabanlı hata sayfaları (403, 404 vb.)
-        /// </summary>
         [Route("/Error/{statusCode:int}")]
         public new IActionResult StatusCode(int statusCode)
         {
@@ -35,9 +27,6 @@ namespace WebUI.Controllers
             };
         }
 
-        /// <summary>
-        /// Beklenmeyen sunucu hataları (500)
-        /// </summary>
         [Route("/Error")]
         public IActionResult ServerError()
         {
@@ -45,8 +34,7 @@ namespace WebUI.Controllers
 
             if (feature?.Error != null)
             {
-                _logger.LogError(feature.Error,
-                    "İşlenmeyen sunucu hatası — Yol: {Path}", feature.Path);
+                _logger.LogError(feature.Error,"İşlenmeyen sunucu hatası — Yol: {Path}", feature.Path);
             }
 
             return View("500");

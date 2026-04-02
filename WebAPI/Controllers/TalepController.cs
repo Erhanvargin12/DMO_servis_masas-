@@ -1,11 +1,6 @@
-using Business.Abstract;
-using Entities.Concrete;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-
 namespace WebAPI.Controllers;
 
-[ApiController]
+/*[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 public class TalepController : ControllerBase
@@ -19,16 +14,15 @@ public class TalepController : ControllerBase
         _env = env;
     }
 
-    // ── Talep CRUD ─────────────────────────────────────────────────────────
-
     [HttpGet("getall")]
-    public IActionResult GetAll([FromQuery] int? olusturanId, [FromQuery] int? atananId, [FromQuery] int? durum)
+    public IActionResult GetAll()
     {
-        var result = _talepService.GetAll(
-            olusturanId,
-            atananId,
-            durum.HasValue ? (TalepDurum)durum.Value : null);
-        return result.Success ? Ok(result) : BadRequest(result);
+        var result = _talepService.GetAll();
+        if (result.Success)
+        {
+            return Ok(result);
+        }
+        return BadRequest(result);
     }
 
     [HttpGet("getbyid/{id}")]
@@ -59,29 +53,6 @@ public class TalepController : ControllerBase
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    [HttpPost("kapat")]
-    public IActionResult Kapat([FromBody] TalepIslemDto dto)
-    {
-        var result = _talepService.TalepKapat(dto.TalepId, dto.KullaniciId);
-        return result.Success ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpPost("iptal")]
-    public IActionResult Iptal([FromBody] TalepIslemDto dto)
-    {
-        var result = _talepService.TalepIptal(dto.TalepId, dto.KullaniciId);
-        return result.Success ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpPost("durum")]
-    public IActionResult DurumGuncelle([FromBody] TalepDurumDto dto)
-    {
-        var result = _talepService.DurumGuncelle(dto.TalepId, (TalepDurum)dto.Durum, dto.KullaniciId);
-        return result.Success ? Ok(result) : BadRequest(result);
-    }
-
-    // ── Yanıt ──────────────────────────────────────────────────────────────
-
     [HttpGet("yanitlar/{talepId}")]
     public IActionResult GetYanitlar(int talepId)
     {
@@ -89,21 +60,6 @@ public class TalepController : ControllerBase
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    [HttpPost("yanitekle")]
-    public IActionResult YanitEkle([FromBody] TalepYanit yanit)
-    {
-        var result = _talepService.YanitEkle(yanit);
-        return result.Success ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpPost("yanitsil")]
-    public IActionResult YanitSil([FromBody] YanitIslemDto dto)
-    {
-        var result = _talepService.YanitSil(dto.YanitId, dto.KullaniciId);
-        return result.Success ? Ok(result) : BadRequest(result);
-    }
-
-    // ── Chat ───────────────────────────────────────────────────────────────
 
     [HttpGet("chat/{talepId}")]
     public IActionResult GetChat(int talepId)
@@ -119,8 +75,6 @@ public class TalepController : ControllerBase
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    // ── Atama ──────────────────────────────────────────────────────────────
-
     [HttpGet("atamalar/{talepId}")]
     public IActionResult GetAtamalar(int talepId)
     {
@@ -135,8 +89,6 @@ public class TalepController : ControllerBase
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    // ── Sevk ───────────────────────────────────────────────────────────────
-
     [HttpGet("sevkler/{talepId}")]
     public IActionResult GetSevkler(int talepId)
     {
@@ -150,8 +102,6 @@ public class TalepController : ControllerBase
         var result = _talepService.TalepSevket(sevk);
         return result.Success ? Ok(result) : BadRequest(result);
     }
-
-    // ── Ek (Dosya) ─────────────────────────────────────────────────────────
 
     [HttpGet("ekler/{talepId}")]
     public IActionResult GetEkler(int talepId)
@@ -237,8 +187,6 @@ public class TalepController : ControllerBase
         return File(bytes, ek.DosyaTipi, ek.DosyaAdi);
     }
 
-    // ── Kategori ───────────────────────────────────────────────────────────
-
     [HttpGet("kategoriler")]
     public IActionResult GetKategoriler()
     {
@@ -268,7 +216,6 @@ public class TalepController : ControllerBase
     }
 }
 
-// ── Request DTOs ────────────────────────────────────────────────────────────
 
 public record IdDto(int Id);
 public record TalepIslemDto(int TalepId, int KullaniciId);
@@ -282,5 +229,4 @@ public class EkEkleDto
     public int? YanitId { get; set; }
     public int KullaniciId { get; set; }
     public IFormFile? Dosya { get; set; }
-}
-
+}*/

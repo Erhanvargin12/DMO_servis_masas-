@@ -1,17 +1,14 @@
-@model WebUI.Models.MenuListViewModel
+@using WebUI.Models
+@using WebUI.Models.ViewModels
+@model MenuViewModel
 @{
     ViewData["Title"] = "Menüler";
-    var parentMenus = Model.Menus.Where(m => m.ParentId == null).OrderBy(m => m.DisplayOrder).ToList();
-    var orphans = Model.Menus.Where(m => m.ParentId != null && !parentMenus.Any(p => p.Id == m.ParentId)).ToList();
 }
 
-<!-- Page Header -->
 <div class="mgmt-page-header">
     <div class="mgmt-page-header-left">
         <div class="mgmt-page-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
+            <i class="fa-solid fa-bars"></i>
         </div>
         <div>
             <div class="mgmt-page-title">Menü Yönetimi</div>
@@ -19,64 +16,65 @@
         </div>
     </div>
     <button type="button" class="btn btn-primary" data-modal-open="menuModal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
+        <i class="fa-solid fa-plus"></i>
         Yeni Menü
     </button>
 </div>
 
-<!-- Data Table -->
+<!-- Filtre Çubuğu -->
+<div class="data-table" style="margin-bottom:16px;">
+    <div class="filter-wrap">
+        <div class="filter-form">
+            <div class="filter-row">
+                <div class="data-table-search filter-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" placeholder="Menü ara..." id="tableSearch" autocomplete="off" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="data-table">
     <div class="data-table-header">
         <div class="data-table-title">
             <span>Menü Listesi</span>
-            <span class="stat-chip">@Model.TotalCount kayıt</span>
+            <span class="stat-chip"></span>
         </div>
-        <div class="data-table-actions">
-            <div class="data-table-search">
-                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <input type="text" placeholder="Menü ara..." id="tableSearch" autocomplete="off" />
-            </div>
-        </div>
+        <div class="data-table-actions"></div>
     </div>
 
     <div class="table-container">
-        <table class="table mgmt-table" id="menusTable">
+        <table class="table mgmt-table" data-paginate data-page-size="10">
             <thead>
                 <tr>
-                    <th width="35%">Menü Adı</th>
-                    <th width="20%">URL</th>
-                    <th width="10%">İkon</th>
-                    <th width="8%">Sıra</th>
-                    <th width="10%">Durum</th>
-                    <th width="17%"></th>
+                    <th>Menü Adı</th>
+                    <th class="col-hide-md">URL</th>
+                    <th class="col-hide-md">İkon</th>
+                    <th class="col-hide-md">Sıra</th>
+                    <th>Durum</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                @if (parentMenus.Any() || orphans.Any())
+                @if (Model.Menu.Any() || Model.Orphans.Any())
                 {
-                    @foreach (var parent in parentMenus)
+                    @foreach (var parent in Model.Menu)
                     {
-                        var children = Model.Menus.Where(m => m.ParentId == parent.Id).OrderBy(m => m.DisplayOrder).ToList();
-                        var hasChildren = children.Any();
+                        var hasChildren = parent.Childrens.Any();
 
                         <tr class="menu-row-parent @(hasChildren ? "has-children" : "")"
-                            data-item-id="@parent.Id"
+                            data-item-id="@parent.Parent.Id"
                             data-parent="true"
-                            data-group-id="group-@parent.Id"
-                            data-role-ids='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(parent.AssignedRoleIds))'
-                            data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(parent, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
-                            <td>
+                            data-group-id="group-@parent.Parent.Id"
+                            data-role-ids='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(parent.Claims.Select(c => c.OperationClaimId)))'
+                            data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(parent.Parent, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
+                            <td data-label="Menü Adı">
                                 <div class="entity-cell">
                                     @if (hasChildren)
                                     {
-                                        <button type="button" class="tree-toggle-btn menu-tree-toggle" data-group="group-@parent.Id" title="Alt menüleri göster/gizle">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                                <polyline points="6 9 12 15 18 9"></polyline>
-                                            </svg>
+                                        <button type="button" class="tree-toggle-btn menu-tree-toggle" data-group="group-@parent.Parent.Id" title="Alt menüleri göster/gizle">
+                                            <i class="fa-solid fa-chevron-down"></i>
                                         </button>
                                     }
                                     else
@@ -84,161 +82,116 @@
                                         <span style="width:22px;display:inline-block;flex-shrink:0;"></span>
                                     }
                                     <div class="entity-badge entity-badge-menu">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                                        </svg>
+                                        <i class="fa-solid fa-folder"></i>
                                     </div>
                                     <div class="entity-info">
-                                        <span class="entity-name">@parent.Name</span>
-                                        @if (!string.IsNullOrEmpty(parent.Description))
+                                        <span class="entity-name">@parent.Parent.Name</span>
+                                        @if (!string.IsNullOrEmpty(parent.Parent.Description))
                                         {
-                                            <span class="entity-meta">@parent.Description</span>
+                                            <span class="entity-meta">@parent.Parent.Description</span>
                                         }
                                     </div>
                                     @if (hasChildren)
                                     {
-                                        <span class="child-count-badge">@children.Count alt</span>
+                                        <span class="child-count-badge">@parent.Childrens.Count alt</span>
                                     }
                                 </div>
                             </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(parent.Url))
+                            <td class="col-hide-md">
+                                @if (!string.IsNullOrEmpty(parent.Parent.Url))
                                 {
-                                    <span class="entity-url">@parent.Url</span>
+                                    <span class="entity-url">@parent.Parent.Url</span>
                                 }
                                 else { <span class="text-muted">—</span> }
                             </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(parent.Icon))
+                            <td class="col-hide-md">
+                                @if (!string.IsNullOrEmpty(parent.Parent.Icon))
                                 {
-                                    <span class="badge badge-info">@parent.Icon</span>
+                                    <span class="badge badge-info">@parent.Parent.Icon</span>
                                 }
                                 else { <span class="text-muted">—</span> }
                             </td>
-                            <td class="text-center"><span class="entity-id">@parent.DisplayOrder</span></td>
-                            <td>
-                                <span class="badge @(parent.IsActive ? "badge-success" : "badge-error")">
-                                    @(parent.IsActive ? "Aktif" : "Pasif")
+                            <td class="text-center col-hide-md"><span class="entity-id">@parent.Parent.DisplayOrder</span></td>
+                            <td data-label="Durum">
+                                <span class="badge @(parent.Parent.IsActive ? "badge-success" : "badge-error")">
+                                    @(parent.Parent.IsActive ? "Aktif" : "Pasif")
                                 </span>
                             </td>
                             <td>
                                 <div class="table-actions">
-                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Rol Ata"
-                                            data-assign-roles data-item-id="@parent.Id">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Rol Ata" data-assign-roles data-item-id="@parent.Parent.Id">
+                                        <i class="fa-solid fa-shield-halved"></i>
                                     </button>
                                     <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Düzenle"
-                                            data-modal-open="menuModal" data-item-id="@parent.Id">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            data-modal-open="menuModal" data-item-id="@parent.Parent.Id">
+                                        <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                     <button type="button" class="btn btn-icon btn-ghost btn-sm btn-icon-danger" title="Sil"
-                                            data-delete="@parent.Id" data-delete-name="@parent.Name">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                            data-delete="@parent.Parent.Id" data-delete-name="@parent.Parent.Name">
+                                        <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </div>
                             </td>
                         </tr>
 
-                        @foreach (var child in children)
+                        @foreach (var child in parent.Childrens)
                         {
-                            var isLast = child == children.Last();
+                            var isLast = child == parent.Childrens.Last();
                             <tr class="menu-row-child"
-                                data-item-id="@child.Id"
+                                data-item-id="@child.Children.Id"
                                 data-child="true"
-                                data-group="group-@parent.Id"
-                                data-role-ids='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(child.AssignedRoleIds))'
-                                data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(child, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
-                                <td>
+                                data-group="group-@parent.Parent.Id"
+                                data-role-ids='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(child.Claims.Select(c=>c.OperationClaimId)))'
+                                data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(child.Children, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
+                                <td data-label="Menü Adı">
                                     <div class="entity-cell" style="padding-left: 30px;">
                                         <span class="tree-connector @(isLast ? "last" : "")"></span>
                                         <div class="entity-badge entity-badge-menu-child">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-                                                <polyline points="13 2 13 9 20 9"/>
-                                            </svg>
+                                            <i class="fa-solid fa-file"></i>
                                         </div>
                                         <div class="entity-info">
-                                            <span class="entity-name" style="font-weight:400;color:var(--text-secondary);">@child.Name</span>
+                                            <span class="entity-name" style="font-weight:400;color:var(--text-secondary);">@child.Children.Name</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(child.Url))
+                                <td class="col-hide-md">
+                                    @if (!string.IsNullOrEmpty(child.Children.Url))
                                     {
-                                        <span class="entity-url">@child.Url</span>
+                                        <span class="entity-url">@child.Children.Url</span>
                                     }
                                     else { <span class="text-muted">—</span> }
                                 </td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(child.Icon))
+                                <td class="col-hide-md">
+                                    @if (!string.IsNullOrEmpty(child.Children.Icon))
                                     {
-                                        <span class="badge badge-info">@child.Icon</span>
+                                        <span class="badge badge-info">@child.Children.Icon</span>
                                     }
                                     else { <span class="text-muted">—</span> }
                                 </td>
-                                <td class="text-center"><span class="entity-id">@child.DisplayOrder</span></td>
-                                <td>
-                                    <span class="badge @(child.IsActive ? "badge-success" : "badge-error")">
-                                        @(child.IsActive ? "Aktif" : "Pasif")
+                                <td class="text-center col-hide-md"><span class="entity-id">@child.Children.DisplayOrder</span></td>
+                                <td data-label="Durum">
+                                    <span class="badge @(child.Children.IsActive ? "badge-success" : "badge-error")">
+                                        @(child.Children.IsActive ? "Aktif" : "Pasif")
                                     </span>
                                 </td>
                                 <td>
                                     <div class="table-actions">
                                         <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Rol Ata"
-                                                data-assign-roles data-item-id="@child.Id">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                                data-assign-roles data-item-id="@child.Children.Id">
+                                            <i class="fa-solid fa-shield-halved"></i>
                                         </button>
                                         <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Düzenle"
-                                                data-modal-open="menuModal" data-item-id="@child.Id">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                data-modal-open="menuModal" data-item-id="@child.Children.Id">
+                                            <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
                                         <button type="button" class="btn btn-icon btn-ghost btn-sm btn-icon-danger" title="Sil"
-                                                data-delete="@child.Id" data-delete-name="@child.Name">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                data-delete="@child.Children.Id" data-delete-name="@child.Children.Name">
+                                            <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                         }
-                    }
-
-                    @foreach (var orphan in orphans)
-                    {
-                        <tr data-item-id="@orphan.Id"
-                            data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(orphan, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
-                            <td>
-                                <div class="entity-cell">
-                                    <div class="entity-badge entity-badge-menu-child">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-                                    </div>
-                                    <div class="entity-info">
-                                        <span class="entity-name">@orphan.Name</span>
-                                    </div>
-                                    <span class="badge badge-warning" style="margin-left:6px;font-size:10px;">Üst menü yok</span>
-                                </div>
-                            </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(orphan.Url))
-                                {
-                                    <span class="entity-url">@orphan.Url</span>
-                                }
-                            </td>
-                            <td><span class="text-muted">—</span></td>
-                            <td class="text-center"><span class="entity-id">@orphan.DisplayOrder</span></td>
-                            <td><span class="badge @(orphan.IsActive ? "badge-success" : "badge-error")">@(orphan.IsActive ? "Aktif" : "Pasif")</span></td>
-                            <td>
-                                <div class="table-actions">
-                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Düzenle"
-                                            data-modal-open="menuModal" data-item-id="@orphan.Id">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                    </button>
-                                    <button type="button" class="btn btn-icon btn-ghost btn-sm btn-icon-danger" title="Sil"
-                                            data-delete="@orphan.Id" data-delete-name="@orphan.Name">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
                     }
                 }
                 else
@@ -247,9 +200,7 @@
                         <td colspan="6">
                             <div class="mgmt-empty">
                                 <div class="mgmt-empty-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                        <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-                                    </svg>
+                                    <i class="fa-solid fa-bars"></i>
                                 </div>
                                 <p class="mgmt-empty-title">Menü bulunamadı</p>
                                 <p class="mgmt-empty-text">Yeni menü eklemek için butonu kullanın</p>
@@ -262,8 +213,7 @@
     </div>
 
     <div class="data-table-footer">
-        <div class="data-table-info" id="paginationInfo">Toplam @Model.TotalCount menü</div>
-        <div class="data-table-pagination" id="pagination"></div>
+        <div class="data-table-info"></div>
     </div>
 </div>
 
@@ -273,9 +223,7 @@
         <div class="modal-header">
             <h3 class="modal-title" data-create-title="Yeni Menü Ekle" data-edit-title="Menü Düzenle">Yeni Menü Ekle</h3>
             <button type="button" class="modal-close" data-modal-close>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <form asp-controller="Menus" asp-action="Save" method="post">
@@ -307,14 +255,14 @@
                         <label class="form-label">İkon</label>
                         <select name="Icon" class="form-input">
                             <option value="">Seçiniz</option>
-                            <option value="dashboard">📊 Dashboard</option>
-                            <option value="users">👥 Kullanıcılar</option>
-                            <option value="roles">🛡️ Roller</option>
-                            <option value="menu">☰ Menü</option>
-                            <option value="settings">⚙️ Ayarlar</option>
-                            <option value="logs">📋 Loglar</option>
-                            <option value="folder">📁 Klasör</option>
-                            <option value="organization">🏢 Organizasyon</option>
+                            <option value="dashboard">Dashboard</option>
+                            <option value="users">Kullanıcılar</option>
+                            <option value="roles">Roller</option>
+                            <option value="menu">Menü</option>
+                            <option value="settings">Ayarlar</option>
+                            <option value="logs">Loglar</option>
+                            <option value="folder">Klasör</option>
+                            <option value="organization">Organizasyon</option>
                         </select>
                     </div>
                 </div>
@@ -322,10 +270,10 @@
                     <div class="form-group">
                         <label class="form-label">Üst Menü</label>
                         <select name="ParentId" class="form-input">
-                            <option value="0">— Ana Kategori —</option>
-                            @foreach (var parent in parentMenus)
+                            <option value="">— Ana Kategori —</option>
+                            @foreach (var parent in Model.Menu)
                             {
-                                <option value="@parent.Id">@parent.Name</option>
+                                <option value="@parent.Parent.Id">@parent.Parent.Name</option>
                             }
                         </select>
                     </div>
@@ -352,9 +300,7 @@
         <div class="modal-header">
             <h3 class="modal-title">Silme Onayı</h3>
             <button type="button" class="modal-close" data-modal-close>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <form asp-controller="Menus" asp-action="Delete" method="post">
@@ -363,10 +309,7 @@
             <div class="modal-body">
                 <div class="delete-confirm">
                     <div class="delete-confirm-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
+                        <i class="fa-solid fa-trash"></i>
                     </div>
                     <p class="delete-confirm-title">Silmek istediğinize emin misiniz?</p>
                     <p class="delete-confirm-name" id="deleteModalItemName"></p>
@@ -386,9 +329,7 @@
         <div class="modal-header">
             <h3 class="modal-title">Rol Ata</h3>
             <button type="button" class="modal-close" data-modal-close>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <form asp-controller="Menus" asp-action="AssignRoles" method="post">
@@ -397,9 +338,7 @@
             <div class="modal-body">
                 <div class="assign-entity-info" style="margin-bottom:16px;">
                     <div class="assign-entity-badge" id="rolesModalBadge">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-                        </svg>
+                        <i class="fa-solid fa-bars"></i>
                     </div>
                     <div>
                         <div class="assign-entity-name" id="rolesModalName">—</div>
@@ -433,7 +372,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn" data-modal-close>İptal</button>
                 <button type="submit" class="btn btn-primary">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    <i class="fa-solid fa-check"></i>
                     Rolleri Kaydet
                 </button>
             </div>

@@ -64,37 +64,22 @@ public static class Messages
     public const string MenuDeleted = "Menü başarıyla silindi!";
     public const string MenuNotFound = "Menü bulunamadı!";
     public const string MenuAlreadyExists = "Bu menü zaten mevcut!";
+    public const string ParentMenuNotFound = "Üst menü bulunamadı!";
     public const string MenuHasChildren = "Bu menünün alt menüleri var, önce onları silin!";
     #endregion
 
-    #region Talep Messages
-    public const string TaleplerListelendi = "Talepler listelendi.";
-    public const string TalepOlusturuldu = "Talep başarıyla oluşturuldu!";
-    public const string TalepGuncellendi = "Talep başarıyla güncellendi!";
-    public const string TalepSilindi = "Talep başarıyla silindi!";
-    public const string TalepBulunamadi = "Talep bulunamadı!";
-    public const string TalepBaslikGecersiz = "Talep başlığı en az 5 karakter olmalıdır!";
-    public const string TalepDurumuGuncellendi = "Talep durumu güncellendi!";
-    public const string TalepAtandi = "Talep kullanıcıya atandı!";
-    public const string TalepSevkedildi = "Talep başarıyla sevk edildi!";
-    public const string SevkHedefGerekli = "Sevk için hedef kullanıcı veya rol seçilmelidir!";
+    #region Ticket Messages
+    public const string TicketsListed = "Talepler listelendi.";
+    public const string TicketCreated = "Talep başarıyla oluşturuldu!";
+    public const string TicketUpdated = "Talep başarıyla güncellendi!";
+    public const string TicketDeleted = "Talep başarıyla silindi!";
+    public const string TicketNotFound = "Talep bulunamadı!";
+    public const string TicketTitleInvalid = "Talep başlığı en az 5 karakter olmalıdır!";
+    public const string TicketStatusUpdated = "Talep durumu güncellendi!";
+    public const string TicketAssigned = "Talep kullanıcıya atandı!";
+    public const string TicketTransferred = "Talep başarıyla sevk edildi!";
+    public const string TransferTargetRequired = "Sevk için hedef kullanıcı veya rol seçilmelidir!";
 
-    public const string YanitEklendi = "Yanıt başarıyla eklendi!";
-    public const string YanitSilindi = "Yanıt silindi!";
-    public const string YanitBulunamadi = "Yanıt bulunamadı!";
-    public const string YanitIcerikBos = "Yanıt içeriği boş olamaz!";
-
-    public const string ChatMesajEklendi = "Mesaj gönderildi!";
-    public const string ChatMesajBos = "Mesaj boş olamaz!";
-
-    public const string EkEklendi = "Dosya başarıyla eklendi!";
-    public const string EkSilindi = "Dosya silindi!";
-    public const string EkBulunamadi = "Dosya bulunamadı!";
-
-    public const string KategoriEklendi = "Kategori başarıyla eklendi!";
-    public const string KategoriGuncellendi = "Kategori güncellendi!";
-    public const string KategoriSilindi = "Kategori silindi!";
-    public const string KategoriBulunamadi = "Kategori bulunamadı!";
     #endregion
 
     #region MenuOperationClaim Messages

@@ -1,3 +1,4 @@
+using Core.Entities.DTOs;
 using Core.Utilities.Results;
 using Entities.Concrete;
 using System.Linq.Expressions;
@@ -9,6 +10,7 @@ public interface IMenuOperationClaimService
     IDataResult<List<MenuOperationClaim>> GetAll(Expression<Func<MenuOperationClaim, bool>> filter = null);
     IDataResult<List<MenuOperationClaim>> GetByMenuId(int menuId);
     IResult Add(MenuOperationClaim menuOperationClaim);
+    IResult Update(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto);
     IResult Delete(MenuOperationClaim menuOperationClaim);
     IResult DeleteByMenuId(int menuId);
 }

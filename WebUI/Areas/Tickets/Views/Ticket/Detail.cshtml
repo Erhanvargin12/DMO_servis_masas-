@@ -1,0 +1,597 @@
+@model WebUI.Areas.Tickets.Models.TicketDetailViewModel
+@{
+    ViewData["Title"] = $"Talep - {Model.Ticket?.TicketNo}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/pages/tickets.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var s = document.getElementById('tempSuccess');
+            var e = document.getElementById('tempError');
+            if (s && s.dataset.message && window.AdminUI) AdminUI.Toast.success(s.dataset.message);
+            if (e && e.dataset.message && window.AdminUI) AdminUI.Toast.error(e.dataset.message);
+        });
+    </script>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div id="tempSuccess" data-message="@TempData["SuccessMessage"]"></div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div id="tempError" data-message="@TempData["ErrorMessage"]"></div>
+}
+
+<!-- Page Header -->
+<div class="ticket-detail-header">
+    <div class="ticket-detail-header-top">
+        <a asp-area="Tickets" asp-controller="Ticket" asp-action="Index" class="ticket-back-link">
+            <i class="fa-solid fa-arrow-left"></i>
+            Geri
+        </a>
+        <span class="ticket-breadcrumb-sep">/</span>
+        <span class="ticket-detail-no-inline">@Model.Ticket?.TicketNo</span>
+    </div>
+</div>
+
+@{
+    string FileIcon(string fn) {
+        var ext = System.IO.Path.GetExtension(fn).TrimStart('.').ToLower();
+        return ext switch { "pdf" => "fa-file-pdf", "doc" or "docx" => "fa-file-word",
+            "xls" or "xlsx" => "fa-file-excel", "zip" or "rar" => "fa-file-zipper",
+            "jpg" or "jpeg" or "png" or "gif" or "webp" => "fa-file-image",
+            "txt" => "fa-file-lines", _ => "fa-file" };
+    }
+    string FileColor(string fn) {
+        var ext = System.IO.Path.GetExtension(fn).TrimStart('.').ToLower();
+        return ext switch { "pdf" => "attach-icon-pdf", "doc" or "docx" => "attach-icon-word",
+            "xls" or "xlsx" => "attach-icon-excel", "zip" or "rar" => "attach-icon-zip",
+            "jpg" or "jpeg" or "png" or "gif" or "webp" => "attach-icon-img", _ => "attach-icon-default" };
+    }
+    string SenderName(int id) {
+        var u = Model.Personnel.FirstOrDefault(p => p.Id == id);
+        return u != null ? $"{u.FirstName} {u.LastName}" : $"Kullanıcı #{id}";
+    }
+    string SenderInitials(int id) {
+        var u = Model.Personnel.FirstOrDefault(p => p.Id == id);
+        return u != null ? $"{u.FirstName[0]}{u.LastName[0]}" : "#";
+    }
+}
+
+<!-- Main Layout: Left (Description + Replies) | Right (Info + Actions) -->
+<div class="ticket-detail-layout">
+
+    <!-- Left: Description + Reply History -->
+    <div class="ticket-detail-main">
+
+        <!-- Description + Attachments -->
+        <div class="data-table">
+            <div class="ticket-section-header">
+                <div class="ticket-section-title">
+                    <i class="fa-solid fa-file-lines" style="color:var(--accent);"></i>
+                    Açıklama
+                </div>
+            </div>
+            <div class="ticket-section-body">
+                @if (!string.IsNullOrWhiteSpace(Model.Ticket?.Description))
+                {
+                    <p class="ticket-desc-text">@Model.Ticket.Description</p>
+                }
+                else
+                {
+                    <div class="ticket-empty-state">
+                        <i class="fa-regular fa-file" style="font-size:1.5rem;margin-bottom:6px;display:block;"></i>
+                        Açıklama girilmemiş
+                    </div>
+                }
+                @if (Model.Attachments.Any())
+                {
+                    <div class="ticket-attachments">
+                        <div class="ticket-attach-label">
+                            <i class="fa-solid fa-paperclip"></i>
+                            Ekler (@Model.Attachments.Count)
+                        </div>
+                        <div class="ticket-attach-grid">
+                            @foreach (var att in Model.Attachments)
+                            {
+                                <a href="@att.FilePath" target="_blank" class="ticket-attach-item" title="@att.FileName">
+                                    <div class="ticket-attach-icon @FileColor(att.FileName)">
+                                        <i class="fa-solid @FileIcon(att.FileName)"></i>
+                                    </div>
+                                    <div class="ticket-attach-info">
+                                        <span class="ticket-attach-name">@att.FileName</span>
+                                        <span class="ticket-attach-date">@att.CreatedAt.ToString("dd.MM.yyyy")</span>
+                                    </div>
+                                    <i class="fa-solid fa-download ticket-attach-dl"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Replies -->
+        <div class="data-table">
+            <div class="ticket-section-header">
+                <div class="ticket-section-title">
+                    <i class="fa-solid fa-comments" style="color:var(--accent);"></i>
+                    Yanıtlar
+                    @if (Model.Responses.Any())
+                    {
+                        <span class="stat-chip" style="margin-left:6px;">@Model.Responses.Count</span>
+                    }
+                </div>
+                @if (Model.Ticket?.StatusId != 6)
+                {
+                    <button type="button" class="btn btn-primary btn-sm" data-modal-open="replyModal">
+                        <i class="fa-solid fa-reply"></i>
+                        Yanıt Ekle
+                    </button>
+                }
+            </div>
+            <div class="ticket-section-body ticket-replies-body">
+                @if (Model.Responses.Any())
+                {
+                    @foreach (var r in Model.Responses.OrderBy(x => x.CreatedAt))
+                    {
+                        <div class="reply-card @(r.IsInternal ? "reply-card-internal" : "")">
+                            <div class="reply-header">
+                                <div class="entity-badge-user">@SenderInitials(r.SenderId)</div>
+                                <div class="reply-meta">
+                                    <span class="reply-user">
+                                        @SenderName(r.SenderId)
+                                        @if (r.IsInternal)
+                                        {
+                                            <span class="badge reply-internal-badge">
+                                                <i class="fa-solid fa-lock"></i> Sevk Notu
+                                            </span>
+                                        }
+                                    </span>
+                                    <span class="reply-date">@r.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                            <div class="reply-content">@r.Message</div>
+                            @if (r.Attachments.Any())
+                            {
+                                <div class="ticket-attachments" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);">
+                                    <div class="ticket-attach-grid">
+                                        @foreach (var att in r.Attachments)
+                                        {
+                                            <a href="@att.FilePath" target="_blank" class="ticket-attach-item" title="@att.FileName">
+                                                <div class="ticket-attach-icon @FileColor(att.FileName)">
+                                                    <i class="fa-solid @FileIcon(att.FileName)"></i>
+                                                </div>
+                                                <div class="ticket-attach-info">
+                                                    <span class="ticket-attach-name">@att.FileName</span>
+                                                    <span class="ticket-attach-date">@att.CreatedAt.ToString("dd.MM.yyyy")</span>
+                                                </div>
+                                                <i class="fa-solid fa-download ticket-attach-dl"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="ticket-empty-state">
+                        <i class="fa-regular fa-comment-dots" style="font-size:1.8rem;margin-bottom:8px;display:block;"></i>
+                        Henüz yanıt bulunmuyor
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Info + Actions -->
+    <div class="ticket-detail-sidebar">
+
+        <!-- Talep Bilgileri -->
+        <div class="data-table">
+            <div class="ticket-section-header">
+                <div class="ticket-section-title">
+                    <i class="fa-solid fa-circle-info" style="color:var(--accent);"></i>
+                    Talep Bilgileri
+                </div>
+            </div>
+            <div class="ticket-section-body">
+                <div class="ticket-info-list">
+                    <div class="ticket-info-item">
+                        <span class="ticket-info-label">Talep No</span>
+                        <span class="ticket-info-value mono">@Model.Ticket?.TicketNo</span>
+                    </div>
+                    <div class="ticket-info-item">
+                        <span class="ticket-info-label">Durum</span>
+                        <span class="ticket-info-value">
+                            <span class="badge @Model.StatusBadge">@Model.StatusLabel</span>
+                        </span>
+                    </div>
+                    <div class="ticket-info-item">
+                        <span class="ticket-info-label">Öncelik</span>
+                        <span class="ticket-info-value">
+                            <span class="badge @Model.PriorityBadge">@Model.PriorityLabel</span>
+                        </span>
+                    </div>
+                    <div class="ticket-info-item">
+                        <span class="ticket-info-label">Atanan Personel</span>
+                        <span class="ticket-info-value">
+                            @{
+                                var assigned = Model.Ticket?.AssignedUserId.HasValue == true
+                                    ? Model.Personnel.FirstOrDefault(u => u.Id == Model.Ticket.AssignedUserId)
+                                    : null;
+                            }
+                            @if (assigned != null)
+                            {
+                                <span>@assigned.FirstName @assigned.LastName</span>
+                            }
+                            else if (Model.Ticket?.AssignedUserId.HasValue == true)
+                            {
+                                <span class="text-muted">#@Model.Ticket.AssignedUserId</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Atanmadı</span>
+                            }
+                        </span>
+                    </div>
+                    <div class="ticket-info-item">
+                        <span class="ticket-info-label">Oluşturma Tarihi</span>
+                        <span class="ticket-info-value">@Model.Ticket?.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                    @if (Model.Ticket?.UpdatedAt.HasValue == true)
+                    {
+                        <div class="ticket-info-item">
+                            <span class="ticket-info-label">Son Güncelleme</span>
+                            <span class="ticket-info-value">@Model.Ticket.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                    }
+                    @if (Model.Ticket?.ClosedAt.HasValue == true)
+                    {
+                        <div class="ticket-info-item">
+                            <span class="ticket-info-label">Kapanış Tarihi</span>
+                            <span class="ticket-info-value">@Model.Ticket.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- İşlemler -->
+        <div class="data-table">
+            <div class="ticket-section-header">
+                <div class="ticket-section-title">
+                    <i class="fa-solid fa-bolt" style="color:var(--accent);"></i>
+                    İşlemler
+                </div>
+            </div>
+            <div class="ticket-section-body">
+                <div class="ticket-actions-list">
+                    @if (Model.Ticket?.StatusId != 6)
+                    {
+                        <button type="button" class="ticket-action-btn" data-modal-open="replyModal">
+                            <i class="fa-solid fa-reply"></i>
+                            <span>Yanıt Ekle</span>
+                            <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
+                        </button>
+                        <button type="button" class="ticket-action-btn" data-modal-open="assignModal">
+                            <i class="fa-solid fa-user-check"></i>
+                            <span>Personel Ata</span>
+                            <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
+                        </button>
+                        <button type="button" class="ticket-action-btn" data-modal-open="statusModal">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Durum Değiştir</span>
+                            <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
+                        </button>
+                        <button type="button" class="ticket-action-btn" data-modal-open="transferModal">
+                            <i class="fa-solid fa-share-nodes"></i>
+                            <span>Sevk Et</span>
+                            <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
+                        </button>
+                        <button type="button" class="ticket-action-btn ticket-action-danger" data-modal-open="closeModal">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                            <span>Talebi Kapat</span>
+                            <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
+                        </button>
+                    }
+                    <button type="button" class="ticket-action-btn" data-modal-open="historyModal">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Talep Geçmişi</span>
+                        <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ───────────────────── MODALS ───────────────────── -->
+
+<!-- Reply Modal -->
+<div class="modal-overlay" id="replyModal">
+    <div class="modal modal-md">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-reply" style="margin-right:8px;color:var(--accent);"></i>
+                Yanıt Ekle
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="Ticket" asp-action="Reply" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Yanıt</label>
+                    <textarea name="content" class="form-input form-textarea" rows="6"
+                              placeholder="Yanıtınızı buraya yazın..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Dosya Ekle <span class="text-muted" style="font-weight:400;">(opsiyonel)</span></label>
+                    <div class="file-drop-zone" data-file-drop>
+                        <input type="file" name="attachments" multiple
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip" />
+                        <div class="file-drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div class="file-drop-title">Dosyaları buraya sürükleyin veya <span>seçmek için tıklayın</span></div>
+                        <div class="file-drop-hint">PDF, Word, Excel, görsel, zip &nbsp;·&nbsp; maks. 10 MB/dosya</div>
+                    </div>
+                    <div class="file-list" data-file-list></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    Gönder
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assign Personnel Modal -->
+<div class="modal-overlay" id="assignModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-user-check" style="margin-right:8px;color:var(--accent);"></i>
+                Personel Ata
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="Ticket" asp-action="Assign" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Personel Seç</label>
+                    <select name="assignedUserId" class="form-input" required>
+                        <option value="">Seçiniz...</option>
+                        @foreach (var user in Model.Personnel)
+                        {
+                            <option value="@user.Id"
+                                    selected="@(Model.Ticket?.AssignedUserId == user.Id ? "selected" : null)">
+                                @user.FirstName @user.LastName
+                            </option>
+                        }
+                    </select>
+                    @if (!Model.Personnel.Any())
+                    {
+                        <span class="form-help" style="color:var(--warning);">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Aktif personel bulunamadı.
+                        </span>
+                    }
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Not <span class="text-muted" style="font-weight:400;">(opsiyonel)</span></label>
+                    <textarea name="note" class="form-input form-textarea" rows="3"
+                              placeholder="Atama notu ekleyin..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary" @(!Model.Personnel.Any() ? "disabled" : "")>
+                    <i class="fa-solid fa-user-check"></i>
+                    Ata
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Change Status Modal -->
+<div class="modal-overlay" id="statusModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-rotate" style="margin-right:8px;color:var(--accent);"></i>
+                Durum Değiştir
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="Ticket" asp-action="ChangeStatus" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Yeni Durum</label>
+                    <select name="statusId" class="form-input">
+                        <option value="1" selected="@(Model.Ticket?.StatusId == 1 ? "selected" : null)">Açık</option>
+                        <option value="2" selected="@(Model.Ticket?.StatusId == 2 ? "selected" : null)">Atandı</option>
+                        <option value="3" selected="@(Model.Ticket?.StatusId == 3 ? "selected" : null)">İşlemde</option>
+                        <option value="4" selected="@(Model.Ticket?.StatusId == 4 ? "selected" : null)">Beklemede</option>
+                        <option value="5" selected="@(Model.Ticket?.StatusId == 5 ? "selected" : null)">Çözüldü</option>
+                        <option value="6" selected="@(Model.Ticket?.StatusId == 6 ? "selected" : null)">Kapatıldı</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Not <span class="text-muted" style="font-weight:400;">(opsiyonel)</span></label>
+                    <textarea name="note" class="form-input form-textarea" rows="3"
+                              placeholder="Durum değişikliği için not ekleyin..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-check"></i>
+                    Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Transfer Modal -->
+<div class="modal-overlay" id="transferModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-share-nodes" style="margin-right:8px;color:var(--accent);"></i>
+                Sevk Et
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="Ticket" asp-action="Transfer" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Kullanıcı / Birim</label>
+                    <select name="targetUserId" class="form-input">
+                        <option value="">Seçiniz...</option>
+                        <!-- API'den kullanıcı listesi gelecek -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sevk Notu <span class="text-muted" style="font-weight:400;">(opsiyonel)</span></label>
+                    <textarea name="note" class="form-input form-textarea" rows="3"
+                              placeholder="Sevk notunuzu buraya yazın..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    Sevk Et
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- History Modal -->
+<div class="modal-overlay" id="historyModal">
+    <div class="modal modal-md">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-clock-rotate-left" style="margin-right:8px;color:var(--accent);"></i>
+                Talep Geçmişi
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px;">
+            <div class="history-timeline">
+                @{
+                    string HistoryIcon(string t) => t switch {
+                        "created"     => "fa-plus-circle",
+                        "status"      => "fa-rotate",
+                        "assigned"    => "fa-user-check",
+                        "replied"     => "fa-reply",
+                        "transferred" => "fa-share-nodes",
+                        "closed"      => "fa-circle-xmark",
+                        "note"        => "fa-lock",
+                        _             => "fa-circle"
+                    };
+                }
+                @foreach (var h in Model.History.OrderBy(x => x.Date))
+                {
+                    <div class="history-item history-item-@h.Type">
+                        <div class="history-icon">
+                            <i class="fa-solid @HistoryIcon(h.Type)"></i>
+                        </div>
+                        <div class="history-content">
+                            <div class="history-title">@h.Title</div>
+                            @if (!string.IsNullOrEmpty(h.Detail))
+                            {
+                                <div class="history-detail">@h.Detail</div>
+                            }
+                            <div class="history-meta">
+                                <span class="history-actor">
+                                    <i class="fa-solid fa-user" style="font-size:10px;"></i>
+                                    @h.ActorName
+                                </span>
+                                <span class="history-date">@h.Date.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn" data-modal-close>Kapat</button>
+        </div>
+    </div>
+</div>
+
+<!-- Close Confirm Modal -->
+<div class="modal-overlay" id="closeModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-circle-xmark" style="margin-right:8px;color:var(--error);"></i>
+                Talebi Kapat
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="Ticket" asp-action="ChangeStatus" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <input type="hidden" name="statusId" value="6" />
+            <div class="modal-body">
+                <div class="delete-confirm-icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <p class="delete-confirm-text">
+                    <strong>@Model.Ticket?.TicketNo</strong> numaralı talep kapatılacak.<br />
+                    Bu işlem geri alınamaz. Devam etmek istiyor musunuz?
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Kapanış Notu <span class="text-muted" style="font-weight:400;">(opsiyonel)</span></label>
+                    <textarea name="note" class="form-input form-textarea" rows="3"
+                              placeholder="Kapanış nedeni veya çözüm notunu yazın..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>Vazgeç</button>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    Evet, Kapat
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+

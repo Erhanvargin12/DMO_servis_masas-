@@ -1,6 +1,7 @@
 using Business.Abstract;
 using Business.BusinessAspects.Autofac;
 using Business.Constants;
+using Core.Entities.DTOs;
 using Core.Utilities.Business;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -9,46 +10,34 @@ using System.Linq.Expressions;
 
 namespace Business.Concrete;
 
+[SecuredOperation("Admin")]
 public class MenuOperationClaimManager : IMenuOperationClaimService
 {
     private readonly IMenuOperationClaimDal _menuOperationClaimDal;
     private readonly IMenuDal _menuDal;
     private readonly IOperationClaimDal _operationClaimDal;
 
-    public MenuOperationClaimManager(
-        IMenuOperationClaimDal menuOperationClaimDal,
-        IMenuDal menuDal,
-        IOperationClaimDal operationClaimDal)
+    public MenuOperationClaimManager(IMenuOperationClaimDal menuOperationClaimDal,IMenuDal menuDal,IOperationClaimDal operationClaimDal)
     {
         _menuOperationClaimDal = menuOperationClaimDal;
         _menuDal = menuDal;
         _operationClaimDal = operationClaimDal;
     }
 
-    [SecuredOperation("Admin")]
+
     public IDataResult<List<MenuOperationClaim>> GetAll(Expression<Func<MenuOperationClaim, bool>> filter = null)
     {
-        return new SuccessDataResult<List<MenuOperationClaim>>(
-            _menuOperationClaimDal.GetAll(filter),
-            Messages.MenuOperationClaimsListed);
+        return new SuccessDataResult<List<MenuOperationClaim>>(_menuOperationClaimDal.GetAll(filter),Messages.MenuOperationClaimsListed);
     }
-
-    [SecuredOperation("Admin")]
     public IDataResult<List<MenuOperationClaim>> GetByMenuId(int menuId)
     {
-        return new SuccessDataResult<List<MenuOperationClaim>>(
-            _menuOperationClaimDal.GetAll(m => m.MenuId == menuId),
-            Messages.MenuOperationClaimsListed);
+        return new SuccessDataResult<List<MenuOperationClaim>>(_menuOperationClaimDal.GetAll(m => m.MenuId == menuId),Messages.MenuOperationClaimsListed);
     }
-
-    [SecuredOperation("Admin")]
     public IResult Add(MenuOperationClaim menuOperationClaim)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfMenuExists(menuOperationClaim.MenuId),
-            CheckIfOperationClaimExists(menuOperationClaim.OperationClaimId),
-            CheckIfMenuOperationClaimAlreadyExists(menuOperationClaim.MenuId, menuOperationClaim.OperationClaimId)
-        );
+        IResult result = BusinessRules.Run(CheckIfMenuExists(menuOperationClaim.MenuId),
+                                           CheckIfOperationClaimExists(menuOperationClaim.OperationClaimId),
+                                           CheckIfMenuOperationClaimAlreadyExists(menuOperationClaim.MenuId, menuOperationClaim.OperationClaimId));
 
         if (result != null)
         {
@@ -58,13 +47,9 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
         _menuOperationClaimDal.Add(menuOperationClaim);
         return new SuccessResult(Messages.MenuOperationClaimAdded);
     }
-
-    [SecuredOperation("Admin")]
     public IResult Delete(MenuOperationClaim menuOperationClaim)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfMenuOperationClaimExists(menuOperationClaim.Id)
-        );
+        IResult result = BusinessRules.Run(CheckIfMenuOperationClaimExists(menuOperationClaim.Id));
 
         if (result != null)
         {
@@ -75,8 +60,27 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
         _menuOperationClaimDal.Delete(existingClaim);
         return new SuccessResult(Messages.MenuOperationClaimDeleted);
     }
+    public IResult Update(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto)
+    {
+        var claims = GetByMenuId(menuOperationClaimUpdateDto.MenuId).Data;
+        var currentIds = claims.Select(x => x.OperationClaimId).ToHashSet();
 
-    [SecuredOperation("Admin")]
+        foreach (var id in menuOperationClaimUpdateDto.RoleIds.Except(currentIds))
+        {
+            var result = Add(new MenuOperationClaim { MenuId = menuOperationClaimUpdateDto.MenuId, OperationClaimId = id });
+            if (!result.Success)
+                return new ErrorResult(Messages.MenuOperationClaimNotFound);
+        }
+            
+        foreach (var claim in claims.Where(x => !menuOperationClaimUpdateDto.RoleIds.Contains(x.OperationClaimId)))
+        {
+            var result = Delete(claim);
+            if (!result.Success)
+                return new ErrorResult(Messages.MenuOperationClaimNotFound);
+        }
+
+        return new SuccessResult(Messages.OperationClaimAdded);
+    }
     public IResult DeleteByMenuId(int menuId)
     {
         var claims = _menuOperationClaimDal.GetAll(m => m.MenuId == menuId);
@@ -87,8 +91,8 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
         return new SuccessResult(Messages.MenuOperationClaimsDeleted);
     }
 
-    #region Business Rules
 
+    #region Business Rules
     private IResult CheckIfMenuExists(int menuId)
     {
         var menu = _menuDal.Get(m => m.Id == menuId);
@@ -98,7 +102,6 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
         }
         return new SuccessResult();
     }
-
     private IResult CheckIfOperationClaimExists(int operationClaimId)
     {
         var claim = _operationClaimDal.Get(o => o.Id == operationClaimId);
@@ -108,7 +111,6 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
         }
         return new SuccessResult();
     }
-
     private IResult CheckIfMenuOperationClaimAlreadyExists(int menuId, int operationClaimId)
     {
         var exists = _menuOperationClaimDal.GetAll(m =>
@@ -120,7 +122,6 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
         }
         return new SuccessResult();
     }
-
     private IResult CheckIfMenuOperationClaimExists(int id)
     {
         var claim = _menuOperationClaimDal.Get(m => m.Id == id);
@@ -130,6 +131,5 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
         }
         return new SuccessResult();
     }
-
     #endregion
 }

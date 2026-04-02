@@ -1,35 +1,28 @@
+using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using WebUI.Models;
-using WebUI.Services.Abstract;
+using WebUI.Core.Services.Abstract;
+using WebUI.Core.Services.Concrete;
+using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers
 {
     [Authorize]
-    public class HomeController : Controller
+    public class HomeController : BaseController
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IUserApiService _userApiService;
-        private readonly IRoleApiService _roleApiService;
-
-        public HomeController(ILogger<HomeController> logger, IUserApiService userApiService, IRoleApiService roleApiService)
-        {
-            _logger = logger;
-            _userApiService = userApiService;
-            _roleApiService = roleApiService;
-        }
+        public HomeController(IApiClient apiClient) : base(apiClient) { }
 
         public async Task<IActionResult> Index()
         {
-            var users = await _userApiService.GetAllAsync();
-            var roles = await _roleApiService.GetAllAsync();
+            var users = await SendRequest<List<User>>("user/getall");
+            var roles = await SendRequest<List<OperationClaim>>("operationclaim/getall");
 
             var model = new DashboardViewModel
             {
-                TotalUsers = users.Count,
-                ActiveUsers = users.Count(u => u.Status),
-                TotalRoles = roles.Count
+                TotalUsers = users.Data.Count,
+                ActiveUsers = users.Data.Count(u => u.Status),
+                TotalRoles = roles.Data.Count
             };
 
             return View(model);
