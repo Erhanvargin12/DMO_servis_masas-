@@ -31,8 +31,7 @@ namespace WebUI.Controllers
             {
                 Menu = menus.Data,
                 Roles = roles.Data,
-                Orphans = new List<Menu>(),
-                TotalCount = menus.Data.Count
+                Orphans = new List<Menu>()
             };
             return View(model);
         }

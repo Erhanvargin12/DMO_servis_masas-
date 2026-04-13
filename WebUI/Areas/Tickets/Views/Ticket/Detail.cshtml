@@ -1,6 +1,6 @@
 @model WebUI.Areas.Tickets.Models.TicketDetailViewModel
 @{
-    ViewData["Title"] = $"Talep - {Model.Ticket?.TicketNo}";
+    ViewData["Title"] = $"Talep - {Model.TicketDto?.Ticket?.TicketNo}";
 }
 
 @section Styles {
@@ -23,12 +23,14 @@
 {
     <div id="tempSuccess" data-message="@TempData["SuccessMessage"]"></div>
 }
+
 @if (TempData["ErrorMessage"] != null)
 {
     <div id="tempError" data-message="@TempData["ErrorMessage"]"></div>
 }
 
-<!-- Page Header -->
+
+
 <div class="ticket-detail-header">
     <div class="ticket-detail-header-top">
         <a asp-area="Tickets" asp-controller="Ticket" asp-action="Index" class="ticket-back-link">
@@ -36,7 +38,7 @@
             Geri
         </a>
         <span class="ticket-breadcrumb-sep">/</span>
-        <span class="ticket-detail-no-inline">@Model.Ticket?.TicketNo</span>
+        <span class="ticket-detail-no-inline">@Model.TicketDto?.Ticket?.TicketNo</span>
     </div>
 </div>
 
@@ -64,13 +66,8 @@
     }
 }
 
-<!-- Main Layout: Left (Description + Replies) | Right (Info + Actions) -->
 <div class="ticket-detail-layout">
-
-    <!-- Left: Description + Reply History -->
     <div class="ticket-detail-main">
-
-        <!-- Description + Attachments -->
         <div class="data-table">
             <div class="ticket-section-header">
                 <div class="ticket-section-title">
@@ -79,9 +76,9 @@
                 </div>
             </div>
             <div class="ticket-section-body">
-                @if (!string.IsNullOrWhiteSpace(Model.Ticket?.Description))
+                @if (!string.IsNullOrWhiteSpace(Model.TicketDto?.Ticket?.Description))
                 {
-                    <p class="ticket-desc-text">@Model.Ticket.Description</p>
+                    <p class="ticket-desc-text">@Model.TicketDto?.Ticket.Description</p>
                 }
                 else
                 {
@@ -90,15 +87,15 @@
                         Açıklama girilmemiş
                     </div>
                 }
-                @if (Model.Attachments.Any())
+                @if (Model.TicketDto.Attachments.Any())
                 {
                     <div class="ticket-attachments">
                         <div class="ticket-attach-label">
                             <i class="fa-solid fa-paperclip"></i>
-                            Ekler (@Model.Attachments.Count)
+                            Ekler (@Model.TicketDto.Attachments.Count)
                         </div>
                         <div class="ticket-attach-grid">
-                            @foreach (var att in Model.Attachments)
+                            @foreach (var att in Model.TicketDto.Attachments)
                             {
                                 <a href="@att.FilePath" target="_blank" class="ticket-attach-item" title="@att.FileName">
                                     <div class="ticket-attach-icon @FileColor(att.FileName)">
@@ -114,32 +111,31 @@
                         </div>
                     </div>
                 }
+
             </div>
         </div>
-
-        <!-- Replies -->
         <div class="data-table">
             <div class="ticket-section-header">
                 <div class="ticket-section-title">
                     <i class="fa-solid fa-comments" style="color:var(--accent);"></i>
                     Yanıtlar
-                    @if (Model.Responses.Any())
+                    @if (Model.TicketDto.Responses.Any())
                     {
-                        <span class="stat-chip" style="margin-left:6px;">@Model.Responses.Count</span>
+                        <span class="stat-chip" style="margin-left:6px;">@Model.TicketDto.Responses.Count</span>
                     }
                 </div>
-                @if (Model.Ticket?.StatusId != 6)
+               @*  @if (Model.Ticket?.StatusId != 6)
                 {
                     <button type="button" class="btn btn-primary btn-sm" data-modal-open="replyModal">
                         <i class="fa-solid fa-reply"></i>
                         Yanıt Ekle
                     </button>
-                }
+                } *@
             </div>
             <div class="ticket-section-body ticket-replies-body">
-                @if (Model.Responses.Any())
+                @if (Model.TicketDto.Responses.Any())
                 {
-                    @foreach (var r in Model.Responses.OrderBy(x => x.CreatedAt))
+                    @foreach (var r in Model.TicketDto.Responses.OrderBy(x => x.CreatedAt))
                     {
                         <div class="reply-card @(r.IsInternal ? "reply-card-internal" : "")">
                             <div class="reply-header">
@@ -178,6 +174,7 @@
                                     </div>
                                 </div>
                             }
+
                         </div>
                     }
                 }
@@ -191,11 +188,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Right: Info + Actions -->
     <div class="ticket-detail-sidebar">
-
-        <!-- Talep Bilgileri -->
         <div class="data-table">
             <div class="ticket-section-header">
                 <div class="ticket-section-title">
@@ -207,7 +200,7 @@
                 <div class="ticket-info-list">
                     <div class="ticket-info-item">
                         <span class="ticket-info-label">Talep No</span>
-                        <span class="ticket-info-value mono">@Model.Ticket?.TicketNo</span>
+                        <span class="ticket-info-value mono">@Model.TicketDto?.Ticket?.TicketNo</span>
                     </div>
                     <div class="ticket-info-item">
                         <span class="ticket-info-label">Durum</span>
@@ -225,17 +218,17 @@
                         <span class="ticket-info-label">Atanan Personel</span>
                         <span class="ticket-info-value">
                             @{
-                                var assigned = Model.Ticket?.AssignedUserId.HasValue == true
-                                    ? Model.Personnel.FirstOrDefault(u => u.Id == Model.Ticket.AssignedUserId)
+                                var assigned = Model.TicketDto?.Ticket?.AssignedUserId.HasValue == true
+                                ? Model.Personnel.FirstOrDefault(u => u.Id == Model.TicketDto?.Ticket.AssignedUserId)
                                     : null;
                             }
                             @if (assigned != null)
                             {
                                 <span>@assigned.FirstName @assigned.LastName</span>
                             }
-                            else if (Model.Ticket?.AssignedUserId.HasValue == true)
+                            else if (Model.TicketDto?.Ticket?.AssignedUserId.HasValue == true)
                             {
-                                <span class="text-muted">#@Model.Ticket.AssignedUserId</span>
+                                <span class="text-muted">#@Model.TicketDto?.Ticket.AssignedUserId</span>
                             }
                             else
                             {
@@ -245,27 +238,25 @@
                     </div>
                     <div class="ticket-info-item">
                         <span class="ticket-info-label">Oluşturma Tarihi</span>
-                        <span class="ticket-info-value">@Model.Ticket?.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        <span class="ticket-info-value">@Model.TicketDto?.Ticket?.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
                     </div>
-                    @if (Model.Ticket?.UpdatedAt.HasValue == true)
+                    @if (Model.TicketDto?.Ticket?.UpdatedAt.HasValue == true)
                     {
                         <div class="ticket-info-item">
                             <span class="ticket-info-label">Son Güncelleme</span>
-                            <span class="ticket-info-value">@Model.Ticket.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            <span class="ticket-info-value">@Model.TicketDto?.Ticket.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
                         </div>
                     }
-                    @if (Model.Ticket?.ClosedAt.HasValue == true)
+                    @if (Model.TicketDto?.Ticket?.ClosedAt.HasValue == true)
                     {
                         <div class="ticket-info-item">
                             <span class="ticket-info-label">Kapanış Tarihi</span>
-                            <span class="ticket-info-value">@Model.Ticket.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            <span class="ticket-info-value">@Model.TicketDto?.Ticket.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
                         </div>
                     }
                 </div>
             </div>
         </div>
-
-        <!-- İşlemler -->
         <div class="data-table">
             <div class="ticket-section-header">
                 <div class="ticket-section-title">
@@ -275,7 +266,7 @@
             </div>
             <div class="ticket-section-body">
                 <div class="ticket-actions-list">
-                    @if (Model.Ticket?.StatusId != 6)
+                    @if (Model.TicketDto?.Ticket?.StatusId != 6)
                     {
                         <button type="button" class="ticket-action-btn" data-modal-open="replyModal">
                             <i class="fa-solid fa-reply"></i>
@@ -284,17 +275,17 @@
                         </button>
                         <button type="button" class="ticket-action-btn" data-modal-open="assignModal">
                             <i class="fa-solid fa-user-check"></i>
-                            <span>Personel Ata</span>
+                            <span>Personel Sevki</span>
                             <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
                         </button>
-                        <button type="button" class="ticket-action-btn" data-modal-open="statusModal">
+                        @* <button type="button" class="ticket-action-btn" data-modal-open="statusModal">
                             <i class="fa-solid fa-rotate"></i>
                             <span>Durum Değiştir</span>
                             <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
-                        </button>
+                        </button> *@
                         <button type="button" class="ticket-action-btn" data-modal-open="transferModal">
                             <i class="fa-solid fa-share-nodes"></i>
-                            <span>Sevk Et</span>
+                            <span>Şube Sevki</span>
                             <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
                         </button>
                         <button type="button" class="ticket-action-btn ticket-action-danger" data-modal-open="closeModal">
@@ -311,13 +302,10 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- ───────────────────── MODALS ───────────────────── -->
 
-<!-- Reply Modal -->
 <div class="modal-overlay" id="replyModal">
     <div class="modal modal-md">
         <div class="modal-header">
@@ -331,7 +319,7 @@
         </div>
         <form asp-area="Tickets" asp-controller="Ticket" asp-action="Reply" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <input type="hidden" name="ticketId" value="@Model.TicketDto?.Ticket?.Id" />
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label required">Yanıt</label>
@@ -360,8 +348,6 @@
         </form>
     </div>
 </div>
-
-<!-- Assign Personnel Modal -->
 <div class="modal-overlay" id="assignModal">
     <div class="modal modal-sm">
         <div class="modal-header">
@@ -375,7 +361,7 @@
         </div>
         <form asp-area="Tickets" asp-controller="Ticket" asp-action="Assign" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <input type="hidden" name="ticketId" value="@Model.TicketDto?.Ticket?.Id" />
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label required">Personel Seç</label>
@@ -384,7 +370,7 @@
                         @foreach (var user in Model.Personnel)
                         {
                             <option value="@user.Id"
-                                    selected="@(Model.Ticket?.AssignedUserId == user.Id ? "selected" : null)">
+                                    selected="@(Model.TicketDto?.Ticket?.AssignedUserId == user.Id ? "selected" : null)">
                                 @user.FirstName @user.LastName
                             </option>
                         }
@@ -413,8 +399,6 @@
         </form>
     </div>
 </div>
-
-<!-- Change Status Modal -->
 <div class="modal-overlay" id="statusModal">
     <div class="modal modal-sm">
         <div class="modal-header">
@@ -428,17 +412,17 @@
         </div>
         <form asp-area="Tickets" asp-controller="Ticket" asp-action="ChangeStatus" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <input type="hidden" name="ticketId" value="@Model.TicketDto?.Ticket?.Id" />
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label required">Yeni Durum</label>
                     <select name="statusId" class="form-input">
-                        <option value="1" selected="@(Model.Ticket?.StatusId == 1 ? "selected" : null)">Açık</option>
-                        <option value="2" selected="@(Model.Ticket?.StatusId == 2 ? "selected" : null)">Atandı</option>
-                        <option value="3" selected="@(Model.Ticket?.StatusId == 3 ? "selected" : null)">İşlemde</option>
-                        <option value="4" selected="@(Model.Ticket?.StatusId == 4 ? "selected" : null)">Beklemede</option>
-                        <option value="5" selected="@(Model.Ticket?.StatusId == 5 ? "selected" : null)">Çözüldü</option>
-                        <option value="6" selected="@(Model.Ticket?.StatusId == 6 ? "selected" : null)">Kapatıldı</option>
+                        <option value="1" selected="@(Model.TicketDto?.Ticket?.StatusId == 1 ? "selected" : null)">Açık</option>
+                        <option value="2" selected="@(Model.TicketDto?.Ticket?.StatusId == 2 ? "selected" : null)">Atandı</option>
+                        <option value="3" selected="@(Model.TicketDto?.Ticket?.StatusId == 3 ? "selected" : null)">İşlemde</option>
+                        <option value="4" selected="@(Model.TicketDto?.Ticket?.StatusId == 4 ? "selected" : null)">Beklemede</option>
+                        <option value="5" selected="@(Model.TicketDto?.Ticket?.StatusId == 5 ? "selected" : null)">Çözüldü</option>
+                        <option value="6" selected="@(Model.TicketDto?.Ticket?.StatusId == 6 ? "selected" : null)">Kapatıldı</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -457,8 +441,6 @@
         </form>
     </div>
 </div>
-
-<!-- Transfer Modal -->
 <div class="modal-overlay" id="transferModal">
     <div class="modal modal-sm">
         <div class="modal-header">
@@ -472,7 +454,7 @@
         </div>
         <form asp-area="Tickets" asp-controller="Ticket" asp-action="Transfer" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <input type="hidden" name="ticketId" value="@Model.TicketDto?.Ticket?.Id" />
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label required">Kullanıcı / Birim</label>
@@ -497,8 +479,6 @@
         </form>
     </div>
 </div>
-
-<!-- History Modal -->
 <div class="modal-overlay" id="historyModal">
     <div class="modal modal-md">
         <div class="modal-header">
@@ -524,7 +504,7 @@
                         _             => "fa-circle"
                     };
                 }
-                @foreach (var h in Model.History.OrderBy(x => x.Date))
+                @foreach (var h in Model.Histories.OrderBy(x => x.Date))
                 {
                     <div class="history-item history-item-@h.Type">
                         <div class="history-icon">
@@ -541,7 +521,7 @@
                                     <i class="fa-solid fa-user" style="font-size:10px;"></i>
                                     @h.ActorName
                                 </span>
-                                <span class="history-date">@h.Date.ToString("dd.MM.yyyy HH:mm")</span>
+                                <span class="history-date">@h.Date</span>
                             </div>
                         </div>
                     </div>
@@ -553,8 +533,6 @@
         </div>
     </div>
 </div>
-
-<!-- Close Confirm Modal -->
 <div class="modal-overlay" id="closeModal">
     <div class="modal modal-sm">
         <div class="modal-header">
@@ -568,14 +546,14 @@
         </div>
         <form asp-area="Tickets" asp-controller="Ticket" asp-action="ChangeStatus" method="post">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="ticketId" value="@Model.Ticket?.Id" />
+            <input type="hidden" name="ticketId" value="@Model.TicketDto?.Ticket?.Id" />
             <input type="hidden" name="statusId" value="6" />
             <div class="modal-body">
                 <div class="delete-confirm-icon">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <p class="delete-confirm-text">
-                    <strong>@Model.Ticket?.TicketNo</strong> numaralı talep kapatılacak.<br />
+                    <strong>@Model.TicketDto?.Ticket?.TicketNo</strong> numaralı talep kapatılacak.<br />
                     Bu işlem geri alınamaz. Devam etmek istiyor musunuz?
                 </p>
                 <div class="form-group">

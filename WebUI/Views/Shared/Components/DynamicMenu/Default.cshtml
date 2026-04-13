@@ -5,7 +5,6 @@
     string SafeUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return "#";
-        // Relative URL ise başına / ekle (http/https ve # hariç)
         if (url.StartsWith("/") || url.StartsWith("http") || url.StartsWith("#"))
             return url;
         return "/" + url;

@@ -39,22 +39,34 @@ public class TicketController : ControllerBase
         return BadRequest(result);
     }
 
+    [HttpGet("getticketdtobyid/{id}")]
+    public IActionResult GetTicketDtoById(int id)
+    {
+        var result = _ticketService.GetTicketDtoById(id);
+        if (result.Success)
+        {
+            return Ok(result);
+        }
+        return BadRequest(result);
+    }
+
+
     [HttpPost("add")]
     public IActionResult Add(TicketDto dto)
     {
         var entity = new Ticket() 
         {
-            TicketNo = dto.TicketNo,
-            Title = dto.Title,
-            Description = dto.Description,
-            CreatedById = dto.CreatedById,
-            CurrentBranchId = dto.CurrentBranchId,
-            AssignedUserId = dto.AssignedUserId,
-            StatusId = dto.StatusId,
-            PriorityId = dto.PriorityId,
-            CreatedAt = dto.CreatedAt,
-            UpdatedAt = dto.UpdatedAt,
-            ClosedAt = dto.ClosedAt,
+            TicketNo = dto.Ticket.TicketNo,
+            Title = dto.Ticket.Title,
+            Description = dto.Ticket.Description,
+            CreatedById = dto.Ticket.CreatedById,
+            CurrentBranchId = dto.Ticket.CurrentBranchId,
+            AssignedUserId = dto.Ticket.AssignedUserId,
+            StatusId = dto.Ticket.StatusId,
+            PriorityId = dto.Ticket.PriorityId,
+            CreatedAt = dto.Ticket.CreatedAt,
+            UpdatedAt = dto.Ticket.UpdatedAt,
+            ClosedAt = dto.Ticket.ClosedAt,
         };
         var result = _ticketService.Add(entity);
         if (result.Success)
@@ -69,18 +81,18 @@ public class TicketController : ControllerBase
     {
         var entity = new Ticket()
         {
-            Id = dto.Id,
-            TicketNo = dto.TicketNo,
-            Title = dto.Title,
-            Description = dto.Description,
-            CreatedById = dto.CreatedById,
-            CurrentBranchId = dto.CurrentBranchId,
-            AssignedUserId = dto.AssignedUserId,
-            StatusId = dto.StatusId,
-            PriorityId = dto.PriorityId,
-            CreatedAt = dto.CreatedAt,
-            UpdatedAt = dto.UpdatedAt,
-            ClosedAt = dto.ClosedAt,
+            Id = dto.Ticket.Id,
+            TicketNo = dto.Ticket.TicketNo,
+            Title = dto.Ticket.Title,
+            Description = dto.Ticket.Description,
+            CreatedById = dto.Ticket.CreatedById,
+            CurrentBranchId = dto.Ticket.CurrentBranchId,
+            AssignedUserId = dto.Ticket.AssignedUserId,
+            StatusId = dto.Ticket.StatusId,
+            PriorityId = dto.Ticket.PriorityId,
+            CreatedAt = dto.Ticket.CreatedAt,
+            UpdatedAt = dto.Ticket.UpdatedAt,
+            ClosedAt = dto.Ticket.ClosedAt,
         };
         var result = _ticketService.Update(entity);
         if (result.Success)

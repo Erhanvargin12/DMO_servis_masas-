@@ -23,6 +23,10 @@ public class MsSqlDbContext : DbContext
         modelBuilder.Entity<Attachment>().ToTable("Attachments", ticketSchema);
         modelBuilder.Entity<Response>().ToTable("Responses", ticketSchema);
         modelBuilder.Entity<Transfer>().ToTable("Transfers", ticketSchema);
+
+        //modelBuilder.Entity<Assignment>().HasOne(a => a.Ticket).WithOne(t => t.Assignment).HasForeignKey<Assignment>(a => a.TicketId);
+        //modelBuilder.Entity<Response>().HasOne(r => r.Ticket).WithMany(t => t.Responses).HasForeignKey(r => r.TicketId);
+        //modelBuilder.Entity<Attachment>().HasOne(a => a.Response).WithMany(r => r.Attachments).HasForeignKey(a => a.ResponseId);
     }
 
     public DbSet<User> Users { get; set; }

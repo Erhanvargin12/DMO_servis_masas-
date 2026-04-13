@@ -16,4 +16,9 @@ public class Ticket : IEntity
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
+
+
+    public Assignment Assignment { get; set; } = new Assignment();
+    public List<Attachment> Attachment { get; set; } = new List<Attachment>();
+    public List<Response> Responses { get; set; } = new List<Response>();
 }

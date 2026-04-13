@@ -17,21 +17,8 @@
             <main class="page-content">@RenderBody()</main>
         </div>
     </div>
-
     <script src="~/js/app.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
-
-    @{
-        var sidebarTicketCount = Context.Session.GetInt32("SidebarTicketCount");
-    }
-    @if (sidebarTicketCount.HasValue)
-    {
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                if (window.AdminUI) AdminUI.setMenuBadge('/Tickets', @sidebarTicketCount.Value);
-            });
-        </script>
-    }
 
     @if (TempData["SuccessMessage"] != null)
     {

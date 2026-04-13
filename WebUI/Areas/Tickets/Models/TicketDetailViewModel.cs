@@ -1,17 +1,15 @@
 using Entities.Concrete;
-using Entities.Concrete.Ticket;
+using WebUI.Models.DTOs;
 
 namespace WebUI.Areas.Tickets.Models;
 
 public class TicketDetailViewModel
 {
-    public Ticket?               Ticket      { get; set; }
-    public List<User>            Personnel   { get; set; } = new();
-    public List<Response>        Responses   { get; set; } = new();
-    public List<Attachment>      Attachments { get; set; } = new();
-    public List<TicketHistoryItem> History   { get; set; } = new();
+    public TicketDto? TicketDto { get; set; }
+    public List<User> Personnel { get; set; } = new();
+    public List<TicketHistoryItem> Histories { get; set; } = new();
 
-    public string StatusLabel => Ticket?.StatusId switch
+    public string StatusLabel => TicketDto?.Ticket?.StatusId switch
     {
         1 => "Açık",
         2 => "Atandı",
@@ -21,8 +19,7 @@ public class TicketDetailViewModel
         6 => "Kapatıldı",
         _ => "—"
     };
-
-    public string StatusBadge => Ticket?.StatusId switch
+    public string StatusBadge => TicketDto?.Ticket?.StatusId switch
     {
         1 => "badge-status-open",
         2 => "badge-status-assigned",
@@ -32,8 +29,7 @@ public class TicketDetailViewModel
         6 => "badge-status-closed",
         _ => ""
     };
-
-    public string PriorityLabel => Ticket?.PriorityId switch
+    public string PriorityLabel => TicketDto?.Ticket?.PriorityId switch
     {
         1 => "Düşük",
         2 => "Orta",
@@ -41,8 +37,7 @@ public class TicketDetailViewModel
         4 => "Kritik",
         _ => "—"
     };
-
-    public string PriorityBadge => Ticket?.PriorityId switch
+    public string PriorityBadge => TicketDto?.Ticket?.PriorityId switch
     {
         1 => "badge-priority-low",
         2 => "badge-priority-medium",
@@ -54,10 +49,9 @@ public class TicketDetailViewModel
 
 public class TicketHistoryItem
 {
-    public DateTime  Date      { get; set; }
-    public string    ActorName { get; set; } = "";
-    public string    Type      { get; set; } = ""; // created | status | assigned | replied | transferred | closed | note
-    public string    Title     { get; set; } = "";
-    public string?   Detail    { get; set; }
+    public DateTime? Date { get; set; }
+    public string ActorName { get; set; } = "";
+    public string Type { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Detail { get; set; }
 }
-

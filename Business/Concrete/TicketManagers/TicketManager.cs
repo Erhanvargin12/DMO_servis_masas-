@@ -5,6 +5,7 @@ using Core.Utilities.Results;
 using DataAccess.Abstract.TicketDal;
 using Entities.Concrete;
 using Entities.Concrete.Ticket;
+using Entities.DTOs.TicketDTOs;
 using System.Linq.Expressions;
 
 namespace Business.Concrete.TicketManagers
@@ -46,6 +47,11 @@ namespace Business.Concrete.TicketManagers
         public IDataResult<Ticket> GetById(int id)
         {
             return new SuccessDataResult<Ticket>(_ticketDal.Get(t=>t.Id == id), Messages.TicketsListed);
+        }
+
+        public IDataResult<TicketDto> GetTicketDtoById(int id)
+        {
+            return new SuccessDataResult<TicketDto>(_ticketDal.GetTicketDtoById(id), Messages.TicketsListed);
         }
 
         public IResult Update(Ticket ticket)

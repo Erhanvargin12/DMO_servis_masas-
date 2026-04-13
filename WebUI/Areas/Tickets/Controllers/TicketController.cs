@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using WebUI.Areas.Tickets.Models;
 using WebUI.Core.Services.Abstract;
 using WebUI.Core.Services.Concrete;
+using WebUI.Models.DTOs;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace WebUI.Areas.Talepler.Controllers;
 
@@ -14,30 +16,28 @@ public class TicketController : BaseController
 {
     public TicketController(IApiClient apiClient) : base(apiClient) { }
 
-    // GET /Tickets/Ticket/Index
-    public async Task<IActionResult> Index(
-        string? search, string? status, string? priority, string? tab)
+    public async Task<IActionResult> Index(string? search, string? status, string? priority, string? tab)
     {
         tab ??= "own";
 
-        var model    = new TicketViewModel();
+        var model = new TicketViewModel();
         var response = await SendRequest<List<Ticket>>("ticket/getall");
 
-        model.Ticket          = response;
-        model.SearchTerm      = search;
-        model.StatusFilter    = status;
-        model.PriorityFilter  = priority;
-        model.ActiveTab       = tab;
+        model.Ticket = response;
+        model.SearchTerm = search;
+        model.StatusFilter = status;
+        model.PriorityFilter = priority;
+        model.ActiveTab = tab;
 
         // ── Mock vekalet bilgisi (API bağlanana kadar) ────────────────────────
         // API hazır olduğunda: kullanıcının aktif vekâletleri /delegation/getactive
         // endpoint'inden çekilecek ve bu blok kaldırılacak.
         var mockDelegation = new DelegationInfo
         {
-            DelegatorId    = 5,
-            DelegatorName  = "Ahmet Yılmaz",
+            DelegatorId = 5,
+            DelegatorName = "Ahmet Yılmaz",
             DelegationType = "manager",      // "manager" | "personnel"
-            BranchName     = "IT Müdürlüğü"
+            BranchName = "IT Müdürlüğü"
         };
         model.Delegation = mockDelegation;
         // ─────────────────────────────────────────────────────────────────────
@@ -49,7 +49,7 @@ public class TicketController : BaseController
         var delegatedList = GetMockDelegatedTickets();
 
         // Sayaçlar (filtreden önce)
-        model.OwnCount       = ownList.Count;
+        model.OwnCount = ownList.Count;
         model.DelegatedCount = delegatedList.Count;
 
         // Aktif tab'a göre filtrelenecek liste
@@ -80,110 +80,99 @@ public class TicketController : BaseController
         return View(model);
     }
 
-    // GET /Tickets/Ticket/Detail/5
     public async Task<IActionResult> Detail(int id)
     {
-        var ticketResponse      = await SendRequest<Ticket>($"ticket/getbyid/{id}");
-        var usersResponse       = await SendRequest<List<User>>("user/getall");
-        var responsesResponse   = await SendRequest<List<Response>>($"ticketresponse/getbyticketid/{id}");
-        var attachmentsResponse = await SendRequest<List<Attachment>>($"ticketattachment/getbyticketid/{id}");
-
-        // ── Mock veri (API bağlanana kadar) ──────────────────────────────────
-        var ticket      = ticketResponse?.Data;
-        var personnel   = usersResponse?.Data?.Where(u => u.Status).ToList() ?? new List<User>();
-        var responses   = responsesResponse?.Data ?? new List<Response>();
-        var attachments = attachmentsResponse?.Data ?? new List<Attachment>();
-
-        if (ticket == null)
-        {
-            ticket = new Ticket
-            {
-                Id = id, TicketNo = $"TKT-2026-{id:000}",
-                Title       = "Yazıcı Bağlantı Sorunu — 3. Kat Muhasebe",
-                Description = "3. kattaki muhasebe departmanında bulunan HP LaserJet 408dn model yazıcı ağa bağlanamıyor. " +
-                              "Diğer bilgisayarlardan da erişilemiyor. Yazıcı ekranında 'Network Error' hatası görünüyor. " +
-                              "Sorun dün sabahtan beri devam ediyor, acil çözüm gerekmektedir.",
-                StatusId = 3, PriorityId = 3, CreatedById = 1, AssignedUserId = 2,
-                CurrentBranchId = 1,
-                CreatedAt = DateTime.Now.AddDays(-3),
-                UpdatedAt = DateTime.Now.AddHours(-2)
-            };
-        }
-
-        if (!personnel.Any())
-        {
-            personnel = new List<User>
-            {
-                new() { Id = 1, FirstName = "Ahmet",  LastName = "Yılmaz", Status = true },
-                new() { Id = 2, FirstName = "Mehmet", LastName = "Kaya",   Status = true },
-                new() { Id = 3, FirstName = "Selin",  LastName = "Demir",  Status = true },
-                new() { Id = 4, FirstName = "Fatma",  LastName = "Şahin",  Status = true },
-            };
-        }
-
-        if (!attachments.Any())
-        {
-            attachments = new List<Attachment>
-            {
-                new() { Id = 1, FileName = "network-error-ekrani.jpg",        FilePath = "#", CreatedAt = DateTime.Now.AddDays(-3), ResponseId = 1, UploadedById = 1 },
-                new() { Id = 2, FileName = "yazici-konfigurasyonu.pdf",        FilePath = "#", CreatedAt = DateTime.Now.AddDays(-3), ResponseId = 1, UploadedById = 1 },
-                new() { Id = 3, FileName = "ip-ayarlari-dokumantasyon.docx",   FilePath = "#", CreatedAt = DateTime.Now.AddDays(-2), ResponseId = 2, UploadedById = 3 },
-            };
-        }
-
-        if (!responses.Any())
-        {
-            responses = new List<Response>
-            {
-                new()
-                {
-                    Id = 1, TicketId = id, SenderId = 1, IsInternal = false,
-                    Message   = "Yazıcı IP adresini kontrol ettim, DHCP'den farklı bir IP almış. Statik IP atanması gerekiyor. Müdahale için onay bekliyorum.",
-                    CreatedAt = DateTime.Now.AddDays(-2).AddHours(-5),
-                    Attachments = attachments.Where(a => a.ResponseId == 1).ToList()
-                },
-                new()
-                {
-                    Id = 2, TicketId = id, SenderId = 3, IsInternal = false,
-                    Message   = "Statik IP ataması yapıldı (192.168.1.45). Şimdi yazıcı ağda görünüyor ancak bazı bilgisayarlardan print kuyruğunda sorun var. Sürücü güncellemesi gerekebilir.",
-                    CreatedAt = DateTime.Now.AddDays(-1).AddHours(-2),
-                    Attachments = attachments.Where(a => a.ResponseId == 2).ToList()
-                },
-                new()
-                {
-                    Id = 3, TicketId = id, SenderId = 2, IsInternal = true,
-                    Message   = "Tüm bilgisayarlarda sürücüler güncellendi. Test çıktısı başarılı. Sorun çözüldü gibi görünüyor, kullanıcı onayı bekleniyor.",
-                    CreatedAt = DateTime.Now.AddHours(-1),
-                    Attachments = new List<Attachment>()
-                },
-            };
-        }
-        // ── Mock geçmiş (API bağlanana kadar) ────────────────────────────────
-        var history = new List<TicketHistoryItem>
-        {
-            new() { Date = ticket.CreatedAt,                          Type = "created",     ActorName = "Ahmet Yılmaz",  Title = "Ticket oluşturuldu",             Detail = null },
-            new() { Date = ticket.CreatedAt.AddMinutes(5),            Type = "status",      ActorName = "Sistem",        Title = "Durum değiştirildi",             Detail = "Açık → Atandı" },
-            new() { Date = ticket.CreatedAt.AddHours(1),              Type = "assigned",    ActorName = "Selin Demir",   Title = "Personel atandı",                Detail = "Mehmet Kaya atandı" },
-            new() { Date = ticket.CreatedAt.AddDays(1),               Type = "replied",     ActorName = "Mehmet Kaya",   Title = "Yanıt eklendi",                  Detail = "Yazıcı IP adresi kontrol edildi." },
-            new() { Date = ticket.CreatedAt.AddDays(1).AddHours(3),   Type = "status",      ActorName = "Mehmet Kaya",   Title = "Durum değiştirildi",             Detail = "Atandı → İşlemde" },
-            new() { Date = ticket.CreatedAt.AddDays(2),               Type = "replied",     ActorName = "Selin Demir",   Title = "Yanıt eklendi",                  Detail = "Statik IP ataması yapıldı." },
-            new() { Date = ticket.CreatedAt.AddDays(2).AddHours(1),   Type = "note",        ActorName = "Mehmet Kaya",   Title = "İç not eklendi",                 Detail = "Sürücüler güncellendi, kullanıcı onayı bekleniyor." },
-            new() { Date = ticket.UpdatedAt ?? ticket.CreatedAt.AddDays(3), Type = "status", ActorName = "Selin Demir",  Title = "Durum değiştirildi",             Detail = "İşlemde → Çözüldü" },
-        };
-        // ─────────────────────────────────────────────────────────────────────
+        var ticket = await SendRequest<TicketDto>($"ticket/getticketdtobyid/{id}");
+        var branchStaff = await SendRequest<List<User>>("user/getall");
+        var responses = await SendRequest<List<Response>>($"ticketresponse/getbyticketid/{id}");
+        var attachments = await SendRequest<List<Attachment>>($"ticketattachment/getbyticketid/{id}");
 
         var model = new TicketDetailViewModel
         {
-            Ticket      = ticket,
-            Personnel   = personnel,
-            Responses   = responses,
-            Attachments = attachments,
-            History     = history
+            TicketDto = ticket?.Data,
+            Personnel = branchStaff?.Data?.Where(u => u.Status).ToList() ?? new List<User>(),
+            Histories = GetTicketHistory(ticket.Data)
         };
         return View(model);
     }
 
-    // POST /Tickets/Ticket/Assign
+    public List<TicketHistoryItem> GetTicketHistory(TicketDto dto)
+    {
+        var history = new List<TicketHistoryItem>();
+
+        if (dto?.Ticket != null)
+        {
+            history.Add(new TicketHistoryItem
+            {
+                Date = dto.Ticket.CreatedAt,
+                Type = "created",
+                Title = "Talep Oluşturuldu",
+                ActorName = "test@gmail.com",
+                Detail = $"{dto.Ticket.TicketNo} numaralı talep test@gmail.com tarafından oluşturuldu"
+            });
+
+            if (dto.Ticket.UpdatedAt != null)
+            {
+                history.Add(new TicketHistoryItem
+                {
+                    Date = dto.Ticket.UpdatedAt,
+                    Type = "status",
+                    Title = "Durum Güncellendi",
+                    ActorName = "test@gmail.com",
+                    Detail = $"Durum: {dto.Ticket.StatusId}"
+                });
+            }
+            
+            if (dto.Ticket.ClosedAt != null)
+            {
+                history.Add(new TicketHistoryItem
+                {
+                    Date = dto.Ticket.ClosedAt.Value,
+                    Type = "closed",
+                    Title = "Talep Kapatıldı",
+                    ActorName = "test@gmail.com",
+                    Detail = $"{dto.Ticket.TicketNo} numaralı talep kapatıldı"
+                });
+            }
+        }
+        if (dto?.Assignment != null)
+        {
+            history.Add(new TicketHistoryItem
+            {
+                Date = dto.Assignment.AssignedAt,
+                Type = "assigned",
+                Title = "Talep Atandı",
+                ActorName = "test@gmail.com",
+                Detail = $"Talep {dto.Assignment.AssignedTo} kullanıcısına atandı"
+            });
+
+            if (dto.Assignment.AssignedAt != null)
+            {
+                history.Add(new TicketHistoryItem
+                {
+                    Date = dto.Assignment.AssignedAt,
+                    Type = "transferred",
+                    Title = "Talep Aktarıldı",
+                    ActorName = "test@gmail.com",
+                    Detail = $"Talep başka kullanıcıya aktarıldı"
+                });
+            }
+        }
+        if (dto?.Responses != null)
+        {
+            history.AddRange(dto.Responses.Select(r => new TicketHistoryItem
+            {
+                Date = r.CreatedAt,
+                Type = "replied",
+                Title = r.IsInternal ? "Not Eklendi" : "Yanıt Verildi",
+                ActorName = "test@gmail.com",
+                Detail = "test"
+            }));
+        }
+
+        return history.OrderBy(x => x.Date).ToList();
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Assign(int ticketId, int assignedUserId, string? note)
@@ -192,7 +181,6 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
 
-    // POST /Tickets/Ticket/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Ticket ticket)
@@ -206,7 +194,7 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Index));
     }
 
-    // POST /Tickets/Ticket/Reply
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Reply(int ticketId, string content)
@@ -215,7 +203,6 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
 
-    // POST /Tickets/Ticket/Transfer
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Transfer(int ticketId, int? targetUserId, string? note)
@@ -224,7 +211,6 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
 
-    // POST /Tickets/Ticket/ChangeStatus
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult ChangeStatus(int ticketId, int statusId)
@@ -233,17 +219,6 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
 
-    // GET /Tickets/Ticket/GetCount — sidebar rozeti için
-    [HttpGet]
-    public async Task<IActionResult> GetCount()
-    {
-        var response = await SendRequest<List<Ticket>>("ticket/getall");
-        var count = response?.Data?.Count ?? 4; // mock: API yoksa 4
-        return Json(new { count });
-    }
-
-    // ── Mock Vekâlet Ticketları ────────────────────────────────────────────────
-    // API hazır olduğunda bu metot kaldırılacak.
     private static List<Ticket> GetMockDelegatedTickets() => new()
     {
         new Ticket

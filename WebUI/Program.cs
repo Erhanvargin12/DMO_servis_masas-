@@ -40,7 +40,7 @@ builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
     // Geliştirme ortamında localhost self-signed sertifika için SSL doğrulamasını atla
     ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
-builder.Services.AddControllersWithViews().AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = null; });
+builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation().AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = null; });
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();

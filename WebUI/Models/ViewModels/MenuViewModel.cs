@@ -8,6 +8,4 @@ public class MenuViewModel
     public List<MenuDto> Menu { get; set; }
     public List<Menu> Orphans { get; set; }
     public List<OperationClaim> Roles { get; set; }
-    public int TotalCount { get; set; }
-
 }
