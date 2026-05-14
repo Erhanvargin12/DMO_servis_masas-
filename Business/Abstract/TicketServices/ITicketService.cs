@@ -1,4 +1,4 @@
-﻿using Core.Utilities.Results;
+using Core.Utilities.Results;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
 using System.Linq.Expressions;
@@ -10,7 +10,7 @@ namespace Business.Abstract.TicketServices
         IDataResult<List<Ticket>> GetAll(Expression<Func<Ticket, bool>> filter = null);
         IDataResult<Ticket> GetById(int id);
         IDataResult<TicketDto> GetTicketDtoById(int id);
-        IResult Add(Ticket ticket);
+        IDataResult<TicketDto> Add(TicketDto ticket);
         IResult Update(Ticket ticket);
         IResult Delete(int id);
     }

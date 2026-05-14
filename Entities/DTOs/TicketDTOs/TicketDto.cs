@@ -1,4 +1,4 @@
-﻿using Core.Entities;
+using Core.Entities;
 using Entities.Concrete.Ticket;
 
 namespace Entities.DTOs.TicketDTOs;

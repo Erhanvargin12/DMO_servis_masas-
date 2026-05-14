@@ -57,6 +57,7 @@ namespace WebUI.Controllers
 
             HttpContext.Session.SetString("AccessToken", result.Data.Token);
             HttpContext.Session.SetString("TokenExpiration", result.Data.Expiration.ToString("O"));
+            HttpContext.Session.SetString("RefreshToken", result.Data.RefreshToken);
             
             var claims = new List<Claim>
             {
@@ -78,6 +79,12 @@ namespace WebUI.Controllers
                 {
                     claims.Add(new Claim("UserId", userIdClaim.Value));
                     HttpContext.Session.SetString("UserId", userIdClaim.Value);
+                }
+
+                var branchIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "organizationUnitId");
+                if (branchIdClaim != null)
+                {
+                    HttpContext.Session.SetString("BranchId", branchIdClaim.Value);
                 }
                 
                 if (nameClaim != null)
@@ -222,18 +229,18 @@ namespace WebUI.Controllers
 
         #region Logout
 
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Logout()
-        //{
-        //    await _authService.LogoutAsync();
-        //    HttpContext.Session.Clear();
-        //    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-        //    _logger.LogInformation("Kullanıcı çıkış yaptı");
+            _logger.LogInformation("Kullanıcı çıkış yaptı");
 
-        //    return RedirectToAction("Login");
-        //}
+            return RedirectToAction("Login");
+        }
 
         #endregion
 

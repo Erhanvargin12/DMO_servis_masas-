@@ -43,9 +43,7 @@ public class TicketResponseController : ControllerBase
     [HttpPost("add")]
     public IActionResult Add(TicketResponseDto dto)
     {
-        var entity = new Response();
-
-        var result = _ticketResponseService.Add(entity);
+        var result = _ticketResponseService.Add(dto);
         if (result.Success)
         {
             return Ok(result);

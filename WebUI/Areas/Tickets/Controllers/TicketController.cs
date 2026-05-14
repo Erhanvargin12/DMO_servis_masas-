@@ -1,12 +1,11 @@
 using Entities.Concrete;
-using Entities.Concrete.Ticket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebUI.Areas.Tickets.Models;
 using WebUI.Core.Services.Abstract;
 using WebUI.Core.Services.Concrete;
+using WebUI.Models;
 using WebUI.Models.DTOs;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace WebUI.Areas.Talepler.Controllers;
 
@@ -14,7 +13,12 @@ namespace WebUI.Areas.Talepler.Controllers;
 [Authorize]
 public class TicketController : BaseController
 {
-    public TicketController(IApiClient apiClient) : base(apiClient) { }
+    private readonly IApiClient _apiClient;
+
+    public TicketController(IApiClient apiClient) : base(apiClient)
+    {
+        _apiClient = apiClient;
+    }
 
     public async Task<IActionResult> Index(string? search, string? status, string? priority, string? tab)
     {
@@ -143,10 +147,10 @@ public class TicketController : BaseController
                 Type = "assigned",
                 Title = "Talep Atandı",
                 ActorName = "test@gmail.com",
-                Detail = $"Talep {dto.Assignment.AssignedTo} kullanıcısına atandı"
+                Detail = $"Talep {dto.Assignment.AssignedToId} kullanıcısına atandı"
             });
 
-            if (dto.Assignment.AssignedAt != null)
+            if (dto.Assignment?.AssignedAt != null)
             {
                 history.Add(new TicketHistoryItem
                 {
@@ -175,17 +179,35 @@ public class TicketController : BaseController
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Assign(int ticketId, int assignedUserId, string? note)
+    public async Task<IActionResult> Assign(int ticketId, int assignedUserId, string? note)
     {
-        TempData["SuccessMessage"] = "Personel atama yapıldı.";
+        int.TryParse(HttpContext.Session.GetString("UserId"), out var userId);
+
+        var assignment = new Assignment()
+        {
+            TicketId = ticketId,
+            AssignedById = userId,
+            AssignedToId = assignedUserId,
+            AssignedAt = DateTime.UtcNow,
+            Description = note
+        };
+        var response = await SendRequest<Assignment>("ticketassignment/add", assignment, HttpMethod.Post);
+
+        if (response?.Success == true)
+            TempData["SuccessMessage"] = "Ticket başarıyla oluşturuldu.";
+        else
+            TempData["ErrorMessage"] = response?.Message ?? "Ticket oluşturulamadı.";
+
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Ticket ticket)
+    public async Task<IActionResult> Create(TicketDto ticketDto, List<IFormFile>? FormFiles)
     {
-        var response = await SendRequest<Ticket>("ticket/add", ticket, HttpMethod.Post);
+        ticketDto.Attachments = await SaveAttachmentFile(FormFiles);
+        var response = await SendRequest<TicketDto>("ticket/add", ticketDto, HttpMethod.Post);
+
         if (response?.Success == true)
             TempData["SuccessMessage"] = "Ticket başarıyla oluşturuldu.";
         else
@@ -194,11 +216,28 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Index));
     }
 
-
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Reply(int ticketId, string content)
+    public async Task<IActionResult> Reply(int ticketId, string content, List<IFormFile>? attachments)
     {
+        int.TryParse(HttpContext.Session.GetString("UserId"), out var userId);
+
+        var reply = new TicketResponseDto
+        {
+            Response = new Response
+            {
+                IsInternal = false,
+                Message = content,
+                CreatedAt = DateTime.UtcNow,
+                TicketId = ticketId,
+                SenderId = userId
+            },
+            Attachments = await SaveAttachmentFile(attachments),
+
+        };
+
+        var response = await SendRequest<TicketResponseDto>($"ticketresponse/add",reply, HttpMethod.Post);
+
         TempData["SuccessMessage"] = "Yanıt gönderildi.";
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
@@ -211,13 +250,6 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult ChangeStatus(int ticketId, int statusId)
-    {
-        TempData["SuccessMessage"] = "Durum güncellendi.";
-        return RedirectToAction(nameof(Detail), new { id = ticketId });
-    }
 
     private static List<Ticket> GetMockDelegatedTickets() => new()
     {
@@ -258,4 +290,43 @@ public class TicketController : BaseController
             CreatedAt   = DateTime.Now.AddDays(-6)
         },
     };
+    private async Task<List<Attachment>> SaveAttachmentFile(List<IFormFile>? FormFiles)
+    {
+        var attachments = new List<Attachment>();
+
+        int.TryParse(HttpContext.Session.GetString("UserId"), out var userId);
+        int.TryParse(HttpContext.Session.GetString("BranchId"), out var branchId);
+
+
+        if (FormFiles != null && FormFiles.Count > 0)
+        {
+            
+            var uploadRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "tickets");
+            Directory.CreateDirectory(uploadRoot);
+
+            foreach (var file in FormFiles)
+            {
+                if (file.Length == 0) continue;
+
+                var ext = Path.GetExtension(file.FileName);
+                var uniqueName = $"{Guid.NewGuid():N}{ext}";
+                var fullPath = Path.Combine(uploadRoot, uniqueName);
+
+                await using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                attachments.Add(new Attachment
+                {
+                    FileName = file.FileName,
+                    FilePath = $"/uploads/tickets/{uniqueName}",
+                    UploadedById = userId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        return attachments.ToList();
+    }
 }

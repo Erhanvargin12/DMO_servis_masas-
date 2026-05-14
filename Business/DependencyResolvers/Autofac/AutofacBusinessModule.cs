@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using Autofac.Extras.DynamicProxy;
 using Business.Abstract;
 using Business.Abstract.TicketServices;
@@ -19,44 +19,44 @@ public class AutofacBusinessModule : Module
     protected override void Load(ContainerBuilder builder)
     {
         // System
-        builder.RegisterType<UserManager>().As<IUserService>().SingleInstance();
-        builder.RegisterType<EfUserDal>().As<IUserDal>().SingleInstance();
+        builder.RegisterType<UserManager>().As<IUserService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfUserDal>().As<IUserDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<OperationClaimManager>().As<IOperationClaimService>().SingleInstance();
-        builder.RegisterType<EfOperationClaimDal>().As<IOperationClaimDal>().SingleInstance();
+        builder.RegisterType<OperationClaimManager>().As<IOperationClaimService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfOperationClaimDal>().As<IOperationClaimDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<UserOperationClaimManager>().As<IUserOperationClaimService>().SingleInstance();
-        builder.RegisterType<EfUserOperationClaimDal>().As<IUserOperationClaimDal>().SingleInstance();
+        builder.RegisterType<UserOperationClaimManager>().As<IUserOperationClaimService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfUserOperationClaimDal>().As<IUserOperationClaimDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<MenuManager>().As<IMenuService>().SingleInstance();
-        builder.RegisterType<EfMenuDal>().As<IMenuDal>().SingleInstance();
+        builder.RegisterType<MenuManager>().As<IMenuService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfMenuDal>().As<IMenuDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<MenuOperationClaimManager>().As<IMenuOperationClaimService>().SingleInstance();
-        builder.RegisterType<EfMenuOperationClaimDal>().As<IMenuOperationClaimDal>().SingleInstance();
+        builder.RegisterType<MenuOperationClaimManager>().As<IMenuOperationClaimService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfMenuOperationClaimDal>().As<IMenuOperationClaimDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<EfRefreshTokenDal>().As<IRefreshTokenDal>().SingleInstance();
+        builder.RegisterType<EfRefreshTokenDal>().As<IRefreshTokenDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<AuthManager>().As<IAuthService>().SingleInstance();
+        builder.RegisterType<AuthManager>().As<IAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 
-        builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>();
+        builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>().InstancePerLifetimeScope();
 
 
         // Ticket 
-        builder.RegisterType<TicketAssignmentManager>().As<ITicketAssignmentService>().SingleInstance();
-        builder.RegisterType<EfTicketAssignmentDal>().As<ITicketAssignmentDal>().SingleInstance();
+        builder.RegisterType<TicketAssignmentManager>().As<ITicketAssignmentService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfTicketAssignmentDal>().As<ITicketAssignmentDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<TicketAttachmentManager>().As<ITicketAttachmentService>().SingleInstance();
-        builder.RegisterType<EfTicketAttachmentDal>().As<ITicketAttachmentDal>().SingleInstance();
+        builder.RegisterType<TicketAttachmentManager>().As<ITicketAttachmentService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfTicketAttachmentDal>().As<ITicketAttachmentDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<TicketResponseManager>().As<ITicketResponseService>().SingleInstance();
-        builder.RegisterType<EfTicketResponseDal>().As<ITicketResponseDal>().SingleInstance();
+        builder.RegisterType<TicketResponseManager>().As<ITicketResponseService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfTicketResponseDal>().As<ITicketResponseDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<TicketManager>().As<ITicketService>().SingleInstance();
-        builder.RegisterType<EfTicketDal>().As<ITicketDal>().SingleInstance();
+        builder.RegisterType<TicketManager>().As<ITicketService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfTicketDal>().As<ITicketDal>().InstancePerLifetimeScope();
 
-        builder.RegisterType<TicketTransferManager>().As<ITicketTransferService>().SingleInstance();
-        builder.RegisterType<EfTicketTransferDal>().As<ITicketTransferDal>().SingleInstance();
+        builder.RegisterType<TicketTransferManager>().As<ITicketTransferService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfTicketTransferDal>().As<ITicketTransferDal>().InstancePerLifetimeScope();
 
         
         // Assembly
@@ -65,6 +65,6 @@ public class AutofacBusinessModule : Module
             .EnableInterfaceInterceptors(new ProxyGenerationOptions()
             {
                 Selector = new AspectInterceptorSelector()
-            }).SingleInstance();
+            }).InstancePerLifetimeScope();
     }
 }

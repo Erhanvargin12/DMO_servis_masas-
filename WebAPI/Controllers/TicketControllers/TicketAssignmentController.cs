@@ -40,10 +40,8 @@ public class TicketAssignmentController : ControllerBase
     }
 
     [HttpPost("add")]
-    public IActionResult Add(TicketAssignmentDto dto)
+    public IActionResult Add(Assignment entity)
     {
-        var entity = new Assignment();
-
         var result = _ticketAssignmentService.Add(entity);
         if (result.Success)
         {

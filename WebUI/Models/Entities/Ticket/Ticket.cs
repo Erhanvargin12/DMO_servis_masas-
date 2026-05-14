@@ -1,6 +1,6 @@
 ﻿using Core.Entities;
 
-namespace Entities.Concrete.Ticket;
+namespace WebUI.Models;
 
 public class Ticket : IEntity
 {

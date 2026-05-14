@@ -281,13 +281,13 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label required">Başlık</label>
-                    <input type="text" name="Title" class="form-input"
+                    <input type="text" name="Ticket.Title" class="form-input"
                            placeholder="Talep başlığını kısaca yazın" required />
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label required">Öncelik</label>
-                        <select name="PriorityId" class="form-input">
+                        <select name="Ticket.PriorityId" class="form-input">
                             <option value="1">Düşük</option>
                             <option value="2" selected>Orta</option>
                             <option value="3">Yüksek</option>
@@ -297,7 +297,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label required">Açıklama</label>
-                    <textarea name="Description" class="form-input form-textarea" rows="5"
+                    <textarea name="Ticket.Description" class="form-input form-textarea" rows="5"
                               placeholder="Sorunu veya isteğinizi detaylı olarak açıklayın..." required></textarea>
                 </div>
                 <div class="form-group">
@@ -305,7 +305,7 @@
                         Dosya Ekle <span class="text-muted" style="font-weight:400;">(opsiyonel)</span>
                     </label>
                     <div class="file-drop-zone" data-file-drop>
-                        <input type="file" name="Attachments" multiple
+                        <input type="file" name="FormFiles" multiple
                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip" />
                         <div class="file-drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
                         <div class="file-drop-title">

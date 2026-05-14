@@ -1,5 +1,5 @@
 using Core.Utilities.Results;
-using Entities.Concrete.Ticket;
+using WebUI.Models;
 
 namespace WebUI.Areas.Tickets.Models;
 

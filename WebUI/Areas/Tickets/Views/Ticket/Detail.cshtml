@@ -72,7 +72,14 @@
             <div class="ticket-section-header">
                 <div class="ticket-section-title">
                     <i class="fa-solid fa-file-lines" style="color:var(--accent);"></i>
-                    Açıklama
+                    @if (!string.IsNullOrWhiteSpace(Model.TicketDto?.Ticket?.Title))
+                    {
+                        <p class="ticket-desc-text">@Model.TicketDto?.Ticket.Title</p>
+                    }
+                    else
+                    {
+                        <p class="ticket-desc-text">Açıklama</p>
+                    }
                 </div>
             </div>
             <div class="ticket-section-body">
@@ -89,13 +96,14 @@
                 }
                 @if (Model.TicketDto.Attachments.Any())
                 {
+                    var ticketAssignment = @Model.TicketDto.Attachments.Where(a => a.ResponseId == 0);
                     <div class="ticket-attachments">
                         <div class="ticket-attach-label">
                             <i class="fa-solid fa-paperclip"></i>
-                            Ekler (@Model.TicketDto.Attachments.Count)
+                            Ekler (@ticketAssignment.Count())
                         </div>
                         <div class="ticket-attach-grid">
-                            @foreach (var att in Model.TicketDto.Attachments)
+                            @foreach (var att in ticketAssignment)
                             {
                                 <a href="@att.FilePath" target="_blank" class="ticket-attach-item" title="@att.FileName">
                                     <div class="ticket-attach-icon @FileColor(att.FileName)">
@@ -124,19 +132,13 @@
                         <span class="stat-chip" style="margin-left:6px;">@Model.TicketDto.Responses.Count</span>
                     }
                 </div>
-               @*  @if (Model.Ticket?.StatusId != 6)
-                {
-                    <button type="button" class="btn btn-primary btn-sm" data-modal-open="replyModal">
-                        <i class="fa-solid fa-reply"></i>
-                        Yanıt Ekle
-                    </button>
-                } *@
             </div>
             <div class="ticket-section-body ticket-replies-body">
                 @if (Model.TicketDto.Responses.Any())
                 {
-                    @foreach (var r in Model.TicketDto.Responses.OrderBy(x => x.CreatedAt))
+                    @foreach (var r in Model.TicketDto.Responses.OrderByDescending(x => x.CreatedAt))
                     {
+                        var atts = Model.TicketDto.Attachments.Where(a => a.ResponseId == r.Id);
                         <div class="reply-card @(r.IsInternal ? "reply-card-internal" : "")">
                             <div class="reply-header">
                                 <div class="entity-badge-user">@SenderInitials(r.SenderId)</div>
@@ -154,11 +156,11 @@
                                 </div>
                             </div>
                             <div class="reply-content">@r.Message</div>
-                            @if (r.Attachments.Any())
+                            @if (atts.Any())
                             {
                                 <div class="ticket-attachments" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);">
                                     <div class="ticket-attach-grid">
-                                        @foreach (var att in r.Attachments)
+                                        @foreach (var att in atts)
                                         {
                                             <a href="@att.FilePath" target="_blank" class="ticket-attach-item" title="@att.FileName">
                                                 <div class="ticket-attach-icon @FileColor(att.FileName)">
@@ -185,6 +187,7 @@
                         Henüz yanıt bulunmuyor
                     </div>
                 }
+
             </div>
         </div>
     </div>
@@ -278,11 +281,6 @@
                             <span>Personel Sevki</span>
                             <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
                         </button>
-                        @* <button type="button" class="ticket-action-btn" data-modal-open="statusModal">
-                            <i class="fa-solid fa-rotate"></i>
-                            <span>Durum Değiştir</span>
-                            <i class="fa-solid fa-chevron-right ticket-action-arrow"></i>
-                        </button> *@
                         <button type="button" class="ticket-action-btn" data-modal-open="transferModal">
                             <i class="fa-solid fa-share-nodes"></i>
                             <span>Şube Sevki</span>

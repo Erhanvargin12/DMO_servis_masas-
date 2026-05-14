@@ -1,4 +1,4 @@
-﻿using Core.Entities;
+using Core.Entities;
 
 namespace Entities.Concrete.Ticket;
 
@@ -18,7 +18,7 @@ public class Ticket : IEntity
     public DateTime? ClosedAt { get; set; }
 
 
-    public Assignment Assignment { get; set; } = new Assignment();
-    public List<Attachment> Attachment { get; set; } = new List<Attachment>();
-    public List<Response> Responses { get; set; } = new List<Response>();
+    public Assignment? Assignment { get; set; }
+    public List<Attachment>? Attachment { get; set; }
+    public List<Response>? Responses { get; set; }
 }

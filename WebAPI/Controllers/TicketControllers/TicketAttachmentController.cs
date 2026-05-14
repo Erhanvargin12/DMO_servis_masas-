@@ -1,6 +1,6 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
+using Business.Constants;
 using Entities.Concrete.Ticket;
-using Entities.DTOs.TicketDTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,13 +8,25 @@ namespace WebAPI.Controllers.TicketControllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+//[Authorize]
 public class TicketAttachmentController : ControllerBase
 {
     private readonly ITicketAttachmentService _ticketAttachmentService;
-    public TicketAttachmentController(ITicketAttachmentService ticketAttachmentService)
+    private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _env;
+
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".txt", ".zip"
+    };
+
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
+
+    public TicketAttachmentController(ITicketAttachmentService ticketAttachmentService,IConfiguration configuration,IWebHostEnvironment env)
     {
         _ticketAttachmentService = ticketAttachmentService;
+        _configuration = configuration;
+        _env = env;
     }
 
     [HttpGet("getall")]
@@ -22,9 +34,7 @@ public class TicketAttachmentController : ControllerBase
     {
         var result = _ticketAttachmentService.GetAll();
         if (result.Success)
-        {
             return Ok(result);
-        }
         return BadRequest(result);
     }
 
@@ -33,48 +43,73 @@ public class TicketAttachmentController : ControllerBase
     {
         var result = _ticketAttachmentService.GetById(id);
         if (result.Success)
-        {
             return Ok(result);
-        }
         return BadRequest(result);
     }
 
-    [HttpPost("add")]
-    public IActionResult Add(TicketAttachmentDto dto)
+    [HttpGet("getbyticketid/{ticketId}")]
+    public IActionResult GetByTicketId(int ticketId)
     {
-        var entity = new Attachment();
-
-        var result = _ticketAttachmentService.Add(entity);
+        var result = _ticketAttachmentService.GetAll(a => a.TicketId == ticketId);
         if (result.Success)
-        {
             return Ok(result);
-        }
         return BadRequest(result);
     }
 
-    [HttpPost("update")]
-    public IActionResult Update(TicketAttachmentDto dto)
+    [HttpPost("upload")]
+    public async Task<IActionResult> Upload([FromForm] int ticketId, [FromForm] int uploadedById, IFormFile file)
     {
-        var entity = new Attachment();
+        if (file == null || file.Length == 0)
+            return BadRequest(new { Success = false, Message = "Dosya seçilmedi." });
 
-        var result = _ticketAttachmentService.Update(entity);
-        if (result.Success)
+        if (file.Length > MaxFileSizeBytes)
+            return BadRequest(new { Success = false, Message = Messages.AttachmentFileTooLarge });
+
+        var ext = Path.GetExtension(file.FileName);
+        if (!AllowedExtensions.Contains(ext))
+            return BadRequest(new { Success = false, Message = Messages.AttachmentInvalidType });
+
+        var uploadBasePath = _configuration["FileStorage:UploadPath"] ?? "wwwroot/uploads/tickets";
+        var ticketFolder = Path.Combine(_env.ContentRootPath, uploadBasePath, ticketId.ToString());
+        Directory.CreateDirectory(ticketFolder);
+
+        var uniqueFileName = $"{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(ticketFolder, uniqueFileName);
+
+        await using (var stream = new FileStream(fullPath, FileMode.Create))
         {
-            return Ok(result);
+            await file.CopyToAsync(stream);
         }
+
+        var relativePath = $"/uploads/tickets/{ticketId}/{uniqueFileName}";
+
+        var attachment = new Attachment
+        {
+            TicketId = ticketId,
+            ResponseId = 0,
+            FileName = file.FileName,
+            FilePath = relativePath,
+            UploadedById = uploadedById,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result = _ticketAttachmentService.Add(attachment);
+        if (result.Success)
+            return Ok(new { Success = true, Message = result.Message, FilePath = relativePath });
+
         return BadRequest(result);
     }
 
     [HttpPost("delete")]
-    public IActionResult Delete(TicketAttachmentDto dto)
+    public IActionResult Delete(int id)
     {
-        var entity = new Attachment();
+        var attachment = _ticketAttachmentService.GetById(id);
+        if (!attachment.Success || attachment.Data == null)
+            return BadRequest(new { Success = false, Message = Messages.AttachmentNotFound });
 
-        var result = _ticketAttachmentService.Delete(entity);
+        var result = _ticketAttachmentService.Delete(attachment.Data);
         if (result.Success)
-        {
             return Ok(result);
-        }
         return BadRequest(result);
     }
 }

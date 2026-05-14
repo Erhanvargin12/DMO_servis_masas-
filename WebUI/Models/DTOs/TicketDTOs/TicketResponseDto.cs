@@ -1,7 +1,9 @@
 ﻿using Core.Entities;
 
-namespace Entities.DTOs.TicketDTOs;
+namespace WebUI.Models.DTOs;
 
 public class TicketResponseDto : IDto
 {
+    public Response? Response { get; set; }
+    public List<Attachment>? Attachments { get; set; }
 }

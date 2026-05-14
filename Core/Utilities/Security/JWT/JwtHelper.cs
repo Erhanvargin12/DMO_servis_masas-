@@ -1,4 +1,4 @@
-﻿using Core.Extensions;
+using Core.Extensions;
 using Core.Utilities.Security.Encryption;
 using Entities.Concrete;
 using Microsoft.Extensions.Configuration;
@@ -62,6 +62,7 @@ namespace Core.Utilities.Security.Jwt
             claims.AddEmail(user.Mail);
             claims.AddName($"{user.FirstName} {user.LastName}");
             claims.AddRoles(operationClaims.Select(c => c.Name).ToArray());
+            claims.AddOrganizationUnitId(user.OrganizationUnitId.ToString());
 
             return claims;
         }

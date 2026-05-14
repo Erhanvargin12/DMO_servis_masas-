@@ -1,22 +1,17 @@
+using Core.Utilities.Security.Jwt;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using WebUI.Models.ViewModels;
-using WebUI.Services.Abstract;
+using WebUI.Core.Services.Abstract;
 
 namespace WebUI.Core.Middleware
 {
-    /// <summary>
-    /// Access token süresi dolmadan önce otomatik yenileme middleware'ı.
-    /// Token'ın son 5 dakikasına girildiyse yenileme işlemi başlatır.
-    /// </summary>
     public class TokenRefreshMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<TokenRefreshMiddleware> _logger;
-        
-        // Token yenileme için kalan süre eşiği (dakika)
+
         private const int RefreshThresholdMinutes = 5;
 
         public TokenRefreshMiddleware(RequestDelegate next, ILogger<TokenRefreshMiddleware> logger)
@@ -27,14 +22,12 @@ namespace WebUI.Core.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            // Auth sayfalarında token kontrolü yapma
             if (IsAuthPath(context.Request.Path))
             {
                 await _next(context);
                 return;
             }
 
-            // Kullanıcı giriş yapmamışsa devam et
             if (context.User.Identity?.IsAuthenticated != true)
             {
                 await _next(context);
@@ -44,46 +37,55 @@ namespace WebUI.Core.Middleware
             try
             {
                 var accessToken = context.Session.GetString("AccessToken");
+                var refreshToken = context.Session.GetString("RefreshToken");
                 var tokenExpirationStr = context.Session.GetString("TokenExpiration");
 
                 if (!string.IsNullOrEmpty(accessToken) && !string.IsNullOrEmpty(tokenExpirationStr))
                 {
-                    if (DateTime.TryParse(tokenExpirationStr, out var tokenExpiration))
+                    if (DateTime.TryParse(tokenExpirationStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var tokenExpiration))
                     {
                         var timeUntilExpiration = tokenExpiration - DateTime.UtcNow;
 
-                        // Token süresi dolmadan 5 dakika kala yenile
-                        if (timeUntilExpiration.TotalMinutes <= RefreshThresholdMinutes && timeUntilExpiration.TotalMinutes > 0)
+                        var shouldRefresh = timeUntilExpiration.TotalMinutes <= RefreshThresholdMinutes;
+
+                        if (shouldRefresh && !string.IsNullOrEmpty(refreshToken))
                         {
-                            _logger.LogInformation("Token yenileniyor. Kalan süre: {Minutes} dakika", timeUntilExpiration.TotalMinutes);
-                            
-                            //var (success, newToken) = await authService.RefreshTokenAsync();
-                            
-                            //if (success && newToken != null)
-                            //{
-                            //    // Session'ı güncelle
-                            //    context.Session.SetString("AccessToken", newToken.Token);
-                            //    context.Session.SetString("TokenExpiration", newToken.Expiration.ToString("O"));
-                                
-                            //    // Cookie claim'lerini güncelle
-                            //    await UpdateAuthCookie(context, newToken);
-                                
-                            //    _logger.LogInformation("Token başarıyla yenilendi");
-                            //}
-                            //else
-                            //{
-                            //    _logger.LogWarning("Token yenileme başarısız");
-                            //}
+                            _logger.LogInformation("Token yenileniyor. Kalan süre: {Minutes:F1} dakika", timeUntilExpiration.TotalMinutes);
+
+                            var apiClient = context.RequestServices.GetRequiredService<IApiClient>();
+                            apiClient.SetBearerToken(accessToken);
+
+                            var refreshResult = await apiClient.PostAsync<AccessToken>("auth/refresh", new RefreshTokenRequestDto
+                            {
+                                AccessToken = accessToken,
+                                RefreshToken = refreshToken
+                            });
+
+                            if (refreshResult.Success && refreshResult.Data != null)
+                            {
+                                context.Session.SetString("AccessToken", refreshResult.Data.Token);
+                                context.Session.SetString("TokenExpiration", refreshResult.Data.Expiration.ToString("O"));
+                                context.Session.SetString("RefreshToken", refreshResult.Data.RefreshToken);
+
+                                await UpdateAuthCookie(context, refreshResult.Data);
+
+                                _logger.LogInformation("Token başarıyla yenilendi.");
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Token yenileme başarısız: {Message}", refreshResult.Message);
+
+                                if (timeUntilExpiration.TotalMinutes <= 0)
+                                {
+                                    await SignOut(context);
+                                    return;
+                                }
+                            }
                         }
-                        // Token süresi dolmuşsa çıkış yap
                         else if (timeUntilExpiration.TotalMinutes <= 0)
                         {
-                            _logger.LogWarning("Token süresi dolmuş, kullanıcı çıkış yapılıyor");
-                            
-                            context.Session.Clear();
-                            await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            
-                            context.Response.Redirect("/Account/Login?expired=true");
+                            _logger.LogWarning("Token süresi dolmuş ve refresh token yok, çıkış yapılıyor.");
+                            await SignOut(context);
                             return;
                         }
                     }
@@ -97,32 +99,45 @@ namespace WebUI.Core.Middleware
             await _next(context);
         }
 
+        private async Task SignOut(HttpContext context)
+        {
+            context.Session.Clear();
+            await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            context.Response.Redirect("/Account/Login?expired=true");
+        }
+
         private bool IsAuthPath(PathString path)
         {
             var authPaths = new[] { "/Account/Login", "/Account/Register", "/Account/ForgotPassword", "/Account/ResetPassword" };
             return authPaths.Any(p => path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase));
         }
 
-        private async Task UpdateAuthCookie(HttpContext context, AccessTokenResponse token)
+        private async Task UpdateAuthCookie(HttpContext context, AccessToken token)
         {
             try
             {
-                var handler = new JwtSecurityTokenHandler();
-                var jwtToken = handler.ReadJwtToken(token.Token);
-
                 var claims = new List<Claim>();
-                
-                // Mevcut claim'leri koru
+
                 foreach (var claim in context.User.Claims)
                 {
                     if (claim.Type != "AccessToken")
-                    {
                         claims.Add(claim);
-                    }
                 }
-                
-                // Yeni token'ı ekle
+
                 claims.Add(new Claim("AccessToken", token.Token));
+
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token.Token);
+                string msUrl = "http://schemas.microsoft.com/ws/2008/06/identity/claims/";
+
+                var roleClaims = jwtToken.Claims.Where(c =>
+                    c.Type == msUrl + "role" || c.Type == ClaimTypes.Role || c.Type == "role");
+
+                foreach (var roleClaim in roleClaims)
+                {
+                    if (!claims.Any(c => c.Type == ClaimTypes.Role && c.Value == roleClaim.Value))
+                        claims.Add(new Claim(ClaimTypes.Role, roleClaim.Value));
+                }
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var authProperties = new AuthenticationProperties
@@ -138,8 +153,7 @@ namespace WebUI.Core.Middleware
             }
             catch (Exception ex)
             {
-                // Loglama yap ama devam et
-                System.Diagnostics.Debug.WriteLine($"Auth cookie güncelleme hatası: {ex.Message}");
+                _logger.LogError(ex, "Auth cookie güncelleme hatası");
             }
         }
     }
@@ -151,5 +165,10 @@ namespace WebUI.Core.Middleware
             return builder.UseMiddleware<TokenRefreshMiddleware>();
         }
     }
-}
 
+    internal class RefreshTokenRequestDto
+    {
+        public string AccessToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+    }
+}

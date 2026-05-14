@@ -1,4 +1,5 @@
-﻿using Core.Utilities.Results;
+using Core.Utilities.Results;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
@@ -46,6 +47,34 @@ public class ApiClient : IApiClient
     public async Task<IDataResult<T>> DeleteAsync<T>(string endpoint)
     {
         var response = await _httpClient.DeleteAsync(endpoint);
+        return await HandleResponse<T>(response);
+    }
+
+    public async Task<IDataResult<T>> SendFormAsync<T>(
+        string endpoint,
+        Dictionary<string, string> fields,
+        IFormFileCollection? files = null,
+        string fileFieldName = "Attachments")
+    {
+        using var form = new MultipartFormDataContent();
+
+        foreach (var kvp in fields)
+            form.Add(new StringContent(kvp.Value ?? string.Empty), kvp.Key);
+
+        if (files != null)
+        {
+            foreach (var file in files)
+            {
+                if (file.Length == 0) continue;
+                var stream = file.OpenReadStream();
+                var fileContent = new StreamContent(stream);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+                    file.ContentType ?? "application/octet-stream");
+                form.Add(fileContent, fileFieldName, file.FileName);
+            }
+        }
+
+        var response = await _httpClient.PostAsync(endpoint, form);
         return await HandleResponse<T>(response);
     }
 

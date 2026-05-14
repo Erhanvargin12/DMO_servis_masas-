@@ -9,5 +9,6 @@ namespace Entities.Concrete.Ticket
         public int AssignedById { get; set; }
         public int AssignedToId { get; set; }
         public DateTime AssignedAt { get; set; }
+        public string? Description { get; set; }
     }
 }

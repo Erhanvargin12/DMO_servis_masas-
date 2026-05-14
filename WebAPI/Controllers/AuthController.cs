@@ -1,4 +1,4 @@
-﻿using Business.Abstract;
+using Business.Abstract;
 using Entities.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
@@ -69,18 +69,19 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("refresh")]
-        public IActionResult RefreshToken()
+        public IActionResult RefreshToken([FromBody] RefreshTokenRequestDto? dto = null)
         {
-            // Refresh token'ı cookie'den al
-            var refreshToken = Request.Cookies[RefreshTokenCookieName];
+            // Refresh token: önce body'den, yoksa cookie'den al
+            var refreshToken = dto?.RefreshToken ?? Request.Cookies[RefreshTokenCookieName];
             
             if (string.IsNullOrEmpty(refreshToken))
             {
                 return Unauthorized(new { Success = false, Message = "Refresh token bulunamadı" });
             }
 
-            // Access token'ı header'dan al
-            var accessToken = Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            // Access token: önce body'den, yoksa header'dan al
+            var accessToken = dto?.AccessToken 
+                ?? Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
             
             if (string.IsNullOrEmpty(accessToken))
             {
@@ -92,17 +93,17 @@ namespace WebAPI.Controllers
             
             if (result.Success)
             {
-                // Yeni refresh token'ı cookie'ye kaydet (token rotation)
                 SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiration);
                 
                 return Ok(new
                 {
-                    Token = result.Data.Token,
-                    Expiration = result.Data.Expiration
+                    result.Data.Token,
+                    result.Data.Expiration,
+                    result.Data.RefreshToken,
+                    result.Data.RefreshTokenExpiration
                 });
             }
 
-            // Token geçersizse cookie'yi temizle
             DeleteRefreshTokenCookie();
             return Unauthorized(new { Success = false, Message = result.Message });
         }

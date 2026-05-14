@@ -1,4 +1,4 @@
-﻿namespace Business.Constants;
+namespace Business.Constants;
 
 public static class Messages
 {
@@ -79,6 +79,13 @@ public static class Messages
     public const string TicketAssigned = "Talep kullanıcıya atandı!";
     public const string TicketTransferred = "Talep başarıyla sevk edildi!";
     public const string TransferTargetRequired = "Sevk için hedef kullanıcı veya rol seçilmelidir!";
+
+    public const string AttachmentAdded = "Dosya başarıyla eklendi!";
+    public const string AttachmentDeleted = "Dosya başarıyla silindi!";
+    public const string AttachmentUpdated = "Dosya başarıyla güncellendi!";
+    public const string AttachmentNotFound = "Dosya bulunamadı!";
+    public const string AttachmentFileTooLarge = "Dosya boyutu 10 MB'ı geçemez!";
+    public const string AttachmentInvalidType = "Geçersiz dosya türü!";
 
     #endregion
 

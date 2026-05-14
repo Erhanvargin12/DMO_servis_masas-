@@ -1,4 +1,4 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +13,7 @@ namespace WebAPI.Controllers.TicketControllers;
 public class TicketController : ControllerBase
 {
     private readonly ITicketService _ticketService;
+
     public TicketController(ITicketService ticketService)
     {
         _ticketService = ticketService;
@@ -52,27 +53,16 @@ public class TicketController : ControllerBase
 
 
     [HttpPost("add")]
-    public IActionResult Add(TicketDto dto)
+    public IActionResult Add(TicketDto ticket)
     {
-        var entity = new Ticket() 
-        {
-            TicketNo = dto.Ticket.TicketNo,
-            Title = dto.Ticket.Title,
-            Description = dto.Ticket.Description,
-            CreatedById = dto.Ticket.CreatedById,
-            CurrentBranchId = dto.Ticket.CurrentBranchId,
-            AssignedUserId = dto.Ticket.AssignedUserId,
-            StatusId = dto.Ticket.StatusId,
-            PriorityId = dto.Ticket.PriorityId,
-            CreatedAt = dto.Ticket.CreatedAt,
-            UpdatedAt = dto.Ticket.UpdatedAt,
-            ClosedAt = dto.Ticket.ClosedAt,
-        };
-        var result = _ticketService.Add(entity);
+        ticket.Ticket.TicketNo = $"TKT-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+        ticket.Ticket.CreatedAt = DateTime.UtcNow;
+        ticket.Ticket.StatusId ??= 1;
+
+        var result = _ticketService.Add(ticket);
         if (result.Success)
-        {
             return Ok(result);
-        }
+
         return BadRequest(result);
     }
 

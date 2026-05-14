@@ -436,9 +436,17 @@
                 input.files = dt.files;
             }
 
-            function add(files) { Array.from(files).forEach(function (f) { dt.items.add(f); }); render(); }
+            function add(files) {
+                var arr = Array.from(files);
+                arr.forEach(function (f) { dt.items.add(f); });
+                render();
+            }
 
-            input.addEventListener('change', function () { add(input.files); input.value = ''; });
+            input.addEventListener('change', function () {
+                var selected = Array.from(input.files);
+                selected.forEach(function (f) { dt.items.add(f); });
+                render();
+            });
             list.addEventListener('click', function (e) {
                 var btn = e.target.closest('[data-idx]');
                 if (!btn) return;
@@ -455,6 +463,13 @@
                     if (ev === 'drop' && e.dataTransfer.files.length) add(e.dataTransfer.files);
                 });
             });
+
+            var form = input.closest('form');
+            if (form) {
+                form.addEventListener('submit', function () {
+                    input.files = dt.files;
+                });
+            }
         },
 
         initAll: function () {

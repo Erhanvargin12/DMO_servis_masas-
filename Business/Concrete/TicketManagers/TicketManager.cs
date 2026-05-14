@@ -1,9 +1,8 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Business.Constants;
 using Core.Utilities.Business;
 using Core.Utilities.Results;
 using DataAccess.Abstract.TicketDal;
-using Entities.Concrete;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
 using System.Linq.Expressions;
@@ -12,17 +11,29 @@ namespace Business.Concrete.TicketManagers
 {
     public class TicketManager : ITicketService
     {
-        private ITicketDal _ticketDal;
+        private readonly ITicketDal _ticketDal;
+        private readonly ITicketAttachmentDal _attachmentDal;
 
-        public TicketManager(ITicketDal ticketDal)
+        public TicketManager(ITicketDal ticketDal, ITicketAttachmentDal attachmentDal)
         {
             _ticketDal = ticketDal;
+            _attachmentDal = attachmentDal;
         }
 
-        public IResult Add(Ticket ticket)
+        public IDataResult<TicketDto> Add(TicketDto dto)
         {
-            _ticketDal.Add(ticket);
-            return new SuccessResult(Messages.TicketCreated);
+            _ticketDal.Add(dto.Ticket);
+
+            if (dto.Attachments != null && dto.Attachments.Count > 0)
+            {
+                foreach (var attachment in dto.Attachments)
+                {
+                    attachment.TicketId = dto.Ticket.Id;
+                    _attachmentDal.Add(attachment);
+                }
+            }
+
+            return new SuccessDataResult<TicketDto>(dto, Messages.TicketCreated);
         }
 
         public IResult Delete(int id)
