@@ -10,8 +10,9 @@ namespace WebUI.Models.ViewModels
         public string Mail { get; set; } = string.Empty;
         public string? Password { get; set; }
         public bool Status { get; set; } = true;
-        public int RegistirationId { get; set; }
-        public int OrganizationUnitId { get; set; }
+        public int EbysId { get; set; }
+        public int DepartmentId { get; set; }
+        public int ParentDepartmentId { get; set; }
         public int PositionId { get; set; }
     }
 

@@ -29,6 +29,12 @@ builder.Services.AddAuthentication("Cookies").AddCookie("Cookies", options =>
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.Redirect("/Account/AccessDenied");
+        return Task.CompletedTask;
+    };
 });
 
 builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>

@@ -39,7 +39,7 @@ public class EfEntityRepositoryBase<TEntity, TContext> : IEntityRepository<TEnti
         return _context.Set<TEntity>().AsNoTracking().FirstOrDefault(filter);
     }
 
-    public List<TEntity> GetAll(Expression<Func<TEntity, bool>> filter = null)
+    public async Task<List<TEntity>> GetAll(Expression<Func<TEntity, bool>> filter = null)
     {
         return filter == null
             ? _context.Set<TEntity>().AsNoTracking().ToList()

@@ -27,7 +27,7 @@ namespace Business.Concrete.TicketManagers
                 _responseDal.Add(new Response
                 {
                     TicketId = assignment.TicketId,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     IsInternal = true,
                     Message = assignment.Description,
                     SenderId = assignment.AssignedById

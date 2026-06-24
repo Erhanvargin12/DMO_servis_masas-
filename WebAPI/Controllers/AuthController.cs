@@ -22,9 +22,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login(UserForLoginDto userForLoginDto)
+        public async Task<IActionResult> Login(UserForLoginDto userForLoginDto)
         {
-            var userToLogin = _authService.Login(userForLoginDto);
+            var userToLogin = await _authService.Login(userForLoginDto);
             if (!userToLogin.Success)
             {
                 return BadRequest("Giriş Hatası");
@@ -43,9 +43,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult Register(UserForRegisterDto userDto)
+        public async Task<IActionResult> Register(UserForRegisterDto userDto)
         {
-            var registerResult = _authService.Register(userDto);
+            var registerResult = await _authService.Register(userDto);
             if (!registerResult.Success)
             {
                 return BadRequest(new { Success = false, Message = registerResult.Message });
@@ -170,7 +170,7 @@ namespace WebAPI.Controllers
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddDays(-1),
+                Expires = DateTime.Now.AddDays(-1),
                 Path = "/api/auth"
             };
 

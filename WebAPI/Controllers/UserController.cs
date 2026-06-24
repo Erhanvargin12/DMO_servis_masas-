@@ -40,7 +40,7 @@ namespace WebAPI.Controllers
         }
         
         [HttpPost("add")]
-        public IActionResult Add(UserAddDto userDto)
+        public async Task<IActionResult> Add(UserAddDto userDto)
         {
             byte[] passwordHash, passwordSalt;
             HashingHelper.CreatePasswordHash(userDto.Password ?? "123456", out passwordHash, out passwordSalt);
@@ -59,7 +59,7 @@ namespace WebAPI.Controllers
                 CreateAt = DateTime.Now
             };
             
-            var result = _userService.Add(user);
+            var result = await _userService.Add(user);
             if (result.Success)
             {
                 return Ok(result);

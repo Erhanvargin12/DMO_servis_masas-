@@ -90,7 +90,7 @@ public class TicketAttachmentController : ControllerBase
             FileName = file.FileName,
             FilePath = relativePath,
             UploadedById = uploadedById,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         var result = _ticketAttachmentService.Add(attachment);

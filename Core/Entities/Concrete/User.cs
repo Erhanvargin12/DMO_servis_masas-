@@ -14,8 +14,8 @@ public class User : IEntity
     public bool Status { get; set; }
     public DateTime CreateAt { get; set; }
     public DateTime? UpdateAt { get; set; }
-    public int RegistirationId { get; set; }
-    public int OrganizationUnitId { get; set; }
+    public string RegistirationId { get; set; }
+    public string OrganizationUnitId { get; set; }
     public int PositionId { get; set; }
 
     [NotMapped]

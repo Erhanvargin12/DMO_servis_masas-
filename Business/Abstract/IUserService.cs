@@ -6,10 +6,10 @@ namespace Business.Abstract;
 
 public interface IUserService
 {
-    IDataResult<List<User>> GetAll(Expression<Func<User, bool>> filter = null);
-    IDataResult<User> GetUser(Expression<Func<User, bool>> filter = null);
-    IResult Add(User user);
-    IResult Update(User user);
-    IResult Delete(User user);
-    List<OperationClaim> GetClaims(User user);
+    Task<IDataResult<List<User>>> GetAll(Expression<Func<User, bool>> filter = null);
+    Task<IDataResult<User>> GetUser(Expression<Func<User, bool>> filter = null);
+    Task<IResult> Add(User user);
+    Task<IResult> Update(User user);
+    Task<IResult> Delete(User user);
+    Task<List<OperationClaim>> GetClaims(User user);
 }

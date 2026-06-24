@@ -98,7 +98,7 @@
         </a>
         <a href="@TabUrl("delegated")" class="data-tab @(Model.ActiveTab == "delegated" ? "active" : "")">
             <i class="fa-solid fa-user-shield"></i>
-            @Model.Delegation.DelegatorName Adına
+            @Model.Delegation.DelegatorName
             <span class="tab-count warn">@Model.DelegatedCount</span>
             <span class="tab-badge">Vekâlet</span>
         </a>
@@ -181,11 +181,7 @@
 <div class="data-table">
     <div class="data-table-header">
         <div class="data-table-title">
-            <span>
-                @(Model.ActiveTab == "delegated" && Model.Delegation != null
-                    ? Model.Delegation.DelegatorName + " — Talepleri"
-                    : "Taleplerim")
-            </span>
+            <span>@(Model.ActiveTab == "delegated" && Model.Delegation != null ? Model.Delegation.DelegatorName + " — Talepleri" : "Taleplerim")</span>
             <span class="stat-chip"></span>
         </div>
         <div class="data-table-actions"></div>

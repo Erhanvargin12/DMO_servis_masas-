@@ -44,7 +44,7 @@ namespace WebUI.Core.Middleware
                 {
                     if (DateTime.TryParse(tokenExpirationStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var tokenExpiration))
                     {
-                        var timeUntilExpiration = tokenExpiration - DateTime.UtcNow;
+                        var timeUntilExpiration = tokenExpiration - DateTime.Now;
 
                         var shouldRefresh = timeUntilExpiration.TotalMinutes <= RefreshThresholdMinutes;
 

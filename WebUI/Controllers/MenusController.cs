@@ -2,7 +2,6 @@ using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using WebUI.Core.Filters;
 using WebUI.Core.Services.Abstract;
 using WebUI.Core.Services.Concrete;
 using WebUI.Models.DTOs;
@@ -10,8 +9,8 @@ using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers
 {
-    [Authorize]
-    [RoleAuthorize("Admin")]
+
+    [Authorize(Roles = "Admin")]
     public class MenusController : BaseController
     {
         private readonly IMemoryCache _cache;

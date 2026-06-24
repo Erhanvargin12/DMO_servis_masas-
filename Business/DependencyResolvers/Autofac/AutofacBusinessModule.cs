@@ -1,10 +1,12 @@
 using Autofac;
+using Autofac.Core;
 using Autofac.Extras.DynamicProxy;
 using Business.Abstract;
 using Business.Abstract.TicketServices;
 using Business.Concrete;
 using Business.Concrete.TicketManagers;
 using Castle.DynamicProxy;
+using Core.Communication;
 using Core.Utilities.Interceptors;
 using Core.Utilities.Security.Jwt;
 using DataAccess.Abstract;
@@ -41,6 +43,7 @@ public class AutofacBusinessModule : Module
 
         builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>().InstancePerLifetimeScope();
 
+        builder.RegisterType<HttpServiceCommunication>().As<IServiceCommunication>().InstancePerLifetimeScope();
 
         // Ticket 
         builder.RegisterType<TicketAssignmentManager>().As<ITicketAssignmentService>().InstancePerLifetimeScope();

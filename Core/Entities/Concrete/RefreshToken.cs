@@ -15,7 +15,7 @@ namespace Core.Entities.Concrete
         public string? ReplacedByToken { get; set; }
         public string? ReasonRevoked { get; set; }
         
-        public bool IsExpired => DateTime.UtcNow >= Expires;
+        public bool IsExpired => DateTime.Now >= Expires;
         public bool IsRevoked => Revoked != null;
         public bool IsActive => !IsRevoked && !IsExpired;
     }

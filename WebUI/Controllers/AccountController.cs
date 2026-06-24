@@ -233,25 +233,19 @@ namespace WebUI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _authService.LogoutAsync();
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            _logger.LogInformation("Kullanıcı çıkış yaptı");
-
             return RedirectToAction("Login");
         }
 
         #endregion
 
         #region Access Denied
-
         [HttpGet]
         public IActionResult AccessDenied()
         {
             return View();
         }
-
         #endregion
     }
 }

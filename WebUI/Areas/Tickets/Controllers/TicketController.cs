@@ -10,7 +10,7 @@ using WebUI.Models.DTOs;
 namespace WebUI.Areas.Talepler.Controllers;
 
 [Area("Tickets")]
-[Authorize]
+[Authorize(Roles = "Tickets,Staff")]
 public class TicketController : BaseController
 {
     private readonly IApiClient _apiClient;
@@ -21,6 +21,70 @@ public class TicketController : BaseController
     }
 
     public async Task<IActionResult> Index(string? search, string? status, string? priority, string? tab)
+    {
+        tab ??= "own";
+
+        var model = new TicketViewModel();
+        var response = await SendRequest<List<Ticket>>("ticket/getall");
+
+        model.Ticket = response;
+        model.SearchTerm = search;
+        model.StatusFilter = status;
+        model.PriorityFilter = priority;
+        model.ActiveTab = tab;
+
+        // ── Mock vekalet bilgisi (API bağlanana kadar) ────────────────────────
+        // API hazır olduğunda: kullanıcının aktif vekâletleri /delegation/getactive
+        // endpoint'inden çekilecek ve bu blok kaldırılacak.
+        var mockDelegation = new DelegationInfo
+        {
+            DelegatorId = 5,
+            DelegatorName = "Ahmet Yılmaz",
+            DelegationType = "manager",      // "manager" | "personnel"
+            BranchName = "IT Müdürlüğü"
+        };
+        model.Delegation = mockDelegation;
+        // ─────────────────────────────────────────────────────────────────────
+
+        // Kendi ticketları
+        var ownList = response?.Data ?? new List<Ticket>();
+
+        // Vekâlet ticketları (mock) — API gelince /ticket/getdelegated/{delegatorId}
+        var delegatedList = GetMockDelegatedTickets();
+
+        // Sayaçlar (filtreden önce)
+        model.OwnCount = ownList.Count;
+        model.DelegatedCount = delegatedList.Count;
+
+        // Aktif tab'a göre filtrelenecek liste
+        var list = tab == "delegated" ? delegatedList : ownList;
+
+        // ── Filtreler ─────────────────────────────────────────────────────────
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLowerInvariant();
+            list = list.Where(t =>
+                t.Title.ToLowerInvariant().Contains(s) ||
+                t.TicketNo.ToLowerInvariant().Contains(s) ||
+                t.Description.ToLowerInvariant().Contains(s)
+            ).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(status) && int.TryParse(status, out var sid))
+            list = list.Where(t => t.StatusId == sid).ToList();
+
+        if (!string.IsNullOrWhiteSpace(priority) && int.TryParse(priority, out var pid))
+            list = list.Where(t => t.PriorityId == pid).ToList();
+
+        model.FilteredTickets = list;
+
+        // Sidebar badge için sayıyı session'a kaydet (her ticket sayfasında güncellenir)
+        HttpContext.Session.SetInt32("SidebarTicketCount", model.OwnCount);
+
+        return View(model);
+    }
+
+    public async Task<IActionResult> PendingTickets(string? search, string? status, string? priority, string? tab)
     {
         tab ??= "own";
 
@@ -188,7 +252,7 @@ public class TicketController : BaseController
             TicketId = ticketId,
             AssignedById = userId,
             AssignedToId = assignedUserId,
-            AssignedAt = DateTime.UtcNow,
+            AssignedAt = DateTime.Now,
             Description = note
         };
         var response = await SendRequest<Assignment>("ticketassignment/add", assignment, HttpMethod.Post);
@@ -228,7 +292,7 @@ public class TicketController : BaseController
             {
                 IsInternal = false,
                 Message = content,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.Now,
                 TicketId = ticketId,
                 SenderId = userId
             },
@@ -322,7 +386,7 @@ public class TicketController : BaseController
                     FileName = file.FileName,
                     FilePath = $"/uploads/tickets/{uniqueName}",
                     UploadedById = userId,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 });
             }
         }

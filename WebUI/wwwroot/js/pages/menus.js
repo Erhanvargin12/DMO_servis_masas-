@@ -49,10 +49,23 @@
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('.menu-tree-toggle');
         if (!btn) return;
+
         var gid = btn.getAttribute('data-group');
         var row = btn.closest('tr');
         if (!gid || !row) return;
-        row.classList.contains('expanded') ? collapse(gid, row) : expand(gid, row, true);
+
+        // Sadece sınıfa bakma, alt satırların gizli olup olmadığını da kontrol et
+        var firstChild = document.querySelector('.menu-row-child[data-group="' + gid + '"]');
+        var isActuallyHidden = firstChild ? window.getComputedStyle(firstChild).display === 'none' : true;
+
+        // Eğer gizliyse aç (expand), değilse kapat (collapse)
+        if (isActuallyHidden) {
+            expand(gid, row, true);
+            row.classList.add('expanded'); // Sınıfın eklendiğinden emin oluyoruz
+        } else {
+            collapse(gid, row);
+            row.classList.remove('expanded');
+        }
     });
 
     /* ── Arama ─────────────────────────────────────────────────────────────── */

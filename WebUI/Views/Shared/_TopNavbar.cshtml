@@ -38,7 +38,8 @@
                             Profilim
                         </a>
                         <div class="profile-menu-divider"></div>
-                        <form asp-controller="Account" asp-action="Logout" method="post">
+                        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                            @Html.AntiForgeryToken()
                             <button type="submit" class="profile-menu-item danger">
                                 <i class="fa-solid fa-right-from-bracket"></i>
                                 Çıkış Yap

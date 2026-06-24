@@ -7,8 +7,8 @@ namespace Business.Abstract
 {
     public interface IAuthService
     {
-        IDataResult<User> Login(UserForLoginDto userForLoginDto);
-        IDataResult<User> Register(UserForRegisterDto userForRegisterDto);
+        Task<IDataResult<User>> Login(UserForLoginDto userForLoginDto);
+        Task<IDataResult<User>> Register(UserForRegisterDto userForRegisterDto);
         IResult UserExists(string email);
         IDataResult<AccessToken> CreateAccessToken(User user, string? ipAddress = null);
         IDataResult<AccessToken> RefreshToken(string token, string refreshToken, string? ipAddress);

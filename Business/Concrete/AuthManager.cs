@@ -1,4 +1,5 @@
 ﻿using Business.Abstract;
+using Business.Abstract.IntegrationServices;
 using Business.Constants;
 using Core.Entities.Concrete;
 using Core.Utilities.Business;
@@ -16,22 +17,23 @@ public class AuthManager : IAuthService
     private readonly IUserService _userService;
     private readonly ITokenHelper _tokenHelper;
     private readonly IRefreshTokenDal _refreshTokenDal;
+    private readonly IDmoMainService _dmoMainService;
 
     public AuthManager(
         IUserService userService, 
         ITokenHelper tokenHelper,
-        IRefreshTokenDal refreshTokenDal)
+        IRefreshTokenDal refreshTokenDal,
+        IDmoMainService dmoMainService)
     {
         _userService = userService;
         _tokenHelper = tokenHelper;
         _refreshTokenDal = refreshTokenDal;
+        _dmoMainService = dmoMainService;
     }
 
-    public IDataResult<User> Register(UserForRegisterDto userForRegisterDto)
+    public async Task<IDataResult<User>> Register(UserForRegisterDto userForRegisterDto)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfUserMailExists(userForRegisterDto.Mail)
-        );
+        IResult result = await BusinessRules.Run(CheckIfUserMailExists(userForRegisterDto.Mail));
 
         if (result != null)
         {
@@ -55,7 +57,7 @@ public class AuthManager : IAuthService
             Status = true
         };
         
-        var addResult = _userService.Add(user);
+        var addResult = await _userService.Add(user);
         if (!addResult.Success)
         {
             return new ErrorDataResult<User>(addResult.Message);
@@ -64,14 +66,27 @@ public class AuthManager : IAuthService
         return new SuccessDataResult<User>(user, Messages.UserAdded);
     }
 
-    public IDataResult<User> Login(UserForLoginDto userForLoginDto)
+    public async Task<IDataResult<User>> Login(UserForLoginDto userForLoginDto)
     {
         var userResult = _userService.GetUser(u=>u.Mail == userForLoginDto.Email);
         var userToCheck = userResult.Data;
         
-        if (userToCheck == null)
+        if (userToCheck is null)
         {
-            return new ErrorDataResult<User>(Messages.UserNotFound);
+            var user = await _dmoMainService.GetDmoUserByUserName(userForLoginDto.Email);
+            if (user is null)
+                return new ErrorDataResult<User>(Messages.UserNotFound);
+
+            var registerResult = await Register(new UserForRegisterDto
+            {
+                Mail = user.Email,
+                FirstName = user.Name,
+                LastName = user.Name,
+                Password = userForLoginDto.Password,
+                BranchId = user.BranchId,
+                PositionId = (int)user.PositionType,
+                RegistirationId = user.EbysId
+            });
         }
 
         if (!userToCheck.Status)
@@ -96,6 +111,7 @@ public class AuthManager : IAuthService
         }
         return new SuccessResult();
     }
+
 
     public IDataResult<AccessToken> CreateAccessToken(User user, string? ipAddress = null)
     {
@@ -160,7 +176,7 @@ public class AuthManager : IAuthService
         }
 
         // Eski token'ı iptal et (Token Rotation)
-        storedToken.Revoked = DateTime.UtcNow;
+        storedToken.Revoked = DateTime.Now;
         storedToken.RevokedByIp = ipAddress;
         storedToken.ReasonRevoked = "Replaced by new token";
         
@@ -192,7 +208,7 @@ public class AuthManager : IAuthService
             return new ErrorResult(Messages.TokenAlreadyRevoked);
         }
 
-        storedToken.Revoked = DateTime.UtcNow;
+        storedToken.Revoked = DateTime.Now;
         storedToken.RevokedByIp = ipAddress;
         storedToken.ReasonRevoked = "Revoked by user";
         _refreshTokenDal.Update(storedToken);
@@ -206,7 +222,7 @@ public class AuthManager : IAuthService
         
         foreach (var token in userTokens)
         {
-            token.Revoked = DateTime.UtcNow;
+            token.Revoked = DateTime.Now;
             token.RevokedByIp = ipAddress;
             token.ReasonRevoked = "Security: All tokens revoked";
             _refreshTokenDal.Update(token);
@@ -222,7 +238,7 @@ public class AuthManager : IAuthService
             UserId = userId,
             Token = token,
             Expires = expires,
-            Created = DateTime.UtcNow,
+            Created = DateTime.Now,
             CreatedByIp = ipAddress
         };
         _refreshTokenDal.Add(refreshToken);

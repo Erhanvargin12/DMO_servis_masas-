@@ -55,8 +55,8 @@ public class TicketController : ControllerBase
     [HttpPost("add")]
     public IActionResult Add(TicketDto ticket)
     {
-        ticket.Ticket.TicketNo = $"TKT-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
-        ticket.Ticket.CreatedAt = DateTime.UtcNow;
+        ticket.Ticket.TicketNo = $"TKT-{DateTime.Now:yyyy}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+        ticket.Ticket.CreatedAt = DateTime.Now;
         ticket.Ticket.StatusId ??= 1;
 
         var result = _ticketService.Add(ticket);

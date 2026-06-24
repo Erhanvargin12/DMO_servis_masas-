@@ -2,15 +2,13 @@ using Core.Utilities.Results;
 using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WebUI.Core.Filters;
 using WebUI.Core.Services.Abstract;
 using WebUI.Core.Services.Concrete;
 using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers
 {
-    [Authorize]
-    [RoleAuthorize("Admin")]
+    [Authorize(Roles = "Admin")]
     public class RolesController : BaseController
     {
         public RolesController(IApiClient apiClient) : base(apiClient){}

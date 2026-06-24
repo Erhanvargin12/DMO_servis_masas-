@@ -4,13 +4,14 @@ namespace Core.Utilities.Business;
 
 public class BusinessRules
 {
-    public static IResult Run(params IResult[] logics)
+    public static async Task<IResult> Run(params Task<IResult>[] logics)
     {
         foreach (var logic in logics)
         {
-            if (!logic.Success)
+            var result = await logic;
+            if (!result.Success)
             {
-                return logic;
+                return result;
             }
         }
         return null;
