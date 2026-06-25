@@ -1,4 +1,4 @@
-﻿using Business.Abstract;
+using Business.Abstract;
 using Core.Utilities.Security.Hashing;
 using Entities.Concrete;
 using Entities.DTOs;
@@ -18,9 +18,9 @@ namespace WebAPI.Controllers
         }
         
         [HttpGet("getall")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var result = _userService.GetAll();
+            var result = await _userService.GetAllAsync();
             if (result.Success)
             {
                 return Ok(result);
@@ -29,9 +29,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getbyid/{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var result = _userService.GetUser(u => u.Id == id);
+            var result = await _userService.GetUserAsync(u => u.Id == id);
             if (result.Success)
             {
                 return Ok(result);
@@ -59,7 +59,7 @@ namespace WebAPI.Controllers
                 CreateAt = DateTime.Now
             };
             
-            var result = await _userService.Add(user);
+            var result = await _userService.AddAsync(user);
             if (result.Success)
             {
                 return Ok(result);
@@ -68,7 +68,7 @@ namespace WebAPI.Controllers
         }
         
         [HttpPost("update")]
-        public IActionResult Update(UserUpdateDto userDto)
+        public async Task<IActionResult> Update(UserUpdateDto userDto)
         {
             var user = new User
             {
@@ -82,7 +82,7 @@ namespace WebAPI.Controllers
                 PositionId = userDto.PositionId
             };
             
-            var result = _userService.Update(user);
+            var result = await _userService.UpdateAsync(user);
             if (result.Success)
             {
                 return Ok(result);
@@ -91,11 +91,11 @@ namespace WebAPI.Controllers
         }
         
         [HttpPost("delete")]
-        public IActionResult Delete(UserDeleteDto userDto)
+        public async Task<IActionResult> Delete(UserDeleteDto userDto)
         {
             var user = new User { Id = userDto.Id };
             
-            var result = _userService.Delete(user);
+            var result = await _userService.DeleteAsync(user);
             if (result.Success)
             {
                 return Ok(result);
@@ -104,9 +104,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("changepassword")]
-        public IActionResult ChangePassword(ChangePasswordDto dto)
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
         {
-            var userResult = _userService.GetUser(u => u.Id == dto.UserId);
+            var userResult = await _userService.GetUserAsync(u => u.Id == dto.UserId);
             if (!userResult.Success || userResult.Data == null)
             {
                 return BadRequest(new { Success = false, Message = "Kullanıcı bulunamadı" });
@@ -124,7 +124,7 @@ namespace WebAPI.Controllers
             user.PasswordSalt = newSalt;
             user.UpdateAt = DateTime.Now;
 
-            var result = _userService.Update(user);
+            var result = await _userService.UpdateAsync(user);
             if (result.Success)
             {
                 return Ok(new { Success = true, Message = "Şifre başarıyla değiştirildi" });

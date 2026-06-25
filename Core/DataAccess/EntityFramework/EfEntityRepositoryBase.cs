@@ -1,4 +1,4 @@
-﻿using Core.Entities;
+using Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -16,33 +16,33 @@ public class EfEntityRepositoryBase<TEntity, TContext> : IEntityRepository<TEnti
     }
 
 
-    public void Add(TEntity entity)
+    public async Task AddAsync(TEntity entity)
     {
-        _context.Set<TEntity>().Add(entity);
-        _context.SaveChanges();
+        await _context.Set<TEntity>().AddAsync(entity);
+        await _context.SaveChangesAsync();
     }
 
-    public void Update(TEntity entity)
+    public async Task UpdateAsync(TEntity entity)
     {
         _context.Set<TEntity>().Update(entity);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
-    public void Delete(TEntity entity)
+    public async Task DeleteAsync(TEntity entity)
     {
         _context.Set<TEntity>().Remove(entity);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
     }
 
-    public TEntity Get(Expression<Func<TEntity, bool>> filter)
+    public async Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> filter)
     {
-        return _context.Set<TEntity>().AsNoTracking().FirstOrDefault(filter);
+        return await _context.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(filter);
     }
 
-    public async Task<List<TEntity>> GetAll(Expression<Func<TEntity, bool>> filter = null)
+    public async Task<List<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>> filter = null)
     {
         return filter == null
-            ? _context.Set<TEntity>().AsNoTracking().ToList()
-            : _context.Set<TEntity>().AsNoTracking().Where(filter).ToList();
+            ? await _context.Set<TEntity>().AsNoTracking().ToListAsync()
+            : await _context.Set<TEntity>().AsNoTracking().Where(filter).ToListAsync();
     }
 }

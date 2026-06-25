@@ -6,10 +6,10 @@ namespace Business.Abstract;
 
 public interface IOperationClaimService
 {
-    IDataResult<List<OperationClaim>> GetAll(Expression<Func<OperationClaim, bool>> filter = null);
-    IDataResult<OperationClaim> GetById(int id);
-    IResult Add(OperationClaim operationClaim);
-    IResult Update(OperationClaim operationClaim);
-    IResult Delete(OperationClaim operationClaim);
+    Task<IDataResult<List<OperationClaim>>> GetAllAsync(Expression<Func<OperationClaim, bool>> filter = null);
+    Task<IDataResult<OperationClaim>> GetByIdAsync(int id);
+    Task<IResult> AddAsync(OperationClaim operationClaim);
+    Task<IResult> UpdateAsync(OperationClaim operationClaim);
+    Task<IResult> DeleteAsync(OperationClaim operationClaim);
 }
 

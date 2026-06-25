@@ -20,71 +20,69 @@ namespace Business.Concrete.TicketManagers
             _attachmentDal = attachmentDal;
         }
 
-        public IDataResult<TicketDto> Add(TicketDto dto)
+        public async Task<IDataResult<TicketDto>> AddAsync(TicketDto dto)
         {
-            _ticketDal.Add(dto.Ticket);
+            await _ticketDal.AddAsync(dto.Ticket);
 
             if (dto.Attachments != null && dto.Attachments.Count > 0)
             {
                 foreach (var attachment in dto.Attachments)
                 {
                     attachment.TicketId = dto.Ticket.Id;
-                    _attachmentDal.Add(attachment);
+                    await _attachmentDal.AddAsync(attachment);
                 }
             }
 
             return new SuccessDataResult<TicketDto>(dto, Messages.TicketCreated);
         }
 
-        public IResult Delete(int id)
+        public async Task<IResult> DeleteAsync(int id)
         {
-            IResult result = BusinessRules.Run(CheckIfTicketExists(id));
+            IResult result = await BusinessRules.RunAsync(() => CheckIfTicketExistsAsync(id));
 
             if (result != null)
             {
                 return result;
             }
 
-            var existingTicket = _ticketDal.Get(u => u.Id == id);
-            _ticketDal.Delete(existingTicket);
+            var existingTicket = await _ticketDal.GetAsync(u => u.Id == id);
+            await _ticketDal.DeleteAsync(existingTicket);
             return new SuccessResult(Messages.TicketDeleted);
         }
 
-        public IDataResult<List<Ticket>> GetAll(Expression<Func<Ticket, bool>> filter = null)
+        public async Task<IDataResult<List<Ticket>>> GetAllAsync(Expression<Func<Ticket, bool>> filter = null)
         {
-            return new SuccessDataResult<List<Ticket>>(_ticketDal.GetAll(filter), Messages.TicketsListed);
+            return new SuccessDataResult<List<Ticket>>(await _ticketDal.GetAllAsync(filter), Messages.TicketsListed);
         }
 
-        public IDataResult<Ticket> GetById(int id)
+        public async Task<IDataResult<Ticket>> GetByIdAsync(int id)
         {
-            return new SuccessDataResult<Ticket>(_ticketDal.Get(t=>t.Id == id), Messages.TicketsListed);
+            return new SuccessDataResult<Ticket>(await _ticketDal.GetAsync(t => t.Id == id), Messages.TicketsListed);
         }
 
-        public IDataResult<TicketDto> GetTicketDtoById(int id)
+        public async Task<IDataResult<TicketDto>> GetTicketDtoByIdAsync(int id)
         {
-            return new SuccessDataResult<TicketDto>(_ticketDal.GetTicketDtoById(id), Messages.TicketsListed);
+            return new SuccessDataResult<TicketDto>(await _ticketDal.GetTicketDtoByIdAsync(id), Messages.TicketsListed);
         }
 
-        public IResult Update(Ticket ticket)
+        public async Task<IResult> UpdateAsync(Ticket ticket)
         {
-            IResult result = BusinessRules.Run(CheckIfTicketExists(ticket.Id));
+            IResult result = await BusinessRules.RunAsync(() => CheckIfTicketExistsAsync(ticket.Id));
 
             if (result != null)
             {
                 return result;
             }
 
-            var existingTicket = _ticketDal.Get(u => u.Id == ticket.Id);
-
+            var existingTicket = await _ticketDal.GetAsync(u => u.Id == ticket.Id);
             existingTicket.Description = ticket.Description;
-
-            _ticketDal.Update(existingTicket);
+            await _ticketDal.UpdateAsync(existingTicket);
             return new SuccessResult(Messages.TicketUpdated);
         }
 
-        private IResult CheckIfTicketExists(int id)
+        private async Task<IResult> CheckIfTicketExistsAsync(int id)
         {
-            var result = _ticketDal.Get(u => u.Id == id);
+            var result = await _ticketDal.GetAsync(u => u.Id == id);
             if (result == null)
             {
                 return new ErrorResult(Messages.TicketNotFound);

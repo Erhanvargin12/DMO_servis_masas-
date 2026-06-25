@@ -16,9 +16,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getall")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var result = _operationClaimService.GetAll();
+            var result = await _operationClaimService.GetAllAsync();
             if (result.Success)
             {
                 return Ok(result);
@@ -27,9 +27,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getbyid/{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var result = _operationClaimService.GetById(id);
+            var result = await _operationClaimService.GetByIdAsync(id);
             if (result.Success)
             {
                 return Ok(result);
@@ -38,9 +38,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("add")]
-        public IActionResult Add(OperationClaim operationClaim)
+        public async Task<IActionResult> Add(OperationClaim operationClaim)
         {
-            var result = _operationClaimService.Add(operationClaim);
+            var result = await _operationClaimService.AddAsync(operationClaim);
             if (result.Success)
             {
                 return Ok(result);
@@ -49,9 +49,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("update")]
-        public IActionResult Update(OperationClaim operationClaim)
+        public async Task<IActionResult> Update(OperationClaim operationClaim)
         {
-            var result = _operationClaimService.Update(operationClaim);
+            var result = await _operationClaimService.UpdateAsync(operationClaim);
             if (result.Success)
             {
                 return Ok(result);
@@ -60,9 +60,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("delete")]
-        public IActionResult Delete(OperationClaim operationClaim)
+        public async Task<IActionResult> Delete(OperationClaim operationClaim)
         {
-            var result = _operationClaimService.Delete(operationClaim);
+            var result = await _operationClaimService.DeleteAsync(operationClaim);
             if (result.Success)
             {
                 return Ok(result);

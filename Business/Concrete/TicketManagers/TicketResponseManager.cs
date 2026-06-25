@@ -1,4 +1,4 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Business.Constants;
 using Core.Utilities.Results;
 using DataAccess.Abstract.TicketDal;
@@ -18,9 +18,9 @@ namespace Business.Concrete.TicketManagers
             _responseDal = responseDal;
             _attachmentDal = attachmentDal;
         }
-        public IResult Add(TicketResponseDto dto)
+        public async Task<IResult> AddAsync(TicketResponseDto dto)
         {
-            _responseDal.Add(dto.Response);
+            await _responseDal.AddAsync(dto.Response);
 
             if (dto.Attachments != null && dto.Attachments.Count > 0)
             {
@@ -28,29 +28,29 @@ namespace Business.Concrete.TicketManagers
                 {
                     attachment.TicketId = dto.Response.TicketId;
                     attachment.ResponseId = dto.Response.Id;
-                    _attachmentDal.Add(attachment);
+                    await _attachmentDal.AddAsync(attachment);
                 }
             }
 
             return new SuccessDataResult<TicketResponseDto>(dto, Messages.TicketCreated);
         }
 
-        public IResult Delete(Response response)
+        public Task<IResult> DeleteAsync(Response response)
         {
             throw new NotImplementedException();
         }
 
-        public IDataResult<List<Response>> GetAll(Expression<Func<Response, bool>> filter = null)
+        public Task<IDataResult<List<Response>>> GetAllAsync(Expression<Func<Response, bool>> filter = null)
         {
             throw new NotImplementedException();
         }
 
-        public IDataResult<Response> GetById(int id)
+        public Task<IDataResult<Response>> GetByIdAsync(int id)
         {
             throw new NotImplementedException();
         }
 
-        public IResult Update(Response response)
+        public Task<IResult> UpdateAsync(Response response)
         {
             throw new NotImplementedException();
         }

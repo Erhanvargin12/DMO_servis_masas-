@@ -1,4 +1,4 @@
-﻿using Core.DataAccess;
+using Core.DataAccess;
 using Entities.Concrete;
 using Entities.DTOs;
 
@@ -6,5 +6,5 @@ namespace DataAccess.Abstract;
 
 public interface IUserDal : IEntityRepository<User>
 {
-    List<OperationClaim> GetClaims(User user);
+    Task<List<OperationClaim>> GetClaimsAsync(User user);
 }

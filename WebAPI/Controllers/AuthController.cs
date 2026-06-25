@@ -24,14 +24,14 @@ namespace WebAPI.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(UserForLoginDto userForLoginDto)
         {
-            var userToLogin = await _authService.Login(userForLoginDto);
+            var userToLogin = await _authService.LoginAsync(userForLoginDto);
             if (!userToLogin.Success)
             {
                 return BadRequest("Giriş Hatası");
             }
 
             var ipAddress = GetIpAddress();
-            var result = _authService.CreateAccessToken(userToLogin.Data, ipAddress);
+            var result = await _authService.CreateAccessTokenAsync(userToLogin.Data, ipAddress);
             
             if (result.Success)
             {
@@ -45,14 +45,14 @@ namespace WebAPI.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(UserForRegisterDto userDto)
         {
-            var registerResult = await _authService.Register(userDto);
+            var registerResult = await _authService.RegisterAsync(userDto);
             if (!registerResult.Success)
             {
                 return BadRequest(new { Success = false, Message = registerResult.Message });
             }
 
             var ipAddress = GetIpAddress();
-            var result = _authService.CreateAccessToken(registerResult.Data, ipAddress);
+            var result = await _authService.CreateAccessTokenAsync(registerResult.Data, ipAddress);
             
             if (result.Success)
             {
@@ -69,7 +69,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("refresh")]
-        public IActionResult RefreshToken([FromBody] RefreshTokenRequestDto? dto = null)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto? dto = null)
         {
             // Refresh token: önce body'den, yoksa cookie'den al
             var refreshToken = dto?.RefreshToken ?? Request.Cookies[RefreshTokenCookieName];
@@ -89,7 +89,7 @@ namespace WebAPI.Controllers
             }
 
             var ipAddress = GetIpAddress();
-            var result = _authService.RefreshToken(accessToken, refreshToken, ipAddress);
+            var result = await _authService.RefreshTokenAsync(accessToken, refreshToken, ipAddress);
             
             if (result.Success)
             {
@@ -109,7 +109,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("revoke")]
-        public IActionResult RevokeToken()
+        public async Task<IActionResult> RevokeToken()
         {
             var refreshToken = Request.Cookies[RefreshTokenCookieName];
             
@@ -119,7 +119,7 @@ namespace WebAPI.Controllers
             }
 
             var ipAddress = GetIpAddress();
-            var result = _authService.RevokeToken(refreshToken, ipAddress);
+            var result = await _authService.RevokeTokenAsync(refreshToken, ipAddress);
             
             DeleteRefreshTokenCookie();
             
@@ -132,14 +132,14 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("logout")]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
             var refreshToken = Request.Cookies[RefreshTokenCookieName];
             
             if (!string.IsNullOrEmpty(refreshToken))
             {
                 var ipAddress = GetIpAddress();
-                _authService.RevokeToken(refreshToken, ipAddress);
+                await _authService.RevokeTokenAsync(refreshToken, ipAddress);
             }
 
             DeleteRefreshTokenCookie();

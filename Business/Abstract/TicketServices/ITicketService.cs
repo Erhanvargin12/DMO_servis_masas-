@@ -7,11 +7,11 @@ namespace Business.Abstract.TicketServices
 {
     public interface ITicketService
     {
-        IDataResult<List<Ticket>> GetAll(Expression<Func<Ticket, bool>> filter = null);
-        IDataResult<Ticket> GetById(int id);
-        IDataResult<TicketDto> GetTicketDtoById(int id);
-        IDataResult<TicketDto> Add(TicketDto ticket);
-        IResult Update(Ticket ticket);
-        IResult Delete(int id);
+        Task<IDataResult<List<Ticket>>> GetAllAsync(Expression<Func<Ticket, bool>> filter = null);
+        Task<IDataResult<Ticket>> GetByIdAsync(int id);
+        Task<IDataResult<TicketDto>> GetTicketDtoByIdAsync(int id);
+        Task<IDataResult<TicketDto>> AddAsync(TicketDto ticket);
+        Task<IResult> UpdateAsync(Ticket ticket);
+        Task<IResult> DeleteAsync(int id);
     }
 }

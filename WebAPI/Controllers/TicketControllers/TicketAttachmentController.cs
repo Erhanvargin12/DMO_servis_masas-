@@ -30,27 +30,27 @@ public class TicketAttachmentController : ControllerBase
     }
 
     [HttpGet("getall")]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var result = _ticketAttachmentService.GetAll();
+        var result = await _ticketAttachmentService.GetAllAsync();
         if (result.Success)
             return Ok(result);
         return BadRequest(result);
     }
 
     [HttpGet("getbyid/{id}")]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var result = _ticketAttachmentService.GetById(id);
+        var result = await _ticketAttachmentService.GetByIdAsync(id);
         if (result.Success)
             return Ok(result);
         return BadRequest(result);
     }
 
     [HttpGet("getbyticketid/{ticketId}")]
-    public IActionResult GetByTicketId(int ticketId)
+    public async Task<IActionResult> GetByTicketId(int ticketId)
     {
-        var result = _ticketAttachmentService.GetAll(a => a.TicketId == ticketId);
+        var result = await _ticketAttachmentService.GetAllAsync(a => a.TicketId == ticketId);
         if (result.Success)
             return Ok(result);
         return BadRequest(result);
@@ -93,7 +93,7 @@ public class TicketAttachmentController : ControllerBase
             CreatedAt = DateTime.Now
         };
 
-        var result = _ticketAttachmentService.Add(attachment);
+        var result = await _ticketAttachmentService.AddAsync(attachment);
         if (result.Success)
             return Ok(new { Success = true, Message = result.Message, FilePath = relativePath });
 
@@ -101,13 +101,13 @@ public class TicketAttachmentController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var attachment = _ticketAttachmentService.GetById(id);
+        var attachment = await _ticketAttachmentService.GetByIdAsync(id);
         if (!attachment.Success || attachment.Data == null)
             return BadRequest(new { Success = false, Message = Messages.AttachmentNotFound });
 
-        var result = _ticketAttachmentService.Delete(attachment.Data);
+        var result = await _ticketAttachmentService.DeleteAsync(attachment.Data);
         if (result.Success)
             return Ok(result);
         return BadRequest(result);

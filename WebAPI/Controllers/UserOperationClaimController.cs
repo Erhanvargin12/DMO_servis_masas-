@@ -16,9 +16,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getall")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var result = _userOperationClaimService.GetAll();
+            var result = await _userOperationClaimService.GetAllAsync();
             if (result.Success)
             {
                 return Ok(result);
@@ -27,9 +27,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getbyuserid/{userId}")]
-        public IActionResult GetByUserId(int userId)
+        public async Task<IActionResult> GetByUserId(int userId)
         {
-            var result = _userOperationClaimService.GetByUserId(userId);
+            var result = await _userOperationClaimService.GetByUserIdAsync(userId);
             if (result.Success)
             {
                 return Ok(result);
@@ -38,9 +38,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("add")]
-        public IActionResult Add(UserOperationClaim userOperationClaim)
+        public async Task<IActionResult> Add(UserOperationClaim userOperationClaim)
         {
-            var result = _userOperationClaimService.Add(userOperationClaim);
+            var result = await _userOperationClaimService.AddAsync(userOperationClaim);
             if (result.Success)
             {
                 return Ok(result);
@@ -49,9 +49,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("delete")]
-        public IActionResult Delete(UserOperationClaim userOperationClaim)
+        public async Task<IActionResult> Delete(UserOperationClaim userOperationClaim)
         {
-            var result = _userOperationClaimService.Delete(userOperationClaim);
+            var result = await _userOperationClaimService.DeleteAsync(userOperationClaim);
             if (result.Success)
             {
                 return Ok(result);
@@ -60,9 +60,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("deletebyuserid/{userId}")]
-        public IActionResult DeleteByUserId(int userId)
+        public async Task<IActionResult> DeleteByUserId(int userId)
         {
-            var result = _userOperationClaimService.DeleteByUserId(userId);
+            var result = await _userOperationClaimService.DeleteByUserIdAsync(userId);
             if (result.Success)
             {
                 return Ok(result);

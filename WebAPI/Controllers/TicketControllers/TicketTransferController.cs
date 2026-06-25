@@ -1,4 +1,4 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -19,9 +19,9 @@ public class TicketTransferController : ControllerBase
 
 
     [HttpGet("getall")]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var result = _ticketTransferService.GetAll();
+        var result = await _ticketTransferService.GetAllAsync();
         if (result.Success)
         {
             return Ok(result);
@@ -30,9 +30,9 @@ public class TicketTransferController : ControllerBase
     }
 
     [HttpGet("getbyid/{id}")]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var result = _ticketTransferService.GetById(id);
+        var result = await _ticketTransferService.GetByIdAsync(id);
         if (result.Success)
         {
             return Ok(result);
@@ -41,11 +41,11 @@ public class TicketTransferController : ControllerBase
     }
 
     [HttpPost("add")]
-    public IActionResult Add(TicketTransferDto dto)
+    public async Task<IActionResult> Add(TicketTransferDto dto)
     {
         var entity = new Transfer();
 
-        var result = _ticketTransferService.Add(entity);
+        var result = await _ticketTransferService.AddAsync(entity);
         if (result.Success)
         {
             return Ok(result);
@@ -54,11 +54,11 @@ public class TicketTransferController : ControllerBase
     }
 
     [HttpPost("update")]
-    public IActionResult Update(TicketTransferDto dto)
+    public async Task<IActionResult> Update(TicketTransferDto dto)
     {
         var entity = new Transfer();
 
-        var result = _ticketTransferService.Update(entity);
+        var result = await _ticketTransferService.UpdateAsync(entity);
         if (result.Success)
         {
             return Ok(result);
@@ -67,11 +67,11 @@ public class TicketTransferController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public IActionResult Delete(TicketTransferDto dto)
+    public async Task<IActionResult> Delete(TicketTransferDto dto)
     {
         var entity = new Transfer();
 
-        var result = _ticketTransferService.Delete(entity);
+        var result = await _ticketTransferService.DeleteAsync(entity);
         if (result.Success)
         {
             return Ok(result);

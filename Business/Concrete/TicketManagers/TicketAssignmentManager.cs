@@ -1,4 +1,4 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Business.Constants;
 using Core.Utilities.Results;
 using DataAccess.Abstract.TicketDal;
@@ -18,13 +18,13 @@ namespace Business.Concrete.TicketManagers
             _assignmentDal = assignmentDal;
             _responseDal = responseDal;
         }
-        public IResult Add(Assignment assignment)
+        public async Task<IResult> AddAsync(Assignment assignment)
         {
-            _assignmentDal.Add(assignment);
+            await _assignmentDal.AddAsync(assignment);
 
             if (!assignment.Description.IsNullOrEmpty())
             {
-                _responseDal.Add(new Response
+                await _responseDal.AddAsync(new Response
                 {
                     TicketId = assignment.TicketId,
                     CreatedAt = DateTime.Now,
@@ -36,22 +36,22 @@ namespace Business.Concrete.TicketManagers
             return new SuccessResult(Messages.TicketCreated);
         }
 
-        public IResult Delete(Assignment assignment)
+        public Task<IResult> DeleteAsync(Assignment assignment)
         {
             throw new NotImplementedException();
         }
 
-        public IDataResult<List<Assignment>> GetAll(Expression<Func<Assignment, bool>> filter = null)
+        public Task<IDataResult<List<Assignment>>> GetAllAsync(Expression<Func<Assignment, bool>> filter = null)
         {
             throw new NotImplementedException();
         }
 
-        public IDataResult<Assignment> GetById(int id)
+        public Task<IDataResult<Assignment>> GetByIdAsync(int id)
         {
             throw new NotImplementedException();
         }
 
-        public IResult Update(Assignment assignment)
+        public Task<IResult> UpdateAsync(Assignment assignment)
         {
             throw new NotImplementedException();
         }

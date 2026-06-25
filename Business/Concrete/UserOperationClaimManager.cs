@@ -26,28 +26,28 @@ public class UserOperationClaimManager : IUserOperationClaimService
     }
 
     [SecuredOperation("Admin")]
-    public IDataResult<List<UserOperationClaim>> GetAll(Expression<Func<UserOperationClaim, bool>> filter = null)
+    public async Task<IDataResult<List<UserOperationClaim>>> GetAllAsync(Expression<Func<UserOperationClaim, bool>> filter = null)
     {
         return new SuccessDataResult<List<UserOperationClaim>>(
-            _userOperationClaimDal.GetAll(filter), 
+            await _userOperationClaimDal.GetAllAsync(filter), 
             Messages.UserOperationClaimsListed);
     }
 
     [SecuredOperation("Admin")]
-    public IDataResult<List<UserOperationClaim>> GetByUserId(int userId)
+    public async Task<IDataResult<List<UserOperationClaim>>> GetByUserIdAsync(int userId)
     {
         return new SuccessDataResult<List<UserOperationClaim>>(
-            _userOperationClaimDal.GetAll(u => u.UserId == userId),
+            await _userOperationClaimDal.GetAllAsync(u => u.UserId == userId),
             Messages.UserOperationClaimsListed);
     }
 
     [SecuredOperation("Admin")]
-    public IResult Add(UserOperationClaim userOperationClaim)
+    public async Task<IResult> AddAsync(UserOperationClaim userOperationClaim)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfUserExists(userOperationClaim.UserId),
-            CheckIfOperationClaimExists(userOperationClaim.OperationClaimId),
-            CheckIfUserOperationClaimAlreadyExists(userOperationClaim.UserId, userOperationClaim.OperationClaimId)
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfUserExistsAsync(userOperationClaim.UserId),
+            () => CheckIfOperationClaimExistsAsync(userOperationClaim.OperationClaimId),
+            () => CheckIfUserOperationClaimAlreadyExistsAsync(userOperationClaim.UserId, userOperationClaim.OperationClaimId)
         );
 
         if (result != null)
@@ -55,15 +55,15 @@ public class UserOperationClaimManager : IUserOperationClaimService
             return result;
         }
 
-        _userOperationClaimDal.Add(userOperationClaim);
+        await _userOperationClaimDal.AddAsync(userOperationClaim);
         return new SuccessResult(Messages.UserOperationClaimAdded);
     }
 
     [SecuredOperation("Admin")]
-    public IResult Delete(UserOperationClaim userOperationClaim)
+    public async Task<IResult> DeleteAsync(UserOperationClaim userOperationClaim)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfUserOperationClaimExists(userOperationClaim.Id)
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfUserOperationClaimExistsAsync(userOperationClaim.Id)
         );
 
         if (result != null)
@@ -71,16 +71,16 @@ public class UserOperationClaimManager : IUserOperationClaimService
             return result;
         }
 
-        var existingClaim = _userOperationClaimDal.Get(u => u.Id == userOperationClaim.Id);
-        _userOperationClaimDal.Delete(existingClaim);
+        var existingClaim = await _userOperationClaimDal.GetAsync(u => u.Id == userOperationClaim.Id);
+        await _userOperationClaimDal.DeleteAsync(existingClaim);
         return new SuccessResult(Messages.UserOperationClaimDeleted);
     }
 
     [SecuredOperation("Admin")]
-    public IResult DeleteByUserId(int userId)
+    public async Task<IResult> DeleteByUserIdAsync(int userId)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfUserExists(userId)
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfUserExistsAsync(userId)
         );
 
         if (result != null)
@@ -88,19 +88,19 @@ public class UserOperationClaimManager : IUserOperationClaimService
             return result;
         }
 
-        var claims = _userOperationClaimDal.GetAll(u => u.UserId == userId);
+        var claims = await _userOperationClaimDal.GetAllAsync(u => u.UserId == userId);
         foreach (var claim in claims)
         {
-            _userOperationClaimDal.Delete(claim);
+            await _userOperationClaimDal.DeleteAsync(claim);
         }
         return new SuccessResult(Messages.UserOperationClaimsDeleted);
     }
 
     #region Business Rules
 
-    private IResult CheckIfUserExists(int userId)
+    private async Task<IResult> CheckIfUserExistsAsync(int userId)
     {
-        var user = _userDal.Get(u => u.Id == userId);
+        var user = await _userDal.GetAsync(u => u.Id == userId);
         if (user == null)
         {
             return new ErrorResult(Messages.UserNotFound);
@@ -108,9 +108,9 @@ public class UserOperationClaimManager : IUserOperationClaimService
         return new SuccessResult();
     }
 
-    private IResult CheckIfOperationClaimExists(int operationClaimId)
+    private async Task<IResult> CheckIfOperationClaimExistsAsync(int operationClaimId)
     {
-        var claim = _operationClaimDal.Get(o => o.Id == operationClaimId);
+        var claim = await _operationClaimDal.GetAsync(o => o.Id == operationClaimId);
         if (claim == null)
         {
             return new ErrorResult(Messages.OperationClaimNotFound);
@@ -118,21 +118,21 @@ public class UserOperationClaimManager : IUserOperationClaimService
         return new SuccessResult();
     }
 
-    private IResult CheckIfUserOperationClaimAlreadyExists(int userId, int operationClaimId)
+    private async Task<IResult> CheckIfUserOperationClaimAlreadyExistsAsync(int userId, int operationClaimId)
     {
-        var exists = _userOperationClaimDal.GetAll(u => 
-            u.UserId == userId && u.OperationClaimId == operationClaimId).Any();
+        var claims = await _userOperationClaimDal.GetAllAsync(u => 
+            u.UserId == userId && u.OperationClaimId == operationClaimId);
         
-        if (exists)
+        if (claims.Any())
         {
             return new ErrorResult(Messages.UserOperationClaimAlreadyExists);
         }
         return new SuccessResult();
     }
 
-    private IResult CheckIfUserOperationClaimExists(int id)
+    private async Task<IResult> CheckIfUserOperationClaimExistsAsync(int id)
     {
-        var claim = _userOperationClaimDal.Get(u => u.Id == id);
+        var claim = await _userOperationClaimDal.GetAsync(u => u.Id == id);
         if (claim == null)
         {
             return new ErrorResult(Messages.UserOperationClaimNotFound);

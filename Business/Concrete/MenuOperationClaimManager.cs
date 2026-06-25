@@ -25,106 +25,107 @@ public class MenuOperationClaimManager : IMenuOperationClaimService
     }
 
 
-    public IDataResult<List<MenuOperationClaim>> GetAll(Expression<Func<MenuOperationClaim, bool>> filter = null)
+    public async Task<IDataResult<List<MenuOperationClaim>>> GetAllAsync(Expression<Func<MenuOperationClaim, bool>> filter = null)
     {
-        return new SuccessDataResult<List<MenuOperationClaim>>(_menuOperationClaimDal.GetAll(filter),Messages.MenuOperationClaimsListed);
+        return new SuccessDataResult<List<MenuOperationClaim>>(await _menuOperationClaimDal.GetAllAsync(filter),Messages.MenuOperationClaimsListed);
     }
-    public IDataResult<List<MenuOperationClaim>> GetByMenuId(int menuId)
+    public async Task<IDataResult<List<MenuOperationClaim>>> GetByMenuIdAsync(int menuId)
     {
-        return new SuccessDataResult<List<MenuOperationClaim>>(_menuOperationClaimDal.GetAll(m => m.MenuId == menuId),Messages.MenuOperationClaimsListed);
+        return new SuccessDataResult<List<MenuOperationClaim>>(await _menuOperationClaimDal.GetAllAsync(m => m.MenuId == menuId),Messages.MenuOperationClaimsListed);
     }
-    public IResult Add(MenuOperationClaim menuOperationClaim)
+    public async Task<IResult> AddAsync(MenuOperationClaim menuOperationClaim)
     {
-        IResult result = BusinessRules.Run(CheckIfMenuExists(menuOperationClaim.MenuId),
-                                           CheckIfOperationClaimExists(menuOperationClaim.OperationClaimId),
-                                           CheckIfMenuOperationClaimAlreadyExists(menuOperationClaim.MenuId, menuOperationClaim.OperationClaimId));
+        IResult result = await BusinessRules.RunAsync(() => CheckIfMenuExistsAsync(menuOperationClaim.MenuId),
+                                           () => CheckIfOperationClaimExistsAsync(menuOperationClaim.OperationClaimId),
+                                           () => CheckIfMenuOperationClaimAlreadyExistsAsync(menuOperationClaim.MenuId, menuOperationClaim.OperationClaimId));
 
         if (result != null)
         {
             return result;
         }
 
-        _menuOperationClaimDal.Add(menuOperationClaim);
+        await _menuOperationClaimDal.AddAsync(menuOperationClaim);
         return new SuccessResult(Messages.MenuOperationClaimAdded);
     }
-    public IResult Delete(MenuOperationClaim menuOperationClaim)
+    public async Task<IResult> DeleteAsync(MenuOperationClaim menuOperationClaim)
     {
-        IResult result = BusinessRules.Run(CheckIfMenuOperationClaimExists(menuOperationClaim.Id));
+        IResult result = await BusinessRules.RunAsync(() => CheckIfMenuOperationClaimExistsAsync(menuOperationClaim.Id));
 
         if (result != null)
         {
             return result;
         }
 
-        var existingClaim = _menuOperationClaimDal.Get(m => m.Id == menuOperationClaim.Id);
-        _menuOperationClaimDal.Delete(existingClaim);
+        var existingClaim = await _menuOperationClaimDal.GetAsync(m => m.Id == menuOperationClaim.Id);
+        await _menuOperationClaimDal.DeleteAsync(existingClaim);
         return new SuccessResult(Messages.MenuOperationClaimDeleted);
     }
-    public IResult Update(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto)
+    public async Task<IResult> UpdateAsync(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto)
     {
-        var claims = GetByMenuId(menuOperationClaimUpdateDto.MenuId).Data;
+        var claimsResult = await GetByMenuIdAsync(menuOperationClaimUpdateDto.MenuId);
+        var claims = claimsResult.Data;
         var currentIds = claims.Select(x => x.OperationClaimId).ToHashSet();
 
         foreach (var id in menuOperationClaimUpdateDto.RoleIds.Except(currentIds))
         {
-            var result = Add(new MenuOperationClaim { MenuId = menuOperationClaimUpdateDto.MenuId, OperationClaimId = id });
+            var result = await AddAsync(new MenuOperationClaim { MenuId = menuOperationClaimUpdateDto.MenuId, OperationClaimId = id });
             if (!result.Success)
                 return new ErrorResult(Messages.MenuOperationClaimNotFound);
         }
             
         foreach (var claim in claims.Where(x => !menuOperationClaimUpdateDto.RoleIds.Contains(x.OperationClaimId)))
         {
-            var result = Delete(claim);
+            var result = await DeleteAsync(claim);
             if (!result.Success)
                 return new ErrorResult(Messages.MenuOperationClaimNotFound);
         }
 
         return new SuccessResult(Messages.OperationClaimAdded);
     }
-    public IResult DeleteByMenuId(int menuId)
+    public async Task<IResult> DeleteByMenuIdAsync(int menuId)
     {
-        var claims = _menuOperationClaimDal.GetAll(m => m.MenuId == menuId);
+        var claims = await _menuOperationClaimDal.GetAllAsync(m => m.MenuId == menuId);
         foreach (var claim in claims)
         {
-            _menuOperationClaimDal.Delete(claim);
+            await _menuOperationClaimDal.DeleteAsync(claim);
         }
         return new SuccessResult(Messages.MenuOperationClaimsDeleted);
     }
 
 
     #region Business Rules
-    private IResult CheckIfMenuExists(int menuId)
+    private async Task<IResult> CheckIfMenuExistsAsync(int menuId)
     {
-        var menu = _menuDal.Get(m => m.Id == menuId);
+        var menu = await _menuDal.GetAsync(m => m.Id == menuId);
         if (menu == null)
         {
             return new ErrorResult(Messages.MenuNotFound);
         }
         return new SuccessResult();
     }
-    private IResult CheckIfOperationClaimExists(int operationClaimId)
+    private async Task<IResult> CheckIfOperationClaimExistsAsync(int operationClaimId)
     {
-        var claim = _operationClaimDal.Get(o => o.Id == operationClaimId);
+        var claim = await _operationClaimDal.GetAsync(o => o.Id == operationClaimId);
         if (claim == null)
         {
             return new ErrorResult(Messages.OperationClaimNotFound);
         }
         return new SuccessResult();
     }
-    private IResult CheckIfMenuOperationClaimAlreadyExists(int menuId, int operationClaimId)
+    private async Task<IResult> CheckIfMenuOperationClaimAlreadyExistsAsync(int menuId, int operationClaimId)
     {
-        var exists = _menuOperationClaimDal.GetAll(m =>
-            m.MenuId == menuId && m.OperationClaimId == operationClaimId).Any();
+        var claims = await _menuOperationClaimDal.GetAllAsync(m =>
+            m.MenuId == menuId && m.OperationClaimId == operationClaimId);
 
-        if (exists)
+        if (claims.Any())
         {
             return new ErrorResult(Messages.MenuOperationClaimAlreadyExists);
         }
         return new SuccessResult();
     }
-    private IResult CheckIfMenuOperationClaimExists(int id)
+    private async Task<IResult> CheckIfMenuOperationClaimExistsAsync(int id)
     {
-        var claim = _menuOperationClaimDal.Get(m => m.Id == id);
+        var claim = await _menuOperationClaimDal.GetAsync(m => m.Id == id);
         if (claim == null)
         {
             return new ErrorResult(Messages.MenuOperationClaimNotFound);

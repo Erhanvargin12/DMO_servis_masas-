@@ -1,4 +1,4 @@
-﻿using Business.Abstract;
+using Business.Abstract;
 using Business.Abstract.IntegrationServices;
 using Business.Constants;
 using Core.Entities.Concrete;
@@ -31,80 +31,101 @@ public class AuthManager : IAuthService
         _dmoMainService = dmoMainService;
     }
 
-    public async Task<IDataResult<User>> Register(UserForRegisterDto userForRegisterDto)
+    public async Task<IDataResult<User>> RegisterAsync(UserForRegisterDto userForRegisterDto)
     {
-        IResult result = await BusinessRules.Run(CheckIfUserMailExists(userForRegisterDto.Mail));
-
-        if (result != null)
+        try
         {
-            return new ErrorDataResult<User>(result.Message);
-        }
+            IResult result = await BusinessRules.RunAsync(() => CheckIfUserMailExistsAsync(userForRegisterDto.Mail));
 
-        byte[] passwordHash, passwordSalt;
-        HashingHelper.CreatePasswordHash(userForRegisterDto.Password, out passwordHash, out passwordSalt);
-        
-        var user = new User
-        {
-            Mail = userForRegisterDto.Mail,
-            FirstName = userForRegisterDto.FirstName,
-            LastName = userForRegisterDto.LastName,
-            PasswordHash = passwordHash,
-            PasswordSalt = passwordSalt,
-            OrganizationUnitId = userForRegisterDto.BranchId,
-            PositionId = userForRegisterDto.PositionId,
-            RegistirationId = userForRegisterDto.RegistirationId,
-            CreateAt = DateTime.Now,
-            Status = true
-        };
-        
-        var addResult = await _userService.Add(user);
-        if (!addResult.Success)
-        {
-            return new ErrorDataResult<User>(addResult.Message);
-        }
-        
-        return new SuccessDataResult<User>(user, Messages.UserAdded);
-    }
-
-    public async Task<IDataResult<User>> Login(UserForLoginDto userForLoginDto)
-    {
-        var userResult = _userService.GetUser(u=>u.Mail == userForLoginDto.Email);
-        var userToCheck = userResult.Data;
-        
-        if (userToCheck is null)
-        {
-            var user = await _dmoMainService.GetDmoUserByUserName(userForLoginDto.Email);
-            if (user is null)
-                return new ErrorDataResult<User>(Messages.UserNotFound);
-
-            var registerResult = await Register(new UserForRegisterDto
+            if (result != null)
             {
-                Mail = user.Email,
-                FirstName = user.Name,
-                LastName = user.Name,
-                Password = userForLoginDto.Password,
-                BranchId = user.BranchId,
-                PositionId = (int)user.PositionType,
-                RegistirationId = user.EbysId
-            });
-        }
+                return new ErrorDataResult<User>(result.Message);
+            }
 
-        if (!userToCheck.Status)
+            byte[] passwordHash, passwordSalt;
+            HashingHelper.CreatePasswordHash(userForRegisterDto.Password, out passwordHash, out passwordSalt);
+            
+            var user = new User
+            {
+                Mail = userForRegisterDto.Mail,
+                FirstName = userForRegisterDto.FirstName,
+                LastName = userForRegisterDto.LastName,
+                PasswordHash = passwordHash,
+                PasswordSalt = passwordSalt,
+                OrganizationUnitId = userForRegisterDto.BranchId,
+                PositionId = userForRegisterDto.PositionId,
+                RegistirationId = userForRegisterDto.RegistirationId,
+                CreateAt = DateTime.Now,
+                Status = true
+            };
+            
+            var addResult = await _userService.AddAsync(user);
+            if (!addResult.Success)
+            {
+                return new ErrorDataResult<User>(addResult.Message);
+            }
+            
+            return new SuccessDataResult<User>(user, Messages.UserAdded);
+        }
+        catch (Exception ex)
         {
-            return new ErrorDataResult<User>(Messages.UserNotActive);
+            return new ErrorDataResult<User>("Register Error: " + ex.Message + " Inner: " + ex.InnerException?.Message);
         }
-
-        if (!HashingHelper.VerifyPasswordHash(userForLoginDto.Password, userToCheck.PasswordHash, userToCheck.PasswordSalt))
-        {
-            return new ErrorDataResult<User>(Messages.PasswordError);
-        }
-
-        return new SuccessDataResult<User>(userToCheck, Messages.SuccessfulLogin);
     }
 
-    public IResult UserExists(string email)
+    public async Task<IDataResult<User>> LoginAsync(UserForLoginDto userForLoginDto)
     {
-        var userResult = _userService.GetAll(m => m.Mail == email);
+        try
+        {
+            var userResult = await _userService.GetUserAsync(u=>u.Mail == userForLoginDto.Email);
+            var userToCheck = userResult.Data;
+            
+            if (userToCheck is null)
+            {
+                var user = await _dmoMainService.GetDmoUserByUserName(userForLoginDto.Email);
+                if (user is null)
+                    return new ErrorDataResult<User>(Messages.UserNotFound);
+
+                var registerResult = await RegisterAsync(new UserForRegisterDto
+                {
+                    Mail = user.Email,
+                    FirstName = user.Name,
+                    LastName = user.Surname,
+                    Password = userForLoginDto.Password,
+                    BranchId = user.BranchId,
+                    PositionId = (int)user.PositionType,
+                    RegistirationId = user.EbysId
+                });
+
+                if (!registerResult.Success)
+                {
+                    return new ErrorDataResult<User>(registerResult.Message);
+                }
+
+                userToCheck = registerResult.Data;
+            }
+
+            if (!userToCheck.Status)
+            {
+                return new ErrorDataResult<User>(Messages.UserNotActive);
+            }
+
+            if (!HashingHelper.VerifyPasswordHash(userForLoginDto.Password, userToCheck.PasswordHash, userToCheck.PasswordSalt))
+            {
+                return new ErrorDataResult<User>(Messages.PasswordError);
+            }
+
+            return new SuccessDataResult<User>(userToCheck, Messages.SuccessfulLogin);
+        }
+        catch (Exception ex)
+        {
+            return new ErrorDataResult<User>("Login Error: " + ex.Message + " Inner: " + ex.InnerException?.Message);
+        }
+    }
+
+    public async Task<IResult> UserExistsAsync(string email)
+    {
+        var userResult = await _userService.GetAllAsync(m => m.Mail == email);
         if (userResult.Data?.FirstOrDefault() != null)
         {
             return new ErrorResult(Messages.UserAlreadyExists);
@@ -113,18 +134,18 @@ public class AuthManager : IAuthService
     }
 
 
-    public IDataResult<AccessToken> CreateAccessToken(User user, string? ipAddress = null)
+    public async Task<IDataResult<AccessToken>> CreateAccessTokenAsync(User user, string? ipAddress = null)
     {
-        var claims = _userService.GetClaims(user);
+        var claims = await _userService.GetClaimsAsync(user);
         var accessToken = _tokenHelper.CreateToken(user, claims);
         
         // Refresh token'ı veritabanına kaydet
-        SaveRefreshToken(user.Id, accessToken.RefreshToken, accessToken.RefreshTokenExpiration, ipAddress);
+        await SaveRefreshTokenAsync(user.Id, accessToken.RefreshToken, accessToken.RefreshTokenExpiration, ipAddress);
         
         return new SuccessDataResult<AccessToken>(accessToken, Messages.AccessTokenCreated);
     }
 
-    public IDataResult<AccessToken> RefreshToken(string token, string refreshToken, string? ipAddress)
+    public async Task<IDataResult<AccessToken>> RefreshTokenAsync(string token, string refreshToken, string? ipAddress)
     {
         // Expired access token'dan kullanıcı bilgisini al
         var principal = _tokenHelper.GetPrincipalFromExpiredToken(token);
@@ -143,7 +164,7 @@ public class AuthManager : IAuthService
         }
 
         // Refresh token'ı doğrula
-        var storedToken = _refreshTokenDal.Get(rt => 
+        var storedToken = await _refreshTokenDal.GetAsync(rt => 
             rt.UserId == userId && 
             rt.Token == refreshToken);
 
@@ -156,7 +177,7 @@ public class AuthManager : IAuthService
         if (storedToken.IsRevoked)
         {
             // Token reuse attack tespit edildi - tüm user token'larını iptal et
-            RevokeAllUserTokens(userId, ipAddress);
+            await RevokeAllUserTokensAsync(userId, ipAddress);
             return new ErrorDataResult<AccessToken>(Messages.TokenReuseDetected);
         }
 
@@ -167,7 +188,7 @@ public class AuthManager : IAuthService
         }
 
         // Kullanıcıyı getir
-        var userResult = _userService.GetAll(u => u.Id == userId);
+        var userResult = await _userService.GetAllAsync(u => u.Id == userId);
         var user = userResult.Data?.FirstOrDefault();
         
         if (user == null || !user.Status)
@@ -181,22 +202,22 @@ public class AuthManager : IAuthService
         storedToken.ReasonRevoked = "Replaced by new token";
         
         // Yeni token oluştur
-        var claims = _userService.GetClaims(user);
+        var claims = await _userService.GetClaimsAsync(user);
         var newAccessToken = _tokenHelper.CreateToken(user, claims);
         
         // Eski token'a yeni token referansı ekle
         storedToken.ReplacedByToken = newAccessToken.RefreshToken;
-        _refreshTokenDal.Update(storedToken);
+        await _refreshTokenDal.UpdateAsync(storedToken);
         
         // Yeni refresh token'ı kaydet
-        SaveRefreshToken(user.Id, newAccessToken.RefreshToken, newAccessToken.RefreshTokenExpiration, ipAddress);
+        await SaveRefreshTokenAsync(user.Id, newAccessToken.RefreshToken, newAccessToken.RefreshTokenExpiration, ipAddress);
 
         return new SuccessDataResult<AccessToken>(newAccessToken, Messages.TokenRefreshed);
     }
 
-    public IResult RevokeToken(string refreshToken, string? ipAddress)
+    public async Task<IResult> RevokeTokenAsync(string refreshToken, string? ipAddress)
     {
-        var storedToken = _refreshTokenDal.Get(rt => rt.Token == refreshToken);
+        var storedToken = await _refreshTokenDal.GetAsync(rt => rt.Token == refreshToken);
         
         if (storedToken == null)
         {
@@ -211,27 +232,27 @@ public class AuthManager : IAuthService
         storedToken.Revoked = DateTime.Now;
         storedToken.RevokedByIp = ipAddress;
         storedToken.ReasonRevoked = "Revoked by user";
-        _refreshTokenDal.Update(storedToken);
+        await _refreshTokenDal.UpdateAsync(storedToken);
 
         return new SuccessResult(Messages.TokenRevoked);
     }
 
-    public IResult RevokeAllUserTokens(int userId, string? ipAddress)
+    public async Task<IResult> RevokeAllUserTokensAsync(int userId, string? ipAddress)
     {
-        var userTokens = _refreshTokenDal.GetAll(rt => rt.UserId == userId && rt.Revoked == null);
+        var userTokens = await _refreshTokenDal.GetAllAsync(rt => rt.UserId == userId && rt.Revoked == null);
         
         foreach (var token in userTokens)
         {
             token.Revoked = DateTime.Now;
             token.RevokedByIp = ipAddress;
             token.ReasonRevoked = "Security: All tokens revoked";
-            _refreshTokenDal.Update(token);
+            await _refreshTokenDal.UpdateAsync(token);
         }
 
         return new SuccessResult(Messages.AllTokensRevoked);
     }
 
-    private void SaveRefreshToken(int userId, string token, DateTime expires, string? ipAddress)
+    private async Task SaveRefreshTokenAsync(int userId, string token, DateTime expires, string? ipAddress)
     {
         var refreshToken = new RefreshToken
         {
@@ -241,14 +262,14 @@ public class AuthManager : IAuthService
             Created = DateTime.Now,
             CreatedByIp = ipAddress
         };
-        _refreshTokenDal.Add(refreshToken);
+        await _refreshTokenDal.AddAsync(refreshToken);
     }
 
     #region Business Rules
 
-    private IResult CheckIfUserMailExists(string email)
+    private async Task<IResult> CheckIfUserMailExistsAsync(string email)
     {
-        var userResult = _userService.GetAll(m => m.Mail == email);
+        var userResult = await _userService.GetAllAsync(m => m.Mail == email);
         if (userResult.Data?.FirstOrDefault() != null)
         {
             return new ErrorResult(Messages.UserAlreadyExists);

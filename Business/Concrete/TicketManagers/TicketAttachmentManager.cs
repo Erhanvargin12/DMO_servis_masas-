@@ -16,41 +16,41 @@ namespace Business.Concrete.TicketManagers
             _ticketAttachmentDal = ticketAttachmentDal;
         }
 
-        public IResult Add(Attachment attachment)
+        public async Task<IResult> AddAsync(Attachment attachment)
         {
-            _ticketAttachmentDal.Add(attachment);
+            await _ticketAttachmentDal.AddAsync(attachment);
             return new SuccessResult(Messages.AttachmentAdded);
         }
 
-        public IResult Delete(Attachment attachment)
+        public async Task<IResult> DeleteAsync(Attachment attachment)
         {
-            var existing = _ticketAttachmentDal.Get(a => a.Id == attachment.Id);
+            var existing = await _ticketAttachmentDal.GetAsync(a => a.Id == attachment.Id);
             if (existing == null)
                 return new ErrorResult(Messages.AttachmentNotFound);
 
-            _ticketAttachmentDal.Delete(existing);
+            await _ticketAttachmentDal.DeleteAsync(existing);
             return new SuccessResult(Messages.AttachmentDeleted);
         }
 
-        public IDataResult<List<Attachment>> GetAll(Expression<Func<Attachment, bool>> filter = null)
+        public async Task<IDataResult<List<Attachment>>> GetAllAsync(Expression<Func<Attachment, bool>> filter = null)
         {
-            return new SuccessDataResult<List<Attachment>>(_ticketAttachmentDal.GetAll(filter));
+            return new SuccessDataResult<List<Attachment>>(await _ticketAttachmentDal.GetAllAsync(filter));
         }
 
-        public IDataResult<Attachment> GetById(int id)
+        public async Task<IDataResult<Attachment>> GetByIdAsync(int id)
         {
-            return new SuccessDataResult<Attachment>(_ticketAttachmentDal.Get(a => a.Id == id));
+            return new SuccessDataResult<Attachment>(await _ticketAttachmentDal.GetAsync(a => a.Id == id));
         }
 
-        public IResult Update(Attachment attachment)
+        public async Task<IResult> UpdateAsync(Attachment attachment)
         {
-            var existing = _ticketAttachmentDal.Get(a => a.Id == attachment.Id);
+            var existing = await _ticketAttachmentDal.GetAsync(a => a.Id == attachment.Id);
             if (existing == null)
                 return new ErrorResult(Messages.AttachmentNotFound);
 
             existing.FileName = attachment.FileName;
             existing.FilePath = attachment.FilePath;
-            _ticketAttachmentDal.Update(existing);
+            await _ticketAttachmentDal.UpdateAsync(existing);
             return new SuccessResult(Messages.AttachmentUpdated);
         }
     }

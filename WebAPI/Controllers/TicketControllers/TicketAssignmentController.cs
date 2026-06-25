@@ -1,4 +1,4 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -18,9 +18,9 @@ public class TicketAssignmentController : ControllerBase
     }
 
     [HttpGet("getall")]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var result = _ticketAssignmentService.GetAll();
+        var result = await _ticketAssignmentService.GetAllAsync();
         if (result.Success)
         {
             return Ok(result);
@@ -29,9 +29,9 @@ public class TicketAssignmentController : ControllerBase
     }
 
     [HttpGet("getbyid/{id}")]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var result = _ticketAssignmentService.GetById(id);
+        var result = await _ticketAssignmentService.GetByIdAsync(id);
         if (result.Success)
         {
             return Ok(result);
@@ -40,9 +40,9 @@ public class TicketAssignmentController : ControllerBase
     }
 
     [HttpPost("add")]
-    public IActionResult Add(Assignment entity)
+    public async Task<IActionResult> Add(Assignment entity)
     {
-        var result = _ticketAssignmentService.Add(entity);
+        var result = await _ticketAssignmentService.AddAsync(entity);
         if (result.Success)
         {
             return Ok(result);
@@ -51,11 +51,11 @@ public class TicketAssignmentController : ControllerBase
     }
 
     [HttpPost("update")]
-    public IActionResult Update(TicketAssignmentDto dto)
+    public async Task<IActionResult> Update(TicketAssignmentDto dto)
     {
         var entity = new Assignment();
 
-        var result = _ticketAssignmentService.Update(entity);
+        var result = await _ticketAssignmentService.UpdateAsync(entity);
         if (result.Success)
         {
             return Ok(result);
@@ -64,11 +64,11 @@ public class TicketAssignmentController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public IActionResult Delete(TicketAssignmentDto dto)
+    public async Task<IActionResult> Delete(TicketAssignmentDto dto)
     {
         var entity = new Assignment();
 
-        var result = _ticketAssignmentService.Delete(entity);
+        var result = await _ticketAssignmentService.DeleteAsync(entity);
         if (result.Success)
         {
             return Ok(result);

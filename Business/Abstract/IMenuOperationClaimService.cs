@@ -7,11 +7,11 @@ namespace Business.Abstract;
 
 public interface IMenuOperationClaimService
 {
-    IDataResult<List<MenuOperationClaim>> GetAll(Expression<Func<MenuOperationClaim, bool>> filter = null);
-    IDataResult<List<MenuOperationClaim>> GetByMenuId(int menuId);
-    IResult Add(MenuOperationClaim menuOperationClaim);
-    IResult Update(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto);
-    IResult Delete(MenuOperationClaim menuOperationClaim);
-    IResult DeleteByMenuId(int menuId);
+    Task<IDataResult<List<MenuOperationClaim>>> GetAllAsync(Expression<Func<MenuOperationClaim, bool>> filter = null);
+    Task<IDataResult<List<MenuOperationClaim>>> GetByMenuIdAsync(int menuId);
+    Task<IResult> AddAsync(MenuOperationClaim menuOperationClaim);
+    Task<IResult> UpdateAsync(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto);
+    Task<IResult> DeleteAsync(MenuOperationClaim menuOperationClaim);
+    Task<IResult> DeleteByMenuIdAsync(int menuId);
 }
 

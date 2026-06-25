@@ -15,9 +15,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getall")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var result = _menuService.GetAll();
+            var result = await _menuService.GetAllAsync();
             if (result.Success)
             {
                 return Ok(result);
@@ -26,9 +26,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getbyid/{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var result = _menuService.GetById(id);
+            var result = await _menuService.GetByIdAsync(id);
             if (result.Success)
             {
                 return Ok(result);
@@ -37,9 +37,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("get-menu-details")]
-        public IActionResult GetMenuDetails()
+        public async Task<IActionResult> GetMenuDetails()
         {
-            var result = _menuService.GetMenuDetails();
+            var result = await _menuService.GetMenuDetailsAsync();
             if (result.Success)
             {
                 return Ok(result);
@@ -48,9 +48,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("get-user-menus/{id}")]
-        public IActionResult GetMenusByUserId(int id)
+        public async Task<IActionResult> GetMenusByUserId(int id)
         {
-            var result = _menuService.GetMenusByUserId(id);
+            var result = await _menuService.GetMenusByUserIdAsync(id);
             if (result.Success)
             {
                 return Ok(result);
@@ -59,9 +59,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("add")]
-        public IActionResult Add(Menu menu)
+        public async Task<IActionResult> Add(Menu menu)
         {
-            var result = _menuService.Add(menu);
+            var result = await _menuService.AddAsync(menu);
             if (result.Success)
             {
                 return Ok(result);
@@ -70,9 +70,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("update")]
-        public IActionResult Update(Menu menu)
+        public async Task<IActionResult> Update(Menu menu)
         {
-            var result = _menuService.Update(menu);
+            var result = await _menuService.UpdateAsync(menu);
             if (result.Success)
             {
                 return Ok(result);
@@ -81,9 +81,9 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("delete")]
-        public IActionResult Delete(Menu menu)
+        public async Task<IActionResult> Delete(Menu menu)
         {
-            var result = _menuService.Delete(menu);
+            var result = await _menuService.DeleteAsync(menu);
             if (result.Success)
             {
                 return Ok(result);

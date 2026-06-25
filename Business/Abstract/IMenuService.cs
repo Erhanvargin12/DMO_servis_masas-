@@ -7,12 +7,12 @@ namespace Business.Abstract;
 
 public interface IMenuService
 {
-    IDataResult<List<Menu>> GetAll(Expression<Func<Menu, bool>> filter = null);
-    IDataResult<Menu> GetById(int id);
-    IDataResult<List<MenuDto>> GetMenuDetails();
-    IDataResult<List<MenuDto>> GetMenusByUserId(int userId);
-    IResult Add(Menu menu);
-    IResult Update(Menu menu);
-    IResult Delete(Menu menu);
+    Task<IDataResult<List<Menu>>> GetAllAsync(Expression<Func<Menu, bool>> filter = null);
+    Task<IDataResult<Menu>> GetByIdAsync(int id);
+    Task<IDataResult<List<MenuDto>>> GetMenuDetailsAsync();
+    Task<IDataResult<List<MenuDto>>> GetMenusByUserIdAsync(int userId);
+    Task<IResult> AddAsync(Menu menu);
+    Task<IResult> UpdateAsync(Menu menu);
+    Task<IResult> DeleteAsync(Menu menu);
 }
 

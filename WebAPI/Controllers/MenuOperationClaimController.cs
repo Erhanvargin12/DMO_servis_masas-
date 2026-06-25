@@ -1,4 +1,4 @@
-﻿using Business.Abstract;
+using Business.Abstract;
 using Core.Entities.DTOs;
 using Entities.Concrete;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +17,9 @@ public class MenuOperationClaimController : ControllerBase
     }
 
     [HttpGet("getall")]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var result = _menuOperationClaimService.GetAll();
+        var result = await _menuOperationClaimService.GetAllAsync();
         if (result.Success)
         {
             return Ok(result);
@@ -28,9 +28,9 @@ public class MenuOperationClaimController : ControllerBase
     }
 
     [HttpGet("getbymenuid/{id}")]
-    public IActionResult GetByMenuId(int id)
+    public async Task<IActionResult> GetByMenuId(int id)
     {
-        var result = _menuOperationClaimService.GetByMenuId(id);
+        var result = await _menuOperationClaimService.GetByMenuIdAsync(id);
         if (result.Success)
         {
             return Ok(result);
@@ -39,9 +39,9 @@ public class MenuOperationClaimController : ControllerBase
     }
 
     [HttpPost("add")]
-    public IActionResult Add(MenuOperationClaim claim)
+    public async Task<IActionResult> Add(MenuOperationClaim claim)
     {
-        var result = _menuOperationClaimService.Add(claim);
+        var result = await _menuOperationClaimService.AddAsync(claim);
         if (result.Success)
         {
             return Ok(result);
@@ -50,9 +50,9 @@ public class MenuOperationClaimController : ControllerBase
     }
 
     [HttpPost("update")]
-    public IActionResult Update(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto)
+    public async Task<IActionResult> Update(MenuOperationClaimUpdateDto menuOperationClaimUpdateDto)
     {
-        var result = _menuOperationClaimService.Update(menuOperationClaimUpdateDto);
+        var result = await _menuOperationClaimService.UpdateAsync(menuOperationClaimUpdateDto);
         if (result.Success)
         {
             return Ok(result);
@@ -61,9 +61,9 @@ public class MenuOperationClaimController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public IActionResult Delete(MenuOperationClaim claim)
+    public async Task<IActionResult> Delete(MenuOperationClaim claim)
     {
-        var result = _menuOperationClaimService.Delete(claim);
+        var result = await _menuOperationClaimService.DeleteAsync(claim);
         if (result.Success)
         {
             return Ok(result);

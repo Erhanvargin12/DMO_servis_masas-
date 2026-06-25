@@ -19,9 +19,9 @@ public class TicketController : ControllerBase
         _ticketService = ticketService;
     }
     [HttpGet("getall")]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var result = _ticketService.GetAll();
+        var result = await _ticketService.GetAllAsync();
         if (result.Success)
         {
             return Ok(result);
@@ -30,9 +30,9 @@ public class TicketController : ControllerBase
     }
 
     [HttpGet("getbyid/{id}")]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var result = _ticketService.GetById(id);
+        var result = await _ticketService.GetByIdAsync(id);
         if (result.Success)
         {
             return Ok(result);
@@ -41,9 +41,9 @@ public class TicketController : ControllerBase
     }
 
     [HttpGet("getticketdtobyid/{id}")]
-    public IActionResult GetTicketDtoById(int id)
+    public async Task<IActionResult> GetTicketDtoById(int id)
     {
-        var result = _ticketService.GetTicketDtoById(id);
+        var result = await _ticketService.GetTicketDtoByIdAsync(id);
         if (result.Success)
         {
             return Ok(result);
@@ -53,13 +53,13 @@ public class TicketController : ControllerBase
 
 
     [HttpPost("add")]
-    public IActionResult Add(TicketDto ticket)
+    public async Task<IActionResult> Add(TicketDto ticket)
     {
         ticket.Ticket.TicketNo = $"TKT-{DateTime.Now:yyyy}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
         ticket.Ticket.CreatedAt = DateTime.Now;
         ticket.Ticket.StatusId ??= 1;
 
-        var result = _ticketService.Add(ticket);
+        var result = await _ticketService.AddAsync(ticket);
         if (result.Success)
             return Ok(result);
 
@@ -67,7 +67,7 @@ public class TicketController : ControllerBase
     }
 
     [HttpPost("update")]
-    public IActionResult Update(TicketDto dto)
+    public async Task<IActionResult> Update(TicketDto dto)
     {
         var entity = new Ticket()
         {
@@ -84,7 +84,7 @@ public class TicketController : ControllerBase
             UpdatedAt = dto.Ticket.UpdatedAt,
             ClosedAt = dto.Ticket.ClosedAt,
         };
-        var result = _ticketService.Update(entity);
+        var result = await _ticketService.UpdateAsync(entity);
         if (result.Success)
         {
             return Ok(result);
@@ -93,9 +93,9 @@ public class TicketController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var result = _ticketService.Delete(id);
+        var result = await _ticketService.DeleteAsync(id);
         if (result.Success)
         {
             return Ok(result);

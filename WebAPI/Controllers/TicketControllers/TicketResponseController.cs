@@ -1,4 +1,4 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -19,9 +19,9 @@ public class TicketResponseController : ControllerBase
 
 
     [HttpGet("getall")]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll()
     {
-        var result = _ticketResponseService.GetAll();
+        var result = await _ticketResponseService.GetAllAsync();
         if (result.Success)
         {
             return Ok(result);
@@ -30,9 +30,9 @@ public class TicketResponseController : ControllerBase
     }
 
     [HttpGet("getbyid/{id}")]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var result = _ticketResponseService.GetById(id);
+        var result = await _ticketResponseService.GetByIdAsync(id);
         if (result.Success)
         {
             return Ok(result);
@@ -41,9 +41,9 @@ public class TicketResponseController : ControllerBase
     }
 
     [HttpPost("add")]
-    public IActionResult Add(TicketResponseDto dto)
+    public async Task<IActionResult> Add(TicketResponseDto dto)
     {
-        var result = _ticketResponseService.Add(dto);
+        var result = await _ticketResponseService.AddAsync(dto);
         if (result.Success)
         {
             return Ok(result);
@@ -52,11 +52,11 @@ public class TicketResponseController : ControllerBase
     }
 
     [HttpPost("update")]
-    public IActionResult Update(TicketResponseDto dto)
+    public async Task<IActionResult> Update(TicketResponseDto dto)
     {
         var entity = new Response();
 
-        var result = _ticketResponseService.Update(entity);
+        var result = await _ticketResponseService.UpdateAsync(entity);
         if (result.Success)
         {
             return Ok(result);
@@ -65,11 +65,11 @@ public class TicketResponseController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public IActionResult Delete(TicketResponseDto dto)
+    public async Task<IActionResult> Delete(TicketResponseDto dto)
     {
         var entity = new Response();
 
-        var result = _ticketResponseService.Delete(entity);
+        var result = await _ticketResponseService.DeleteAsync(entity);
         if (result.Success)
         {
             return Ok(result);

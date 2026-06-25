@@ -1,4 +1,4 @@
-﻿using Business.Abstract.TicketServices;
+using Business.Abstract.TicketServices;
 using Core.Utilities.Results;
 using Entities.Concrete.Ticket;
 using System.Linq.Expressions;
@@ -7,27 +7,27 @@ namespace Business.Concrete.TicketManagers
 {
     public class TicketTransferManager : ITicketTransferService
     {
-        public IResult Add(Transfer transfer)
+        public Task<IResult> AddAsync(Transfer transfer)
         {
             throw new NotImplementedException();
         }
 
-        public IResult Delete(Transfer transfer)
+        public Task<IResult> DeleteAsync(Transfer transfer)
         {
             throw new NotImplementedException();
         }
 
-        public IDataResult<List<Transfer>> GetAll(Expression<Func<Transfer, bool>> filter = null)
+        public Task<IDataResult<List<Transfer>>> GetAllAsync(Expression<Func<Transfer, bool>> filter = null)
         {
             throw new NotImplementedException();
         }
 
-        public IDataResult<Transfer> GetById(int id)
+        public Task<IDataResult<Transfer>> GetByIdAsync(int id)
         {
             throw new NotImplementedException();
         }
 
-        public IResult Update(Transfer transfer)
+        public Task<IResult> UpdateAsync(Transfer transfer)
         {
             throw new NotImplementedException();
         }

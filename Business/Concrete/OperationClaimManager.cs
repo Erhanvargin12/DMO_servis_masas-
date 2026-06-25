@@ -19,15 +19,15 @@ public class OperationClaimManager : IOperationClaimService
     }
 
     //[SecuredOperation("Admin")]
-    public IDataResult<List<OperationClaim>> GetAll(Expression<Func<OperationClaim, bool>> filter = null)
+    public async Task<IDataResult<List<OperationClaim>>> GetAllAsync(Expression<Func<OperationClaim, bool>> filter = null)
     {
-        return new SuccessDataResult<List<OperationClaim>>(_operationClaimDal.GetAll(filter), Messages.OperationClaimsListed);
+        return new SuccessDataResult<List<OperationClaim>>(await _operationClaimDal.GetAllAsync(filter), Messages.OperationClaimsListed);
     }
 
     [SecuredOperation("Admin")]
-    public IDataResult<OperationClaim> GetById(int id)
+    public async Task<IDataResult<OperationClaim>> GetByIdAsync(int id)
     {
-        var result = _operationClaimDal.Get(o => o.Id == id);
+        var result = await _operationClaimDal.GetAsync(o => o.Id == id);
         if (result == null)
         {
             return new ErrorDataResult<OperationClaim>(Messages.OperationClaimNotFound);
@@ -36,10 +36,10 @@ public class OperationClaimManager : IOperationClaimService
     }
 
     [SecuredOperation("Admin")]
-    public IResult Add(OperationClaim operationClaim)
+    public async Task<IResult> AddAsync(OperationClaim operationClaim)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfOperationClaimNameExists(operationClaim.Name)
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfOperationClaimNameExistsAsync(operationClaim.Name)
         );
 
         if (result != null)
@@ -47,16 +47,16 @@ public class OperationClaimManager : IOperationClaimService
             return result;
         }
 
-        _operationClaimDal.Add(operationClaim);
+        await _operationClaimDal.AddAsync(operationClaim);
         return new SuccessResult(Messages.OperationClaimAdded);
     }
 
     [SecuredOperation("Admin")]
-    public IResult Update(OperationClaim operationClaim)
+    public async Task<IResult> UpdateAsync(OperationClaim operationClaim)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfOperationClaimExists(operationClaim.Id),
-            CheckIfOperationClaimNameExistsForUpdate(operationClaim.Id, operationClaim.Name)
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfOperationClaimExistsAsync(operationClaim.Id),
+            () => CheckIfOperationClaimNameExistsForUpdateAsync(operationClaim.Id, operationClaim.Name)
         );
 
         if (result != null)
@@ -64,19 +64,19 @@ public class OperationClaimManager : IOperationClaimService
             return result;
         }
 
-        var existingClaim = _operationClaimDal.Get(o => o.Id == operationClaim.Id);
+        var existingClaim = await _operationClaimDal.GetAsync(o => o.Id == operationClaim.Id);
         existingClaim.Name = operationClaim.Name;
         existingClaim.Description = operationClaim.Description;
 
-        _operationClaimDal.Update(existingClaim);
+        await _operationClaimDal.UpdateAsync(existingClaim);
         return new SuccessResult(Messages.OperationClaimUpdated);
     }
 
     //[SecuredOperation("Admin")]
-    public IResult Delete(OperationClaim operationClaim)
+    public async Task<IResult> DeleteAsync(OperationClaim operationClaim)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfOperationClaimExists(operationClaim.Id)
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfOperationClaimExistsAsync(operationClaim.Id)
         );
 
         if (result != null)
@@ -84,36 +84,36 @@ public class OperationClaimManager : IOperationClaimService
             return result;
         }
 
-        var existingClaim = _operationClaimDal.Get(o => o.Id == operationClaim.Id);
-        _operationClaimDal.Delete(existingClaim);
+        var existingClaim = await _operationClaimDal.GetAsync(o => o.Id == operationClaim.Id);
+        await _operationClaimDal.DeleteAsync(existingClaim);
         return new SuccessResult(Messages.OperationClaimDeleted);
     }
 
     #region Business Rules
 
-    private IResult CheckIfOperationClaimNameExists(string name)
+    private async Task<IResult> CheckIfOperationClaimNameExistsAsync(string name)
     {
-        var result = _operationClaimDal.GetAll(o => o.Name == name).Any();
-        if (result)
+        var claims = await _operationClaimDal.GetAllAsync(o => o.Name == name);
+        if (claims.Any())
         {
             return new ErrorResult(Messages.OperationClaimAlreadyExists);
         }
         return new SuccessResult();
     }
 
-    private IResult CheckIfOperationClaimNameExistsForUpdate(int id, string name)
+    private async Task<IResult> CheckIfOperationClaimNameExistsForUpdateAsync(int id, string name)
     {
-        var result = _operationClaimDal.GetAll(o => o.Name == name && o.Id != id).Any();
-        if (result)
+        var claims = await _operationClaimDal.GetAllAsync(o => o.Name == name && o.Id != id);
+        if (claims.Any())
         {
             return new ErrorResult(Messages.OperationClaimAlreadyExists);
         }
         return new SuccessResult();
     }
 
-    private IResult CheckIfOperationClaimExists(int id)
+    private async Task<IResult> CheckIfOperationClaimExistsAsync(int id)
     {
-        var result = _operationClaimDal.Get(o => o.Id == id);
+        var result = await _operationClaimDal.GetAsync(o => o.Id == id);
         if (result == null)
         {
             return new ErrorResult(Messages.OperationClaimNotFound);

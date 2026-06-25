@@ -1,4 +1,4 @@
-﻿using Business.Abstract;
+using Business.Abstract;
 using Business.BusinessAspects.Autofac;
 using Business.Constants;
 using Business.ValidationRules.FluentValidation;
@@ -20,27 +20,27 @@ public class UserManager : IUserService
     {
         _userDal = userDal;
     }
-    public async Task<IResult> Add(User user)
+    public async Task<IResult> AddAsync(User user)
     {
-        IResult result = await BusinessRules.Run(
-            CheckIfUserMailExists(user.Mail),
-            CheckIfUserRegistrationIdExists(user.RegistirationId));
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfUserMailExistsAsync(user.Mail),
+            () => CheckIfUserRegistrationIdExistsAsync(user.RegistirationId));
         
         if (result != null)
         {
             return result;
         }
-        _userDal.Add(user);
+        await _userDal.AddAsync(user);
         return new SuccessResult(Messages.UserAdded);
     }
 
     [SecuredOperation("Admin")]
-    public IResult Update(User user)
+    public async Task<IResult> UpdateAsync(User user)
     {
-        IResult result = BusinessRules.Run(
-            CheckIfUserExists(user.Id),
-            CheckIfUserMailExistsForUpdate(user.Id, user.Mail),
-            CheckIfUserRegistrationIdExistsForUpdate(user.Id, user.RegistirationId)
+        IResult result = await BusinessRules.RunAsync(
+            () => CheckIfUserExistsAsync(user.Id),
+            () => CheckIfUserMailExistsForUpdateAsync(user.Id, user.Mail),
+            () => CheckIfUserRegistrationIdExistsForUpdateAsync(user.Id, user.RegistirationId)
         );
 
         if (result != null)
@@ -48,7 +48,7 @@ public class UserManager : IUserService
             return result;
         }
 
-        var existingUser = _userDal.Get(u => u.Id == user.Id);
+        var existingUser = await _userDal.GetAsync(u => u.Id == user.Id);
         existingUser.FirstName = user.FirstName;
         existingUser.LastName = user.LastName;
         existingUser.Mail = user.Mail;
@@ -58,83 +58,87 @@ public class UserManager : IUserService
         existingUser.PositionId = user.PositionId;
         existingUser.UpdateAt = DateTime.Now;
 
-        _userDal.Update(existingUser);
+        await _userDal.UpdateAsync(existingUser);
         return new SuccessResult(Messages.UserUpdated);
     }
 
     [SecuredOperation("Admin")]
-    public IResult Delete(User user)
+    public async Task<IResult> DeleteAsync(User user)
     {
-        IResult result = await BusinessRules.Run(CheckIfUserExists(user.Id));
+        IResult result = await BusinessRules.RunAsync(() => CheckIfUserExistsAsync(user.Id));
 
         if (result != null)
         {
             return result;
         }
 
-        var existingUser = await _userDal.Get(u => u.Id == user.Id);
-        _userDal.Delete(existingUser);
+        var existingUser = await _userDal.GetAsync(u => u.Id == user.Id);
+        await _userDal.DeleteAsync(existingUser);
         return new SuccessResult(Messages.UserDeleted);
     }
-    public IDataResult<List<User>> GetAll(Expression<Func<User, bool>> filter = null)
+    public async Task<IDataResult<List<User>>> GetAllAsync(Expression<Func<User, bool>> filter = null)
     {
-        return new SuccessDataResult<List<User>>(_userDal.GetAll(filter), Messages.UsersList);
+        return new SuccessDataResult<List<User>>(await _userDal.GetAllAsync(filter), Messages.UsersList);
     }
-    public async Task<IDataResult<User>> GetUser(Expression<Func<User, bool>> filter = null)
+    public async Task<IDataResult<User>> GetUserAsync(Expression<Func<User, bool>> filter = null)
     {
-        return new SuccessDataResult<User>(await _userDal.Get(filter), Messages.UsersList);
+        return new SuccessDataResult<User>(await _userDal.GetAsync(filter), Messages.UsersList);
     }
-    public List<OperationClaim> GetClaims(User user)
+    public async Task<List<OperationClaim>> GetClaimsAsync(User user)
     {
-        return _userDal.GetClaims(user);
+        return await _userDal.GetClaimsAsync(user);
     }
 
 
 
     #region Business Rules
-    private async Task<IResult> CheckIfUserMailExists(string email)
+    private async Task<IResult> CheckIfUserMailExistsAsync(string email)
     {
-        var result = await _userDal.GetAll(e => e.Mail == email);
-        if (result is not null)
+        var result = await _userDal.GetAllAsync(e => e.Mail == email);
+        if (result is not null && result.Count > 0)
         {
             return new ErrorResult(Messages.UserMailAlreadyExists);
         }
         return new SuccessResult();
     }
 
-    private async Task<IResult> CheckIfUserMailExistsForUpdate(int id, string email)
+    private async Task<IResult> CheckIfUserMailExistsForUpdateAsync(int id, string email)
     {
-        var result = await _userDal.GetAll(e => e.Mail == email && e.Id != id);
-        if (result is not null)
+        var result = await _userDal.GetAllAsync(e => e.Mail == email && e.Id != id);
+        if (result is not null && result.Count > 0)
         {
             return new ErrorResult(Messages.UserMailAlreadyExists);
         }
         return new SuccessResult();
     }
 
-    private async Task<IResult> CheckIfUserRegistrationIdExists(string registrationId)
+    private async Task<IResult> CheckIfUserRegistrationIdExistsAsync(string registrationId)
     {
-        var result = await _userDal.GetAll(e => e.RegistirationId == registrationId);
-        if (result is not null)
+        if (string.IsNullOrWhiteSpace(registrationId)) return new SuccessResult();
+
+        var result = await _userDal.GetAllAsync(e => e.RegistirationId == registrationId);
+        if (result is not null && result.Count > 0)
         {
             return new ErrorResult(Messages.UserRegistrationIdAlreadyExists);
         }
         return new SuccessResult();
     }
 
-    private async Task<IResult> CheckIfUserRegistrationIdExistsForUpdate(int id, string registrationId)
+    private async Task<IResult> CheckIfUserRegistrationIdExistsForUpdateAsync(int id, string registrationId)
     {
-        var result = _userDal.GetAll(e => e.RegistirationId == registrationId && e.Id != id);
-        if (result is not null)
+        if (string.IsNullOrWhiteSpace(registrationId)) return new SuccessResult();
+
+        var result = await _userDal.GetAllAsync(e => e.RegistirationId == registrationId && e.Id != id);
+        if (result is not null && result.Count > 0)
         {
             return new ErrorResult(Messages.UserRegistrationIdAlreadyExists);
         }
         return new SuccessResult();
     }
 
-    private async Task<IResult> CheckIfUserExists(int id)
+    private async Task<IResult> CheckIfUserExistsAsync(int id)
     {
-        var result = await _userDal.Get(u => u.Id == id);
+        var result = await _userDal.GetAsync(u => u.Id == id);
         if (result == null)
         {
             return new ErrorResult(Messages.UserNotFound);

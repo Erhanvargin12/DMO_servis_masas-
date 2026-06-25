@@ -1,6 +1,7 @@
-﻿using Core.DataAccess.EntityFramework;
+using Core.DataAccess.EntityFramework;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Microsoft.EntityFrameworkCore;
 
 namespace DataAccess.Concrete.EntityFramework;
 public class EfUserDal : EfEntityRepositoryBase<User, MsSqlDbContext>, IUserDal
@@ -8,8 +9,7 @@ public class EfUserDal : EfEntityRepositoryBase<User, MsSqlDbContext>, IUserDal
 
     public EfUserDal(MsSqlDbContext context) : base(context){}
 
-
-    public List<OperationClaim> GetClaims(User user)
+    public async Task<List<OperationClaim>> GetClaimsAsync(User user)
     {
         var result = from operationClaim in _context.OperationClaims
                      join userOperationClaim in _context.UserOperationClaims
@@ -22,7 +22,6 @@ public class EfUserDal : EfEntityRepositoryBase<User, MsSqlDbContext>, IUserDal
                          Description = operationClaim.Description
                      };
 
-        return result.ToList();
+        return await result.ToListAsync();
     }
-
 }
