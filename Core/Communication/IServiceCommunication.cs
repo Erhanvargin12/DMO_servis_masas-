@@ -3,7 +3,7 @@
 public interface IServiceCommunication
 {
     Task<TResponse?> GetAsync<TResponse>(string serviceId, string address);
-    Task<TResponse?> GetAsync<T, TResponse>(string serviceId, string address, T queryData);
+    Task<TResponse?> GetAsync<TResponse>(string serviceId, string address, object? queryData = null);
     Task<TResponse?> PostAsync<T, TResponse>(string serviceId, string address, T data);
     Task PostAsync<T>(string serviceId, string address, T data);
     Task<Stream> PostStreamAsync<T>(string serviceId, string address, T data);

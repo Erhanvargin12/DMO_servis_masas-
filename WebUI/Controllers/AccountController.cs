@@ -2,7 +2,6 @@ using Core.Utilities.Security.Jwt;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using WebUI.Core.Services.Abstract;
 using WebUI.Core.Services.Concrete;
@@ -26,7 +25,7 @@ namespace WebUI.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
-            if (_currentUser.IsAuthenticated)
+            if (_currentUser.User.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }
@@ -65,46 +64,9 @@ namespace WebUI.Controllers
                 new Claim("AccessToken", result.Data.Token)
             };
 
-            try
-            {
-                var handler = new JwtSecurityTokenHandler();
-                var jwtToken = handler.ReadJwtToken(result.Data.Token);
-                string url = "http://schemas.microsoft.com/ws/2008/06/identity/claims/";
-                
-                var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == url+"nameidentifier" ||c.Type == ClaimTypes.NameIdentifier ||c.Type == "sub" ||c.Type == "nameid");
-                var nameClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == url + "name" || c.Type == ClaimTypes.Name || c.Type == "name");
-                var roleClaims = jwtToken.Claims.Where(c => c.Type == url + "role" || c.Type == ClaimTypes.Role || c.Type == "role");
-
-                if (userIdClaim != null)
-                {
-                    claims.Add(new Claim("UserId", userIdClaim.Value));
-                    HttpContext.Session.SetString("UserId", userIdClaim.Value);
-                }
-
-                var branchIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "organizationUnitId");
-                if (branchIdClaim != null)
-                {
-                    HttpContext.Session.SetString("BranchId", branchIdClaim.Value);
-                }
-                
-                if (nameClaim != null)
-                {
-                    claims.Add(new Claim(ClaimTypes.Name, nameClaim.Value));
-                }
-
-                foreach (var roleClaim in roleClaims)
-                {
-                    claims.Add(new Claim(ClaimTypes.Role, roleClaim.Value));
-                }
-            }
-            catch (Exception ex)
-            {
-            }
-
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties
             {
-                IsPersistent = model.RememberMe,
                 ExpiresUtc = result.Data.Expiration
             };
 
@@ -125,7 +87,7 @@ namespace WebUI.Controllers
         [HttpGet]
         public IActionResult Register()
         {
-            if (_currentUser.IsAuthenticated)
+            if (_currentUser.User.IsAuthenticated)
             {
                 return RedirectToAction("Index", "Home");
             }

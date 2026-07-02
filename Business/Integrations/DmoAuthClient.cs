@@ -1,22 +1,24 @@
-﻿using Business.Abstract.IntegrationServices;
 using Entities.Concrete.Integration;
+using Core.Communication;
 using Entities.DTOs;
-using System.Net.Http.Json;
+using Business.Abstract.IntegrationServices;
 
 namespace Business.Integrations;
 
 public class DmoAuthClient : IDmoAuthService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IServiceCommunication _service;
 
-    public DmoAuthClient(HttpClient httpClient)
+    public DmoAuthClient(IServiceCommunication service)
     {
-        _httpClient = httpClient;
+        _service = service;
     }
+
     public async Task<DmoIntegrationLoginResponse?> DmoLoginAsync(UserForLoginDto loginDto)
     {
-        var response = await _httpClient.PostAsJsonAsync("dmo-login",loginDto);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<DmoIntegrationLoginResponse>();
+        var result = await _service.PostAsync<UserForLoginDto, DmoIntegrationLoginResponse>(
+            "gateway", "dmo-login", loginDto);
+
+        return result;
     }
 }

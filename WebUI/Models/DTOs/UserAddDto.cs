@@ -9,7 +9,7 @@ public class UserAddDto : IDto
     public string Mail { get; set; } = string.Empty;
     public string Password { get; set; } = "123456"; // Varsayılan şifre
     public bool Status { get; set; } = true;
-    public int RegistirationId { get; set; }
+    public int EbysUserId { get; set; }
     public int OrganizationUnitId { get; set; }
     public int PositionId { get; set; }
 }

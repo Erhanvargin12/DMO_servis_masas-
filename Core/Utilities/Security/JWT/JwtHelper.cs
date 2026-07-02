@@ -60,10 +60,11 @@ namespace Core.Utilities.Security.Jwt
             var claims = new List<Claim>();
             claims.AddNameIdentifier(user.Id.ToString());
             claims.AddEmail(user.Mail);
+            claims.AddEbysUserId(user.EbysUserId);
             claims.AddName($"{user.FirstName} {user.LastName}");
             claims.AddRoles(operationClaims.Select(c => c.Name).ToArray());
-            claims.AddOrganizationUnitId(user.OrganizationUnitId.ToString());
-
+            claims.AddBranchId(user.BranchId.ToString());
+            claims.AddProxyUserIds(user.ProxyUserId);
             return claims;
         }
 

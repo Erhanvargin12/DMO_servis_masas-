@@ -87,7 +87,7 @@
                                 </div>
                             </td>
                             <td class="entity-desc col-hide-md" data-label="E-posta">@user.User.Mail</td>
-                            <td class="col-hide-md" data-label="Sicil No"><span class="entity-id">@user.User.RegistirationId</span></td>
+                            <td class="col-hide-md" data-label="Sicil No"><span class="entity-id">@user.User.EbysUserId</span></td>
                             <td data-label="Durum"><span class="badge @(user.User.Status ? "badge-success" : "badge-error")">@(user.User.Status ? "Aktif" : "Pasif")</span></td>
                             <td class="text-muted col-hide-md" data-label="Tarih">@user.User.CreateAt.ToString("dd.MM.yyyy")</td>
                             <td>

@@ -1,7 +1,6 @@
 using Core.Utilities.Security.Jwt;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using WebUI.Core.Services.Abstract;
 
@@ -116,28 +115,10 @@ namespace WebUI.Core.Middleware
         {
             try
             {
-                var claims = new List<Claim>();
-
-                foreach (var claim in context.User.Claims)
-                {
-                    if (claim.Type != "AccessToken")
-                        claims.Add(claim);
-                }
-
-                claims.Add(new Claim("AccessToken", token.Token));
-
-                var handler = new JwtSecurityTokenHandler();
-                var jwtToken = handler.ReadJwtToken(token.Token);
-                string msUrl = "http://schemas.microsoft.com/ws/2008/06/identity/claims/";
-
-                var roleClaims = jwtToken.Claims.Where(c =>
-                    c.Type == msUrl + "role" || c.Type == ClaimTypes.Role || c.Type == "role");
-
-                foreach (var roleClaim in roleClaims)
-                {
-                    if (!claims.Any(c => c.Type == ClaimTypes.Role && c.Value == roleClaim.Value))
-                        claims.Add(new Claim(ClaimTypes.Role, roleClaim.Value));
-                }
+                var claims = context.User.Claims
+                    .Where(c => c.Type != "AccessToken")
+                    .Append(new Claim("AccessToken", token.Token))
+                    .ToList();
 
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var authProperties = new AuthenticationProperties

@@ -23,10 +23,10 @@ public class DynamicMenuViewComponent : ViewComponent
 
     public async Task<IViewComponentResult> InvokeAsync()
     {
-        var userId = _currentUserService.UserId;
+        var userId = _currentUserService.User.UserId;
         var menus = new MenuViewModel();
 
-        if (string.IsNullOrEmpty(userId))
+        if (userId == 0)
             return View(menus);
 
         var cacheKey = $"UserMenu_{userId}";

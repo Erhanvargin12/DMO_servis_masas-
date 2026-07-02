@@ -1,6 +1,7 @@
-﻿using System.Net.Http.Headers;
+using Azure.Core;
+using Microsoft.IdentityModel.Tokens;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
@@ -14,9 +15,9 @@ public class HttpServiceCommunication : IServiceCommunication
 
     public HttpServiceCommunication(IHttpClientFactory httpClientFactory)
     {
-        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory),"HttpClientFactory not registered");
+        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory), "HttpClientFactory not registered");
 
-        _jsonSerializerOptions = new JsonSerializerOptions()
+        _jsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -29,105 +30,64 @@ public class HttpServiceCommunication : IServiceCommunication
     {
         var client = _httpClientFactory.CreateClient(serviceId);
 
-        string response = await client.GetStringAsync(address);
+        var response = await client.GetStringAsync(address);
         if (string.IsNullOrEmpty(response))
             return default;
 
         return JsonSerializer.Deserialize<TResponse>(response, _jsonSerializerOptions);
     }
 
-    public Task<TResponse?> GetAsync<T, TResponse>(string serviceId, string address, T queryData)
+    public Task<TResponse?> GetAsync<TResponse>(string serviceId,string address,object? queryData = null)
     {
-        var props = typeof(T).GetProperties();
+        if (queryData is null)
+            return GetAsync<TResponse>(serviceId, address);
 
-        string query = string.Join("&", props.Where(r => r.GetValue(queryData) != null)
-            .Select(r =>
+        var props = queryData.GetType().GetProperties();
+
+        var query = string.Join("&", props.Where(p => p.GetValue(queryData) != null)
+            .Select(p =>
             {
-                var value = r.PropertyType == typeof(DateTime) || r.PropertyType == typeof(DateTime?)
-                    ? HttpUtility.UrlEncode(DateTime.Parse(r.GetValue(queryData).ToString()).ToString("yyyy-MM-dd HH:mm"))
-                    : HttpUtility.UrlEncode(r.GetValue(queryData).ToString());
-
-                return $"{HttpUtility.UrlEncode(r.Name)}={value}";
+                var value = p.GetValue(queryData)!;
+                return $"{Uri.EscapeDataString(p.Name)}={Uri.EscapeDataString(value.ToString()!)}";
             }));
-        string newAddress = $"{address}?{query}";
-        return GetAsync<TResponse?>(serviceId, newAddress);
+
+        if (!string.IsNullOrWhiteSpace(query))
+            address = $"{address}?{query}";
+
+        return GetAsync<TResponse>(serviceId, address);
     }
 
     public async Task<TResponse?> PostAsync<T, TResponse>(string serviceId, string address, T data)
     {
         var client = _httpClientFactory.CreateClient(serviceId);
 
-        string json = JsonSerializer.Serialize(data);
+        var responseMessage = await client.PostAsJsonAsync(address, data, _jsonSerializerOptions);
 
-        using var body = new StringContent(content: json, encoding: Encoding.UTF8, "application/json");
-        var responseMessage = await client.PostAsJsonAsync<T>(address, data);
-
-        string responseData = await responseMessage.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<TResponse>(responseData, _jsonSerializerOptions);
-    }
-
-    public async Task<TResponse?> PutAsync<T, TResponse>(string serviceId, string address, T data)
-    {
-        var client = _httpClientFactory.CreateClient(serviceId);
-
-        //string json = JsonSerializer.Serialize(data);
-        //using var body = new StringContent(content: json, encoding: Encoding.UTF8, "application/json");
-
-        var responseMessage = await client.PutAsJsonAsync(address, data);
-
-        string responseData = await responseMessage.Content.ReadAsStringAsync();
+        var responseData = await responseMessage.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(responseData))
+            return default;
 
         return JsonSerializer.Deserialize<TResponse>(responseData, _jsonSerializerOptions);
-    }
-
-    public async Task<TResponse?> PatchAsync<T, TResponse>(string serviceId, string address, T data)
-    {
-        var client = _httpClientFactory.CreateClient(serviceId);
-
-        //string json = JsonSerializer.Serialize(data);
-        //using var body = new StringContent(content: json, encoding: Encoding.UTF8, "application/json");
-
-        var responseMessage = await client.PatchAsJsonAsync(address, data);
-
-        string responseData = await responseMessage.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<TResponse>(responseData, _jsonSerializerOptions);
-    }
-
-    public async Task DeleteAsync(string serviceId, string address)
-    {
-        var client = _httpClientFactory.CreateClient(serviceId);
-
-        await client.DeleteAsync(address);
     }
 
     public async Task PostAsync<T>(string serviceId, string address, T data)
     {
         var client = _httpClientFactory.CreateClient(serviceId);
 
-        await client.PostAsJsonAsync(address, data);
+        await client.PostAsJsonAsync(address, data, _jsonSerializerOptions);
     }
 
     public async Task<Stream> PostStreamAsync<T>(string serviceId, string address, T data)
     {
         var client = _httpClientFactory.CreateClient(serviceId);
 
-        var responseMessage = await client.PostAsJsonAsync(address, data);
+        var responseMessage = await client.PostAsJsonAsync(address, data, _jsonSerializerOptions);
 
-        Stream responseStream = await responseMessage.Content.ReadAsStreamAsync();
-
-        return responseStream;
+        return await responseMessage.Content.ReadAsStreamAsync();
     }
 
-    public async Task PutAsync<T>(string serviceId, string address, T data)
-    {
-        var client = _httpClientFactory.CreateClient(serviceId);
-
-        await client.PutAsJsonAsync(address, data);
-    }
-
-    public async Task PostFileUploadAsync(string serviceId, string address, Stream fileStream, string fileName, string fileContentName, string contentType, Dictionary<string, HttpContent> contents)
+    public async Task PostFileUploadAsync(string serviceId, string address, Stream fileStream, string fileName,
+        string fileContentName, string contentType, Dictionary<string, HttpContent> contents)
     {
         var client = _httpClientFactory.CreateClient(serviceId);
 
@@ -143,5 +103,45 @@ public class HttpServiceCommunication : IServiceCommunication
         }
 
         await client.PostAsync(address, content);
+    }
+
+    public async Task<TResponse?> PutAsync<T, TResponse>(string serviceId, string address, T data)
+    {
+        var client = _httpClientFactory.CreateClient(serviceId);
+
+        var responseMessage = await client.PutAsJsonAsync(address, data, _jsonSerializerOptions);
+
+        var responseData = await responseMessage.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(responseData))
+            return default;
+
+        return JsonSerializer.Deserialize<TResponse>(responseData, _jsonSerializerOptions);
+    }
+
+    public async Task PutAsync<T>(string serviceId, string address, T data)
+    {
+        var client = _httpClientFactory.CreateClient(serviceId);
+
+        await client.PutAsJsonAsync(address, data, _jsonSerializerOptions);
+    }
+
+    public async Task<TResponse?> PatchAsync<T, TResponse>(string serviceId, string address, T data)
+    {
+        var client = _httpClientFactory.CreateClient(serviceId);
+
+        var responseMessage = await client.PatchAsJsonAsync(address, data, _jsonSerializerOptions);
+
+        var responseData = await responseMessage.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(responseData))
+            return default;
+
+        return JsonSerializer.Deserialize<TResponse>(responseData, _jsonSerializerOptions);
+    }
+
+    public async Task DeleteAsync(string serviceId, string address)
+    {
+        var client = _httpClientFactory.CreateClient(serviceId);
+
+        await client.DeleteAsync(address);
     }
 }

@@ -42,32 +42,6 @@ namespace WebAPI.Controllers
             return BadRequest(result.Message);
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(UserForRegisterDto userDto)
-        {
-            var registerResult = await _authService.RegisterAsync(userDto);
-            if (!registerResult.Success)
-            {
-                return BadRequest(new { Success = false, Message = registerResult.Message });
-            }
-
-            var ipAddress = GetIpAddress();
-            var result = await _authService.CreateAccessTokenAsync(registerResult.Data, ipAddress);
-            
-            if (result.Success)
-            {
-                SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiration);
-                
-                return Ok(new
-                {
-                    Token = result.Data.Token,
-                    Expiration = result.Data.Expiration
-                });
-            }
-
-            return BadRequest(new { Success = false, Message = result.Message });
-        }
-
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto? dto = null)
         {
@@ -179,13 +153,11 @@ namespace WebAPI.Controllers
 
         private string? GetIpAddress()
         {
-            // X-Forwarded-For header'ı (reverse proxy arkasında)
             if (Request.Headers.ContainsKey("X-Forwarded-For"))
             {
                 return Request.Headers["X-Forwarded-For"].FirstOrDefault()?.Split(',').FirstOrDefault()?.Trim();
             }
             
-            // X-Real-IP header'ı (nginx)
             if (Request.Headers.ContainsKey("X-Real-IP"))
             {
                 return Request.Headers["X-Real-IP"].FirstOrDefault();

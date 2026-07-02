@@ -1,5 +1,4 @@
-﻿using Autofac.Core;
-using Core.CrossCuttingConcerns.Caching;
+﻿using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Caching.Microsoft;
 using Core.Utilities.IoC;
 using Microsoft.AspNetCore.Http;
@@ -19,6 +18,11 @@ public class CoreModule : ICoreModule
         {
             var config = sp.GetRequiredService<IConfiguration>();
             client.BaseAddress = new Uri(config.GetValue<string>("GatewayApiBaseUrl")!);
+        });
+        serviceColleciton.AddHttpClient("dip", (sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            client.BaseAddress = new Uri(config.GetValue<string>("DipApiBaseUrl")!);
         });
 
     }

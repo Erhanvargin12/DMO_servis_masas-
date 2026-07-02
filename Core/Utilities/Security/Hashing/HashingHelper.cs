@@ -1,4 +1,4 @@
-﻿namespace Core.Utilities.Security.Hashing;
+namespace Core.Utilities.Security.Hashing;
 
 public class HashingHelper
 {
@@ -25,5 +25,18 @@ public class HashingHelper
             }
         }
         return true;
+    }
+    public static string ComputeSha256Hash(string data)
+    {
+        using (var sha256 = System.Security.Cryptography.SHA256.Create())
+        {
+            byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(data));
+            var builder = new System.Text.StringBuilder();
+            foreach (var b in bytes)
+            {
+                builder.Append(b.ToString("x2"));
+            }
+            return builder.ToString();
+        }
     }
 }

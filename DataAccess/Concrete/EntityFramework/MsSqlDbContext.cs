@@ -1,4 +1,4 @@
-﻿using Core.Entities.Concrete;
+using Core.Entities.Concrete;
 using Entities.Concrete;
 using Entities.Concrete.Ticket;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +30,7 @@ public class MsSqlDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
+    public DbSet<Branch> Branches { get; set; }
     public DbSet<OperationClaim> OperationClaims { get; set; }
     public DbSet<UserOperationClaim> UserOperationClaims { get; set; }
     public DbSet<Menu> Menus { get; set; }
@@ -42,4 +43,5 @@ public class MsSqlDbContext : DbContext
     public DbSet<Response> Responses { get; set; }
     public DbSet<Ticket> Tickets { get; set; }
     public DbSet<Transfer> Transfers { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 }

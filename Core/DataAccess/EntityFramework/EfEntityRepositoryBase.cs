@@ -19,7 +19,7 @@ public class EfEntityRepositoryBase<TEntity, TContext> : IEntityRepository<TEnti
     public async Task AddAsync(TEntity entity)
     {
         await _context.Set<TEntity>().AddAsync(entity);
-        await _context.SaveChangesAsync();
+        var result = await _context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(TEntity entity)

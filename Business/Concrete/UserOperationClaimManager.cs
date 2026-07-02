@@ -41,7 +41,7 @@ public class UserOperationClaimManager : IUserOperationClaimService
             Messages.UserOperationClaimsListed);
     }
 
-    [SecuredOperation("Admin")]
+    //[SecuredOperation("Admin")]
     public async Task<IResult> AddAsync(UserOperationClaim userOperationClaim)
     {
         IResult result = await BusinessRules.RunAsync(

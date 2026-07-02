@@ -1,13 +1,14 @@
-﻿using Business.Abstract.IntegrationServices;
+using Business.Abstract.IntegrationServices;
+using Core.Communication;
 
 namespace Business.Integrations;
 
 public class DmoEbysClient : IDmoEbysService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IServiceCommunication _serviceCommunication;
 
-    public DmoEbysClient(HttpClient httpClient)
+    public DmoEbysClient(IServiceCommunication serviceCommunication)
     {
-        _httpClient = httpClient;
+        _serviceCommunication = serviceCommunication;
     }
 }

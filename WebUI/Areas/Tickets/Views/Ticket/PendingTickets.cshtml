@@ -1,4 +1,4 @@
-﻿@model WebUI.Areas.Tickets.Models.TicketViewModel
+@model WebUI.Areas.Tickets.Models.TicketViewModel
 @{
     ViewData["Title"] = "Talepler";
 
@@ -38,10 +38,10 @@
         4 => "Kritik",
         _ => "—"
     };
-    string TabUrl(string tabName) => Url.Action("Index", "Ticket", new
+    string TabUrl(int? proxyUserId) => Url.Action("PendingTickets", "Ticket", new
     {
         area = "Tickets",
-        tab = tabName,
+        userId = proxyUserId,
         search = Model.SearchTerm,
         status = Model.StatusFilter,
         priority = Model.PriorityFilter
@@ -65,12 +65,16 @@
         <div>
             <div class="mgmt-page-title">Talepler</div>
             <div class="mgmt-page-subtitle">
-                @if (Model.ActiveTab == "delegated" && Model.Delegation != null)
+                @if (Model.ActiveUserId.HasValue && Model.ProxyUser != null)
                 {
-                    <span style="color:var(--warning);">
-                        <i class="fa-solid fa-user-shield" style="margin-right:4px;"></i>
-                        @Model.Delegation.DelegatorName adına vekâlet
-                    </span>
+                    var proxyUser = Model.ProxyUser.FirstOrDefault(x => x.Id == Model.ActiveUserId.Value);
+                    if (proxyUser != null)
+                    {
+                        <span style="color:var(--warning);">
+                            <i class="fa-solid fa-user-shield" style="margin-right:4px;"></i>
+                            @proxyUser.FirstName @proxyUser.LastName adına vekâlet
+                        </span>
+                    }
                 }
                 else
                 {
@@ -88,36 +92,45 @@
 </div>
 
 @* ── Vekalet Tabları (sadece vekâlet varsa göster) ──────────────────────── *@
-@if (Model.Delegation != null)
+@if (Model.ProxyUser != null)
 {
     <div class="data-tabs">
-        <a href="@TabUrl("own")" class="data-tab @(Model.ActiveTab == "own" ? "active" : "")">
+        <a href="@TabUrl(null)" class="data-tab @(!Model.ActiveUserId.HasValue ? "active" : "")">
             <i class="fa-solid fa-inbox"></i>
             Kendi Taleplerim
             <span class="tab-count">@Model.OwnCount</span>
         </a>
-        <a href="@TabUrl("delegated")" class="data-tab @(Model.ActiveTab == "delegated" ? "active" : "")">
-            <i class="fa-solid fa-user-shield"></i>
-            @Model.Delegation.DelegatorName
-            <span class="tab-count warn">@Model.DelegatedCount</span>
-            <span class="tab-badge">Vekâlet</span>
-        </a>
+        @foreach (var proxyUser in Model.ProxyUser)
+        {
+            <a href="@TabUrl(proxyUser.Id)" class="data-tab @(Model.ActiveUserId == proxyUser.Id ? "active" : "")">
+                <i class="fa-solid fa-user-shield"></i>
+                @proxyUser.FirstName @proxyUser.LastName
+                <span class="tab-count warn">@(Model.ProxyCounts.ContainsKey(proxyUser.Id) ? Model.ProxyCounts[proxyUser.Id] : 0)</span>
+                <span class="tab-badge">Vekâlet</span>
+            </a>
+        }
+
     </div>
 
-    @if (Model.ActiveTab == "delegated")
+    @if (Model.ActiveUserId.HasValue)
     {
+        var activeProxy = Model.ProxyUser.FirstOrDefault(x => x.Id == Model.ActiveUserId.Value);
+
         <div class="delegation-banner">
             <i class="fa-solid fa-circle-info"></i>
             <div>
-                @if (Model.Delegation.DelegationType == "manager")
+                @if (activeProxy != null)
                 {
-                    <strong>@Model.Delegation.BranchName</strong>
-                    <span>şubesine ait tüm ticketları görüntülüyorsunuz (@Model.Delegation.DelegatorName).</span>
-                }
-                else
-                {
-                    <strong>@Model.Delegation.DelegatorName</strong>
-                    <span>adlı personelin kişisel ticketlarını görüntülüyorsunuz (personel vekâleti).</span>
+                    @if (activeProxy.FirstName == "manager")
+                    {
+                        <strong>@activeProxy.BranchId</strong>
+                        <span>şubesine ait tüm ticketları görüntülüyorsunuz (@activeProxy.FirstName @activeProxy.LastName).</span>
+                    }
+                    else
+                    {
+                        <strong>@activeProxy.FirstName @activeProxy.LastName</strong>
+                        <span>adlı personelin kişisel ticketlarını görüntülüyorsunuz (personel vekâleti).</span>
+                    }
                 }
             </div>
         </div>
@@ -128,8 +141,10 @@
     <div class="filter-wrap">
         <form method="get" asp-action="Index" asp-controller="Ticket" asp-area="Tickets"
               class="filter-form" id="ticketFilterForm">
-            @* Tab parametresini form ile birlikte koru *@
-            <input type="hidden" name="tab" value="@Model.ActiveTab" />
+            @if (Model.ActiveUserId.HasValue)
+            {
+                <input type="hidden" name="userId" value="@Model.ActiveUserId" />
+            }
             <div class="filter-row">
                 <div class="data-table-search filter-search">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -163,7 +178,7 @@
                     </button>
                     @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.PriorityFilter))
                     {
-                        <a href="@Url.Action("Index", "Ticket", new { area = "Tickets", tab = Model.ActiveTab })"
+                        <a href="@Url.Action("PendingTickets", "Ticket", new { area = "Tickets", userId = Model.ActiveUserId })"
                            class="btn filter-btn">
                             <i class="fa-solid fa-xmark"></i>
                             Temizle
@@ -177,11 +192,20 @@
 <div class="data-table">
     <div class="data-table-header">
         <div class="data-table-title">
-            <span>
-                @(Model.ActiveTab == "delegated" && Model.Delegation != null
-                                ? Model.Delegation.DelegatorName + " — Talepleri"
-                                : "Taleplerim")
-            </span>
+            @{
+                if (Model.ActiveUserId.HasValue && Model.ProxyUser != null)
+                {
+                    var activeProxy = Model.ProxyUser.FirstOrDefault(x => x.Id == Model.ActiveUserId.Value);
+                    if (activeProxy != null)
+                    {
+                        <span>@activeProxy.FirstName @activeProxy.LastName — Talepleri</span>
+                    }
+                }
+                else
+                {
+                    <span>Taleplerim</span>
+                }
+            }
             <span class="stat-chip"></span>
         </div>
         <div class="data-table-actions"></div>

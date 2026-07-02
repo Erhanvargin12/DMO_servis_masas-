@@ -1,3 +1,5 @@
+using Core.Communication;
+using Core.Utilities.Results;
 using Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +8,7 @@ using WebUI.Core.Services.Abstract;
 using WebUI.Core.Services.Concrete;
 using WebUI.Models;
 using WebUI.Models.DTOs;
+using WebUI.Services.Abstract;
 
 namespace WebUI.Areas.Talepler.Controllers;
 
@@ -13,137 +16,113 @@ namespace WebUI.Areas.Talepler.Controllers;
 [Authorize(Roles = "Tickets,Staff")]
 public class TicketController : BaseController
 {
-    private readonly IApiClient _apiClient;
-
-    public TicketController(IApiClient apiClient) : base(apiClient)
+    private readonly ICurrentUserService _currentUser;
+    private readonly IServiceCommunication _service;
+    public TicketController(IApiClient apiClient,ICurrentUserService currentUser, IServiceCommunication service) : base(apiClient)
     {
-        _apiClient = apiClient;
+        _currentUser = currentUser;
+        _service = service;
     }
 
-    public async Task<IActionResult> Index(string? search, string? status, string? priority, string? tab)
+    public async Task<IActionResult> Index(string? search, string? status, string? priority, int? userId)
     {
-        tab ??= "own";
-
-        var model = new TicketViewModel();
-        var response = await SendRequest<List<Ticket>>("ticket/getall");
-
-        model.Ticket = response;
-        model.SearchTerm = search;
-        model.StatusFilter = status;
-        model.PriorityFilter = priority;
-        model.ActiveTab = tab;
-
-        // ── Mock vekalet bilgisi (API bağlanana kadar) ────────────────────────
-        // API hazır olduğunda: kullanıcının aktif vekâletleri /delegation/getactive
-        // endpoint'inden çekilecek ve bu blok kaldırılacak.
-        var mockDelegation = new DelegationInfo
+        var model = new TicketViewModel
         {
-            DelegatorId = 5,
-            DelegatorName = "Ahmet Yılmaz",
-            DelegationType = "manager",      // "manager" | "personnel"
-            BranchName = "IT Müdürlüğü"
+            SearchTerm = search,
+            StatusFilter = status,
+            PriorityFilter = priority,
+            ActiveUserId = userId
         };
-        model.Delegation = mockDelegation;
-        // ─────────────────────────────────────────────────────────────────────
 
-        // Kendi ticketları
-        var ownList = response?.Data ?? new List<Ticket>();
+        await VekilleriGetir(model);
+        await KendiTaleplerimiGetir(model);
 
-        // Vekâlet ticketları (mock) — API gelince /ticket/getdelegated/{delegatorId}
-        var delegatedList = GetMockDelegatedTickets();
-
-        // Sayaçlar (filtreden önce)
-        model.OwnCount = ownList.Count;
-        model.DelegatedCount = delegatedList.Count;
-
-        // Aktif tab'a göre filtrelenecek liste
-        var list = tab == "delegated" ? delegatedList : ownList;
-
-        // ── Filtreler ─────────────────────────────────────────────────────────
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var s = search.Trim().ToLowerInvariant();
-            list = list.Where(t =>
-                t.Title.ToLowerInvariant().Contains(s) ||
-                t.TicketNo.ToLowerInvariant().Contains(s) ||
-                t.Description.ToLowerInvariant().Contains(s)
-            ).ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(status) && int.TryParse(status, out var sid))
-            list = list.Where(t => t.StatusId == sid).ToList();
-
-        if (!string.IsNullOrWhiteSpace(priority) && int.TryParse(priority, out var pid))
-            list = list.Where(t => t.PriorityId == pid).ToList();
-
-        model.FilteredTickets = list;
-
-        // Sidebar badge için sayıyı session'a kaydet (her ticket sayfasında güncellenir)
-        HttpContext.Session.SetInt32("SidebarTicketCount", model.OwnCount);
+        var liste = await TalepleriGetir(userId);
+        
+        model.FilteredTickets = Filtrele(liste, search, status, priority);
 
         return View(model);
     }
 
-    public async Task<IActionResult> PendingTickets(string? search, string? status, string? priority, string? tab)
+    private async Task VekilleriGetir(TicketViewModel model)
     {
-        tab ??= "own";
+        if (_currentUser.User?.ProxyUserIds == null) return;
 
-        var model = new TicketViewModel();
-        var response = await SendRequest<List<Ticket>>("ticket/getall");
-
-        model.Ticket = response;
-        model.SearchTerm = search;
-        model.StatusFilter = status;
-        model.PriorityFilter = priority;
-        model.ActiveTab = tab;
-
-        // ── Mock vekalet bilgisi (API bağlanana kadar) ────────────────────────
-        // API hazır olduğunda: kullanıcının aktif vekâletleri /delegation/getactive
-        // endpoint'inden çekilecek ve bu blok kaldırılacak.
-        var mockDelegation = new DelegationInfo
+        foreach (var pId in _currentUser.User.ProxyUserIds)
         {
-            DelegatorId = 5,
-            DelegatorName = "Ahmet Yılmaz",
-            DelegationType = "manager",      // "manager" | "personnel"
-            BranchName = "IT Müdürlüğü"
-        };
-        model.Delegation = mockDelegation;
-        // ─────────────────────────────────────────────────────────────────────
+            var proxyUser = await _service.GetAsync<DataResult<User>>("dip", $"user/getbyid/{pId}");
+            if (proxyUser?.Data != null)
+            {
+                model.ProxyUser.Add(proxyUser.Data);
 
-        // Kendi ticketları
-        var ownList = response?.Data ?? new List<Ticket>();
+                if (int.TryParse(pId, out int proxyUserId))
+                {
+                    var response = await _service.GetAsync<DataResult<List<Ticket>>>("dip", "ticket/get-ticket-by-user-id", new { id = proxyUserId });
+                    model.ProxyCounts[proxyUserId] = response?.Data?.Count ?? 0;
+                }
+            }
+        }
+    }
 
-        // Vekâlet ticketları (mock) — API gelince /ticket/getdelegated/{delegatorId}
-        var delegatedList = GetMockDelegatedTickets();
+    private async Task KendiTaleplerimiGetir(TicketViewModel model)
+    {
+        var response = await _service.GetAsync<DataResult<List<Ticket>>>("dip", "ticket/get-ticket-by-user-id", new { id = _currentUser.User.UserId });
+        var liste = response?.Data ?? new List<Ticket>();
+        
+        model.OwnCount = liste.Count;
+        model.Ticket = response;
+    }
 
-        // Sayaçlar (filtreden önce)
-        model.OwnCount = ownList.Count;
-        model.DelegatedCount = delegatedList.Count;
+    private async Task<List<Ticket>> TalepleriGetir(int? userId)
+    {
+        int hedefId = userId ?? _currentUser.User.UserId;
+        var response = await _service.GetAsync<DataResult<List<Ticket>>>("dip", "ticket/get-ticket-by-user-id", new { id = hedefId });
+        return response?.Data ?? new List<Ticket>();
+    }
 
-        // Aktif tab'a göre filtrelenecek liste
-        var list = tab == "delegated" ? delegatedList : ownList;
+    private List<Ticket> Filtrele(List<Ticket> liste, string? search, string? status, string? priority)
+    {
+        IEnumerable<Ticket> filtreli = liste;
 
-        // ── Filtreler ─────────────────────────────────────────────────────────
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLowerInvariant();
-            list = list.Where(t =>
-                t.Title.ToLowerInvariant().Contains(s) ||
-                t.TicketNo.ToLowerInvariant().Contains(s) ||
-                t.Description.ToLowerInvariant().Contains(s)
-            ).ToList();
+            filtreli = filtreli.Where(t =>
+                (!string.IsNullOrEmpty(t.Title) && t.Title.ToLowerInvariant().Contains(s)) ||
+                (!string.IsNullOrEmpty(t.TicketNo) && t.TicketNo.ToLowerInvariant().Contains(s)) ||
+                (!string.IsNullOrEmpty(t.Description) && t.Description.ToLowerInvariant().Contains(s))
+            );
         }
 
         if (!string.IsNullOrWhiteSpace(status) && int.TryParse(status, out var sid))
-            list = list.Where(t => t.StatusId == sid).ToList();
+        {
+            filtreli = filtreli.Where(t => t.StatusId == sid);
+        }
 
         if (!string.IsNullOrWhiteSpace(priority) && int.TryParse(priority, out var pid))
-            list = list.Where(t => t.PriorityId == pid).ToList();
+        {
+            filtreli = filtreli.Where(t => t.PriorityId == pid);
+        }
 
-        model.FilteredTickets = list;
+        return filtreli.ToList();
+    }
 
-        // Sidebar badge için sayıyı session'a kaydet (her ticket sayfasında güncellenir)
-        HttpContext.Session.SetInt32("SidebarTicketCount", model.OwnCount);
+    public async Task<IActionResult> PendingTickets(string? search, string? status, string? priority, int? userId)
+    {
+        var model = new TicketViewModel
+        {
+            SearchTerm = search,
+            StatusFilter = status,
+            PriorityFilter = priority,
+            ActiveUserId = userId
+        };
+
+        await VekilleriGetir(model);
+        await KendiTaleplerimiGetir(model);
+
+        var liste = await TalepleriGetir(userId);
+        
+        model.FilteredTickets = Filtrele(liste, search, status, priority);
 
         return View(model);
     }
@@ -270,6 +249,8 @@ public class TicketController : BaseController
     public async Task<IActionResult> Create(TicketDto ticketDto, List<IFormFile>? FormFiles)
     {
         ticketDto.Attachments = await SaveAttachmentFile(FormFiles);
+        ticketDto.Ticket.CreatedById = _currentUser.User.UserId;
+        
         var response = await SendRequest<TicketDto>("ticket/add", ticketDto, HttpMethod.Post);
 
         if (response?.Success == true)
@@ -314,46 +295,6 @@ public class TicketController : BaseController
         return RedirectToAction(nameof(Detail), new { id = ticketId });
     }
 
-
-    private static List<Ticket> GetMockDelegatedTickets() => new()
-    {
-        new Ticket
-        {
-            Id = 101, TicketNo = "TKT-2026-101",
-            Title       = "Sunucu Erişim Sorunu — IT Müdürlüğü",
-            Description = "Merkez sunucuya VPN üzerinden erişilemiyor. 5 kullanıcı etkilendi.",
-            StatusId    = 1, PriorityId = 4,
-            CreatedById = 5, AssignedUserId = null, CurrentBranchId = 2,
-            CreatedAt   = DateTime.Now.AddDays(-1)
-        },
-        new Ticket
-        {
-            Id = 102, TicketNo = "TKT-2026-102",
-            Title       = "E-posta Gönderim Gecikmesi",
-            Description = "Toplu e-postalar 2-3 saat gecikmeli iletiliyor.",
-            StatusId    = 3, PriorityId = 2,
-            CreatedById = 6, AssignedUserId = 7, CurrentBranchId = 2,
-            CreatedAt   = DateTime.Now.AddDays(-2)
-        },
-        new Ticket
-        {
-            Id = 103, TicketNo = "TKT-2026-103",
-            Title       = "Lisans Yenileme Talebi",
-            Description = "Office 365 lisansları 15.03 tarihinde sona eriyor, yenileme yapılmalı.",
-            StatusId    = 2, PriorityId = 3,
-            CreatedById = 5, AssignedUserId = 8, CurrentBranchId = 2,
-            CreatedAt   = DateTime.Now.AddDays(-4)
-        },
-        new Ticket
-        {
-            Id = 104, TicketNo = "TKT-2026-104",
-            Title       = "Yeni Personel Bilgisayar Kurulumu",
-            Description = "İşe başlayan 3 personel için laptop kurulumu ve hesap açılması gerekiyor.",
-            StatusId    = 5, PriorityId = 1,
-            CreatedById = 6, AssignedUserId = 7, CurrentBranchId = 2,
-            CreatedAt   = DateTime.Now.AddDays(-6)
-        },
-    };
     private async Task<List<Attachment>> SaveAttachmentFile(List<IFormFile>? FormFiles)
     {
         var attachments = new List<Attachment>();

@@ -1,3 +1,4 @@
+using Core.Communication;
 using Microsoft.Extensions.FileProviders;
 using WebUI.Core.Middleware;
 using WebUI.Core.Services.Abstract;
@@ -46,6 +47,28 @@ builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
     // Geliştirme ortamında localhost self-signed sertifika için SSL doğrulamasını atla
     ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
+builder.Services.AddHttpClient("dip", client =>
+{
+    var gatewayUrl = builder.Configuration["DipApiBaseUrl"];
+    if (!string.IsNullOrEmpty(gatewayUrl))
+    {
+        client.BaseAddress = new Uri(gatewayUrl);
+    }
+});
+
+// TicketController uses serviceId = "gateway" via IServiceCommunication.
+// Keep an alias client name to avoid missing BaseAddress errors.
+builder.Services.AddHttpClient("gateway", client =>
+{
+    var gatewayUrl = builder.Configuration["GatewayApiBaseUrl"];
+    if (!string.IsNullOrEmpty(gatewayUrl))
+    {
+        client.BaseAddress = new Uri(gatewayUrl);
+    }
+});
+
+
+builder.Services.AddScoped<IServiceCommunication, HttpServiceCommunication>();
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation().AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = null; });
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
@@ -78,8 +101,9 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseRouting();
 app.UseSession();
 app.UseAuthentication();
-app.UseAuthorization();
 app.UseTokenRefresh();
+app.UseJwtUserClaims();
+app.UseAuthorization();
 app.UseMenuAccess();
 
 app.MapControllerRoute(name: "areas", pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");

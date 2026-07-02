@@ -13,7 +13,10 @@ using DataAccess.Abstract;
 using DataAccess.Abstract.TicketDal;
 using DataAccess.Concrete.EntityFramework;
 using DataAccess.Concrete.EntityFramework.EfTicketDal;
+using DataAccess.Concrete.EntityFramework.EfTicketDal;
 using Microsoft.AspNetCore.Http;
+using Business.Integrations;
+using Business.Abstract.IntegrationServices;
 
 namespace Business.DependencyResolvers.Autofac;
 public class AutofacBusinessModule : Module
@@ -38,12 +41,20 @@ public class AutofacBusinessModule : Module
 
         builder.RegisterType<EfRefreshTokenDal>().As<IRefreshTokenDal>().InstancePerLifetimeScope();
 
+        builder.RegisterType<BranchManager>().As<IBranchService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfBranchDal>().As<IBranchDal>().InstancePerLifetimeScope();
+
         builder.RegisterType<AuthManager>().As<IAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 
         builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>().InstancePerLifetimeScope();
 
         builder.RegisterType<HttpServiceCommunication>().As<IServiceCommunication>().InstancePerLifetimeScope();
+
+        // Integrations
+        builder.RegisterType<DmoAuthClient>().As<IDmoAuthService>().InstancePerLifetimeScope();
+        builder.RegisterType<DmoMainClient>().As<IDmoMainService>().InstancePerLifetimeScope();
+        builder.RegisterType<DmoEbysClient>().As<IDmoEbysService>().InstancePerLifetimeScope();
 
         // Ticket 
         builder.RegisterType<TicketAssignmentManager>().As<ITicketAssignmentService>().InstancePerLifetimeScope();

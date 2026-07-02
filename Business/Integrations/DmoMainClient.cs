@@ -1,7 +1,6 @@
-﻿using Business.Abstract.IntegrationServices;
-using Core.Communication;
 using Entities.Concrete.Integration;
-using System.Net.Http.Json;
+using Core.Communication;
+using Business.Abstract.IntegrationServices;
 
 namespace Business.Integrations;
 
@@ -16,7 +15,12 @@ public class DmoMainClient : IDmoMainService
 
     public async Task<DmoUserResponse?> GetDmoUserByUserName(string username)
     {
-        var response = await _serviceCommunication.GetAsync<DmoUserResponse>("gateway",$"main-db/{username}/get-dmo-user-by-username");
-        return response;
+        var result = await _serviceCommunication.GetAsync<DmoUserResponse>("gateway", $"main-db/{username}/get-dmo-user-by-username");
+        return result;
+    }
+    public async Task<List<ProxyEbysUser?>> GetDmoProxyUsersUserByEbysId(string ebysId)
+    {
+        var result = await _serviceCommunication.GetAsync<List<ProxyEbysUser>>("gateway", $"main-db/{ebysId}/get-dmo-proxy-users-by-ebysid");
+        return result;
     }
 }

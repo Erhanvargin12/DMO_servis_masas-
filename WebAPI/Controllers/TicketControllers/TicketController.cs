@@ -1,7 +1,6 @@
 using Business.Abstract.TicketServices;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers.TicketControllers;
@@ -29,10 +28,32 @@ public class TicketController : ControllerBase
         return BadRequest(result);
     }
 
+    [HttpGet("get-ticket-by-user-id")]
+    public async Task<IActionResult> GetTicketByUserId(int id)
+    {
+        var result = await _ticketService.GetAllAsync(t=>t.CreatedById == id);
+        if (result.Success)
+        {
+            return Ok(result);
+        }
+        return BadRequest(result);
+    }
+
     [HttpGet("getbyid/{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await _ticketService.GetByIdAsync(id);
+        if (result.Success)
+        {
+            return Ok(result);
+        }
+        return BadRequest(result);
+    }
+    
+    [HttpGet("get-tickets-by-user-id/{id}")]
+    public async Task<IActionResult> GetTicketsByUserId(int id)
+    {
+        var result = await _ticketService.GetAllAsync(t=>t.CreatedById == id);
         if (result.Success)
         {
             return Ok(result);

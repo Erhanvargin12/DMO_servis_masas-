@@ -8,7 +8,9 @@ using Core.Utilities.Security.Hashing;
 using Core.Utilities.Security.Jwt;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.Concrete.Integration;
 using Entities.DTOs;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Business.Concrete;
 
@@ -18,128 +20,143 @@ public class AuthManager : IAuthService
     private readonly ITokenHelper _tokenHelper;
     private readonly IRefreshTokenDal _refreshTokenDal;
     private readonly IDmoMainService _dmoMainService;
+    private readonly IBranchService _branchService;
+    private readonly IOperationClaimService _operationClaimService;
+    private readonly IUserOperationClaimService _userOperationClaimService;
 
     public AuthManager(
-        IUserService userService, 
+        IUserService userService,
         ITokenHelper tokenHelper,
         IRefreshTokenDal refreshTokenDal,
-        IDmoMainService dmoMainService)
+        IDmoMainService dmoMainService,
+        IBranchService branchService,
+        IOperationClaimService operationClaimService,
+        IUserOperationClaimService userOperationClaimService)
     {
         _userService = userService;
         _tokenHelper = tokenHelper;
         _refreshTokenDal = refreshTokenDal;
         _dmoMainService = dmoMainService;
+        _branchService = branchService;
+        _operationClaimService = operationClaimService;
+        _userOperationClaimService = userOperationClaimService;
     }
 
-    public async Task<IDataResult<User>> RegisterAsync(UserForRegisterDto userForRegisterDto)
+    private async Task<IDataResult<User>> AddStaffUserAsync(DmoUserResponse staff)
     {
-        try
-        {
-            IResult result = await BusinessRules.RunAsync(() => CheckIfUserMailExistsAsync(userForRegisterDto.Mail));
+        IResult result = await BusinessRules.RunAsync(() => CheckIfUserMailExistsAsync(staff.Email));
 
-            if (result != null)
-            {
-                return new ErrorDataResult<User>(result.Message);
-            }
-
-            byte[] passwordHash, passwordSalt;
-            HashingHelper.CreatePasswordHash(userForRegisterDto.Password, out passwordHash, out passwordSalt);
-            
-            var user = new User
-            {
-                Mail = userForRegisterDto.Mail,
-                FirstName = userForRegisterDto.FirstName,
-                LastName = userForRegisterDto.LastName,
-                PasswordHash = passwordHash,
-                PasswordSalt = passwordSalt,
-                OrganizationUnitId = userForRegisterDto.BranchId,
-                PositionId = userForRegisterDto.PositionId,
-                RegistirationId = userForRegisterDto.RegistirationId,
-                CreateAt = DateTime.Now,
-                Status = true
-            };
-            
-            var addResult = await _userService.AddAsync(user);
-            if (!addResult.Success)
-            {
-                return new ErrorDataResult<User>(addResult.Message);
-            }
-            
-            return new SuccessDataResult<User>(user, Messages.UserAdded);
-        }
-        catch (Exception ex)
+        if (result != null)
         {
-            return new ErrorDataResult<User>("Register Error: " + ex.Message + " Inner: " + ex.InnerException?.Message);
+            return new ErrorDataResult<User>(result.Message);
         }
+
+        await _branchService.AddIfNotExistsAsync(new Branch
+        {
+            DepartmentId = staff.DepartmentId,
+            ParentDepartmentId = staff.ParentDepartmentId,
+            Name = staff.Department?.Split('\\').LastOrDefault()?.Trim() ?? string.Empty
+        });
+
+        if (!string.IsNullOrWhiteSpace(staff.ParentDepartmentId))
+        {
+            var parentName = staff.Department?.Split('\\').ElementAtOrDefault(1)?.Trim() ?? string.Empty;
+            await _branchService.AddIfNotExistsAsync(new Branch
+            {
+                DepartmentId = staff.ParentDepartmentId,
+                ParentDepartmentId = null,
+                Name = parentName
+            });
+        }
+
+        var user = new User
+        {
+            Mail = staff.Email,
+            FirstName = staff.Name,
+            LastName = staff.Surname,
+            BranchId = staff.DepartmentId,
+            PositionId = (int)staff.PositionType,
+            EbysUserId = staff.EbysId,
+            CreateAt = DateTime.Now,
+            Status = true,
+        };
+
+        var addResult = await _userService.AddAsync(user);
+        if (!addResult.Success)
+        {
+            return new ErrorDataResult<User>(addResult.Message);
+        }
+
+        await AssignRoleIfExistsAsync(user.Id, "Tickets");
+        
+        bool isAdmin = staff.Roles.Any(r =>r.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) || r.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+        if (isAdmin)
+        {
+            await AssignRoleIfExistsAsync(user.Id, "Admin");
+        }
+
+        return new SuccessDataResult<User>(user, Messages.UserAdded);
+    }
+
+    private async Task AssignRoleIfExistsAsync(int userId, string roleName)
+    {
+        var allClaims = await _operationClaimService.GetAllAsync(c => c.Name == roleName);
+        var claim = allClaims.Data?.FirstOrDefault();
+        if (claim == null) return;
+
+        await _userOperationClaimService.AddAsync(new UserOperationClaim
+        {
+            UserId = userId,
+            OperationClaimId = claim.Id
+        });
     }
 
     public async Task<IDataResult<User>> LoginAsync(UserForLoginDto userForLoginDto)
     {
-        try
+        var userResult = await _userService.GetUserAsync(u=>u.Mail == userForLoginDto.Email);
+        var userToCheck = userResult.Data;
+        
+        if (userToCheck is null)
         {
-            var userResult = await _userService.GetUserAsync(u=>u.Mail == userForLoginDto.Email);
-            var userToCheck = userResult.Data;
-            
-            if (userToCheck is null)
+            var user = await _dmoMainService.GetDmoUserByUserName(userForLoginDto.Email);
+            var proxyUser = await _dmoMainService.GetDmoProxyUsersUserByEbysId(user.EbysId);
+            if (user is null)
+                return new ErrorDataResult<User>(Messages.UserNotFound);
+
+            var registerResult = await AddStaffUserAsync(user);
+
+            if (!registerResult.Success)
             {
-                var user = await _dmoMainService.GetDmoUserByUserName(userForLoginDto.Email);
-                if (user is null)
-                    return new ErrorDataResult<User>(Messages.UserNotFound);
-
-                var registerResult = await RegisterAsync(new UserForRegisterDto
-                {
-                    Mail = user.Email,
-                    FirstName = user.Name,
-                    LastName = user.Surname,
-                    Password = userForLoginDto.Password,
-                    BranchId = user.BranchId,
-                    PositionId = (int)user.PositionType,
-                    RegistirationId = user.EbysId
-                });
-
-                if (!registerResult.Success)
-                {
-                    return new ErrorDataResult<User>(registerResult.Message);
-                }
-
-                userToCheck = registerResult.Data;
+                return new ErrorDataResult<User>(registerResult.Message);
             }
 
-            if (!userToCheck.Status)
-            {
-                return new ErrorDataResult<User>(Messages.UserNotActive);
-            }
-
-            if (!HashingHelper.VerifyPasswordHash(userForLoginDto.Password, userToCheck.PasswordHash, userToCheck.PasswordSalt))
-            {
-                return new ErrorDataResult<User>(Messages.PasswordError);
-            }
-
-            return new SuccessDataResult<User>(userToCheck, Messages.SuccessfulLogin);
+            userToCheck = registerResult.Data;
         }
-        catch (Exception ex)
+
+        if (!userToCheck.Status)
         {
-            return new ErrorDataResult<User>("Login Error: " + ex.Message + " Inner: " + ex.InnerException?.Message);
+            return new ErrorDataResult<User>(Messages.UserNotActive);
         }
+
+        //if (!HashingHelper.VerifyPasswordHash(userForLoginDto.Password, userToCheck.PasswordHash, userToCheck.PasswordSalt))
+        //{
+        //    return new ErrorDataResult<User>(Messages.PasswordError);
+        //}
+
+        return new SuccessDataResult<User>(userToCheck, Messages.SuccessfulLogin);
     }
-
-    public async Task<IResult> UserExistsAsync(string email)
-    {
-        var userResult = await _userService.GetAllAsync(m => m.Mail == email);
-        if (userResult.Data?.FirstOrDefault() != null)
-        {
-            return new ErrorResult(Messages.UserAlreadyExists);
-        }
-        return new SuccessResult();
-    }
-
-
     public async Task<IDataResult<AccessToken>> CreateAccessTokenAsync(User user, string? ipAddress = null)
-    {
+    { 
+        var proxyEbysUser = await _dmoMainService.GetDmoProxyUsersUserByEbysId(user.EbysUserId);
+        var ebysIds = proxyEbysUser.Select(x => x.EbysId).ToList();
+        if (proxyEbysUser != null)
+        {
+            var proxyUsers = await _userService.GetAllAsync(u => ebysIds.Contains(u.EbysUserId));
+            user.ProxyUserId.AddRange(proxyUsers.Data.Select(u => u.Id.ToString()));
+        }
+
         var claims = await _userService.GetClaimsAsync(user);
         var accessToken = _tokenHelper.CreateToken(user, claims);
-        
-        // Refresh token'ı veritabanına kaydet
         await SaveRefreshTokenAsync(user.Id, accessToken.RefreshToken, accessToken.RefreshTokenExpiration, ipAddress);
         
         return new SuccessDataResult<AccessToken>(accessToken, Messages.AccessTokenCreated);
@@ -164,9 +181,10 @@ public class AuthManager : IAuthService
         }
 
         // Refresh token'ı doğrula
+        var hashedToken = HashingHelper.ComputeSha256Hash(refreshToken);
         var storedToken = await _refreshTokenDal.GetAsync(rt => 
             rt.UserId == userId && 
-            rt.Token == refreshToken);
+            rt.Token == hashedToken);
 
         if (storedToken == null)
         {
@@ -205,8 +223,9 @@ public class AuthManager : IAuthService
         var claims = await _userService.GetClaimsAsync(user);
         var newAccessToken = _tokenHelper.CreateToken(user, claims);
         
-        // Eski token'a yeni token referansı ekle
-        storedToken.ReplacedByToken = newAccessToken.RefreshToken;
+        // Eski token'a yeni token referansı ekle (Hashed)
+        var newHashedToken = HashingHelper.ComputeSha256Hash(newAccessToken.RefreshToken);
+        storedToken.ReplacedByToken = newHashedToken;
         await _refreshTokenDal.UpdateAsync(storedToken);
         
         // Yeni refresh token'ı kaydet
@@ -217,7 +236,8 @@ public class AuthManager : IAuthService
 
     public async Task<IResult> RevokeTokenAsync(string refreshToken, string? ipAddress)
     {
-        var storedToken = await _refreshTokenDal.GetAsync(rt => rt.Token == refreshToken);
+        var hashedToken = HashingHelper.ComputeSha256Hash(refreshToken);
+        var storedToken = await _refreshTokenDal.GetAsync(rt => rt.Token == hashedToken);
         
         if (storedToken == null)
         {
@@ -257,7 +277,7 @@ public class AuthManager : IAuthService
         var refreshToken = new RefreshToken
         {
             UserId = userId,
-            Token = token,
+            Token = HashingHelper.ComputeSha256Hash(token),
             Expires = expires,
             Created = DateTime.Now,
             CreatedByIp = ipAddress
@@ -265,8 +285,8 @@ public class AuthManager : IAuthService
         await _refreshTokenDal.AddAsync(refreshToken);
     }
 
+    
     #region Business Rules
-
     private async Task<IResult> CheckIfUserMailExistsAsync(string email)
     {
         var userResult = await _userService.GetAllAsync(m => m.Mail == email);
@@ -276,6 +296,5 @@ public class AuthManager : IAuthService
         }
         return new SuccessResult();
     }
-
     #endregion
 }

@@ -46,7 +46,8 @@ namespace WebUI.Core.Services.Concrete
         private void SetUserToken()
         {
             var token = User.FindFirst("AccessToken")?.Value;
-            if (!string.IsNullOrEmpty(token)) _apiClient.SetBearerToken(token);
+            if (!string.IsNullOrEmpty(token)) 
+                _apiClient.SetBearerToken(token);
         }
     }
 }

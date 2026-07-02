@@ -53,8 +53,8 @@ namespace WebAPI.Controllers
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
                 Status = userDto.Status,
-                RegistirationId = userDto.RegistirationId,
-                OrganizationUnitId = userDto.OrganizationUnitId,
+                EbysUserId = userDto.EbysUserId,
+                BranchId = userDto.BranchId,
                 PositionId = userDto.PositionId,
                 CreateAt = DateTime.Now
             };
@@ -77,8 +77,8 @@ namespace WebAPI.Controllers
                 LastName = userDto.LastName,
                 Mail = userDto.Mail,
                 Status = userDto.Status,
-                RegistirationId = userDto.RegistirationId,
-                OrganizationUnitId = userDto.OrganizationUnitId,
+                EbysUserId = userDto.RegistirationId,
+                BranchId = userDto.BranchId,
                 PositionId = userDto.PositionId
             };
             
@@ -131,5 +131,6 @@ namespace WebAPI.Controllers
             }
             return BadRequest(new { Success = false, Message = result.Message });
         }
+
     }
 }

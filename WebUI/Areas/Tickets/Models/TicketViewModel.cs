@@ -1,4 +1,5 @@
 using Core.Utilities.Results;
+using Entities.Concrete;
 using WebUI.Models;
 
 namespace WebUI.Areas.Tickets.Models;
@@ -7,19 +8,14 @@ namespace WebUI.Areas.Tickets.Models;
 /// API'den dönen vekalet bilgisi.
 /// API hazır olduğunda bu model response'dan doldurulacak.
 /// </summary>
-public class DelegationInfo
+
+public class ProxyEbysUser
 {
-    public int    DelegatorId   { get; set; }
-    public string DelegatorName { get; set; } = "";
-
-    /// <summary>
-    /// "manager"  → vekâlet veren müdür; vekil şubenin TÜM ticketlarını görür.
-    /// "personnel"→ vekâlet veren personel; vekil sadece o kişinin ticketlarını görür.
-    /// </summary>
-    public string DelegationType { get; set; } = "manager";
-
-    /// <summary>Müdür vekâletinde şube adı.</summary>
-    public string BranchName { get; set; } = "";
+    public string Name { get; set; }
+    public string Surname { get; set; }
+    public string EbysId { get; set; }
+    public string DepartmentId { get; set; }
+    public string Department { get; set; }
 }
 
 public class TicketViewModel
@@ -39,15 +35,15 @@ public class TicketViewModel
 
     // ── Vekalet ──────────────────────────────────────────────────────────────
 
-    /// <summary>"own" | "delegated"</summary>
-    public string ActiveTab { get; set; } = "own";
+    /// <summary>Eğer null ise kendi talepleri, dolu ise ilgili vekaletin talepleri</summary>
+    public int? ActiveUserId { get; set; }
 
     /// <summary>null ise bu kullanıcının aktif vekâleti yok → tek tab gösterilir.</summary>
-    public DelegationInfo? Delegation { get; set; }
+    public List<User>? ProxyUser { get; set; } = new();
 
     /// <summary>Kendi tab'ındaki ticket sayısı (badge için).</summary>
-    public int OwnCount       { get; set; }
+    public int OwnCount { get; set; }
 
-    /// <summary>Vekâlet tab'ındaki ticket sayısı (badge için).</summary>
-    public int DelegatedCount { get; set; }
+    /// <summary>Vekâlet alınan kullanıcıların ticket sayıları (proxyId -> count).</summary>
+    public Dictionary<int, int> ProxyCounts { get; set; } = new();
 }

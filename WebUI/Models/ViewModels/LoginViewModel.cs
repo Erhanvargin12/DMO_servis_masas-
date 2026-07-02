@@ -14,9 +14,6 @@ namespace WebUI.Models.ViewModels
         [Display(Name = "Şifre")]
         public string Password { get; set; } = string.Empty;
 
-        [Display(Name = "Beni Hatırla")]
-        public bool RememberMe { get; set; }
-
         public string? ReturnUrl { get; set; }
     }
 }

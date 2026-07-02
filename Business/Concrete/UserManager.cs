@@ -1,14 +1,10 @@
 using Business.Abstract;
 using Business.BusinessAspects.Autofac;
 using Business.Constants;
-using Business.ValidationRules.FluentValidation;
-using Core.Aspects.Autofac.Validation;
-using Core.Aspects.Caching;
 using Core.Utilities.Business;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
-using Microsoft.Win32;
 using System.Linq.Expressions;
 
 namespace Business.Concrete;
@@ -24,7 +20,7 @@ public class UserManager : IUserService
     {
         IResult result = await BusinessRules.RunAsync(
             () => CheckIfUserMailExistsAsync(user.Mail),
-            () => CheckIfUserRegistrationIdExistsAsync(user.RegistirationId));
+            () => CheckIfUserRegistrationIdExistsAsync(user.EbysUserId));
         
         if (result != null)
         {
@@ -40,7 +36,7 @@ public class UserManager : IUserService
         IResult result = await BusinessRules.RunAsync(
             () => CheckIfUserExistsAsync(user.Id),
             () => CheckIfUserMailExistsForUpdateAsync(user.Id, user.Mail),
-            () => CheckIfUserRegistrationIdExistsForUpdateAsync(user.Id, user.RegistirationId)
+            () => CheckIfUserRegistrationIdExistsForUpdateAsync(user.Id, user.EbysUserId)
         );
 
         if (result != null)
@@ -53,8 +49,8 @@ public class UserManager : IUserService
         existingUser.LastName = user.LastName;
         existingUser.Mail = user.Mail;
         existingUser.Status = user.Status;
-        existingUser.RegistirationId = user.RegistirationId;
-        existingUser.OrganizationUnitId = user.OrganizationUnitId;
+        existingUser.EbysUserId = user.EbysUserId;
+        existingUser.BranchId = user.BranchId;
         existingUser.PositionId = user.PositionId;
         existingUser.UpdateAt = DateTime.Now;
 
@@ -116,7 +112,7 @@ public class UserManager : IUserService
     {
         if (string.IsNullOrWhiteSpace(registrationId)) return new SuccessResult();
 
-        var result = await _userDal.GetAllAsync(e => e.RegistirationId == registrationId);
+        var result = await _userDal.GetAllAsync(e => e.EbysUserId == registrationId);
         if (result is not null && result.Count > 0)
         {
             return new ErrorResult(Messages.UserRegistrationIdAlreadyExists);
@@ -128,7 +124,7 @@ public class UserManager : IUserService
     {
         if (string.IsNullOrWhiteSpace(registrationId)) return new SuccessResult();
 
-        var result = await _userDal.GetAllAsync(e => e.RegistirationId == registrationId && e.Id != id);
+        var result = await _userDal.GetAllAsync(e => e.EbysUserId == registrationId && e.Id != id);
         if (result is not null && result.Count > 0)
         {
             return new ErrorResult(Messages.UserRegistrationIdAlreadyExists);
