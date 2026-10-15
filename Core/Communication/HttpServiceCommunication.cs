@@ -6,16 +6,20 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
 
+using Microsoft.AspNetCore.Http;
+
 namespace Core.Communication;
 
 public class HttpServiceCommunication : IServiceCommunication
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-    public HttpServiceCommunication(IHttpClientFactory httpClientFactory)
+    public HttpServiceCommunication(IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory), "HttpClientFactory not registered");
+        _httpContextAccessor = httpContextAccessor;
 
         _jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -26,15 +30,45 @@ public class HttpServiceCommunication : IServiceCommunication
         _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
-    public async Task<TResponse?> GetAsync<TResponse>(string serviceId, string address)
+    private HttpClient CreateClientWithAuth(string serviceId)
     {
         var client = _httpClientFactory.CreateClient(serviceId);
+        var httpContext = _httpContextAccessor?.HttpContext;
+        if (httpContext != null)
+        {
+            string? token = null;
+            if (httpContext.Session != null && httpContext.Session.TryGetValue("AccessToken", out var bytes) && bytes != null)
+            {
+                token = System.Text.Encoding.UTF8.GetString(bytes);
+            }
+            if (string.IsNullOrEmpty(token))
+            {
+                token = httpContext.User?.FindFirst("AccessToken")?.Value;
+            }
 
-        var response = await client.GetStringAsync(address);
-        if (string.IsNullOrEmpty(response))
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+        }
+        return client;
+    }
+
+    public async Task<TResponse?> GetAsync<TResponse>(string serviceId, string address)
+    {
+        var client = CreateClientWithAuth(serviceId);
+
+        var httpResponse = await client.GetAsync(address);
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            return default;
+        }
+
+        var responseContent = await httpResponse.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(responseContent))
             return default;
 
-        return JsonSerializer.Deserialize<TResponse>(response, _jsonSerializerOptions);
+        return JsonSerializer.Deserialize<TResponse>(responseContent, _jsonSerializerOptions);
     }
 
     public Task<TResponse?> GetAsync<TResponse>(string serviceId,string address,object? queryData = null)
@@ -59,7 +93,7 @@ public class HttpServiceCommunication : IServiceCommunication
 
     public async Task<TResponse?> PostAsync<T, TResponse>(string serviceId, string address, T data)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         var responseMessage = await client.PostAsJsonAsync(address, data, _jsonSerializerOptions);
 
@@ -72,14 +106,14 @@ public class HttpServiceCommunication : IServiceCommunication
 
     public async Task PostAsync<T>(string serviceId, string address, T data)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         await client.PostAsJsonAsync(address, data, _jsonSerializerOptions);
     }
 
     public async Task<Stream> PostStreamAsync<T>(string serviceId, string address, T data)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         var responseMessage = await client.PostAsJsonAsync(address, data, _jsonSerializerOptions);
 
@@ -89,7 +123,7 @@ public class HttpServiceCommunication : IServiceCommunication
     public async Task PostFileUploadAsync(string serviceId, string address, Stream fileStream, string fileName,
         string fileContentName, string contentType, Dictionary<string, HttpContent> contents)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         var content = new MultipartFormDataContent();
         var fileContent = new StreamContent(fileStream);
@@ -107,7 +141,7 @@ public class HttpServiceCommunication : IServiceCommunication
 
     public async Task<TResponse?> PutAsync<T, TResponse>(string serviceId, string address, T data)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         var responseMessage = await client.PutAsJsonAsync(address, data, _jsonSerializerOptions);
 
@@ -120,14 +154,14 @@ public class HttpServiceCommunication : IServiceCommunication
 
     public async Task PutAsync<T>(string serviceId, string address, T data)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         await client.PutAsJsonAsync(address, data, _jsonSerializerOptions);
     }
 
     public async Task<TResponse?> PatchAsync<T, TResponse>(string serviceId, string address, T data)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         var responseMessage = await client.PatchAsJsonAsync(address, data, _jsonSerializerOptions);
 
@@ -140,7 +174,7 @@ public class HttpServiceCommunication : IServiceCommunication
 
     public async Task DeleteAsync(string serviceId, string address)
     {
-        var client = _httpClientFactory.CreateClient(serviceId);
+        var client = CreateClientWithAuth(serviceId);
 
         await client.DeleteAsync(address);
     }

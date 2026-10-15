@@ -23,6 +23,8 @@ public class MsSqlDbContext : DbContext
         modelBuilder.Entity<Attachment>().ToTable("Attachments", ticketSchema);
         modelBuilder.Entity<Response>().ToTable("Responses", ticketSchema);
         modelBuilder.Entity<Transfer>().ToTable("Transfers", ticketSchema);
+        modelBuilder.Entity<TicketCategory>().ToTable("Categories", ticketSchema);
+        modelBuilder.Entity<TicketCategoryBranch>().ToTable("CategoryBranches", ticketSchema);
 
         //modelBuilder.Entity<Assignment>().HasOne(a => a.Ticket).WithOne(t => t.Assignment).HasForeignKey<Assignment>(a => a.TicketId);
         //modelBuilder.Entity<Response>().HasOne(r => r.Ticket).WithMany(t => t.Responses).HasForeignKey(r => r.TicketId);
@@ -43,5 +45,8 @@ public class MsSqlDbContext : DbContext
     public DbSet<Response> Responses { get; set; }
     public DbSet<Ticket> Tickets { get; set; }
     public DbSet<Transfer> Transfers { get; set; }
+    public DbSet<TicketCategory> TicketCategories { get; set; }
+    public DbSet<TicketCategoryBranch> TicketCategoryBranches { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Company> Companies { get; set; }
 }

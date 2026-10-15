@@ -1,4 +1,5 @@
 using Business.Abstract.TicketServices;
+using Core.Utilities.Results;
 using Entities.Concrete.Ticket;
 using Entities.DTOs.TicketDTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -29,14 +30,26 @@ public class TicketController : ControllerBase
     }
 
     [HttpGet("get-ticket-by-user-id")]
-    public async Task<IActionResult> GetTicketByUserId(int id)
+    public async Task<IActionResult> GetTicketByUserId([FromQuery] int id)
     {
-        var result = await _ticketService.GetAllAsync(t=>t.CreatedById == id);
-        if (result.Success)
+        try
         {
-            return Ok(result);
+            if (id <= 0)
+            {
+                return Ok(new SuccessDataResult<List<Ticket>>(new List<Ticket>(), "Kullanıcı ID boş."));
+            }
+
+            var result = await _ticketService.GetAllAsync(t => t.CreatedById == id);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
         }
-        return BadRequest(result);
+        catch (Exception ex)
+        {
+            return Ok(new ErrorDataResult<List<Ticket>>("Sorgulama hatası: " + ex.Message));
+        }
     }
 
     [HttpGet("getbyid/{id}")]
@@ -58,6 +71,22 @@ public class TicketController : ControllerBase
         {
             return Ok(result);
         }
+        return BadRequest(result);
+    }
+
+    [HttpGet("get-unit-pending/{branchId}")]
+    public async Task<IActionResult> GetUnitPending(int branchId)
+    {
+        var result = await _ticketService.GetByBranchAsync(branchId);
+        if (result.Success) return Ok(result);
+        return BadRequest(result);
+    }
+
+    [HttpGet("get-assigned/{userId}")]
+    public async Task<IActionResult> GetAssigned(int userId)
+    {
+        var result = await _ticketService.GetAssignedAsync(userId);
+        if (result.Success) return Ok(result);
         return BadRequest(result);
     }
 
@@ -104,6 +133,9 @@ public class TicketController : ControllerBase
             CreatedAt = dto.Ticket.CreatedAt,
             UpdatedAt = dto.Ticket.UpdatedAt,
             ClosedAt = dto.Ticket.ClosedAt,
+            AiSummary = dto.Ticket.AiSummary,
+            AiSuggestedAction = dto.Ticket.AiSuggestedAction,
+            AiSentiment = dto.Ticket.AiSentiment
         };
         var result = await _ticketService.UpdateAsync(entity);
         if (result.Success)

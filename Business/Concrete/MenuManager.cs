@@ -26,7 +26,7 @@ public class MenuManager : IMenuService
 
     }
 
-    public async Task<IDataResult<List<Menu>>> GetAllAsync(Expression<Func<Menu, bool>> filter = null)
+    public async Task<IDataResult<List<Menu>>> GetAllAsync(Expression<Func<Menu, bool>>? filter = null)
     {
         return new SuccessDataResult<List<Menu>>(await _menuDal.GetAllAsync(filter), Messages.MenusListed);
     }

@@ -12,10 +12,12 @@ namespace WebUI.Core.Services.Concrete;
 public class ApiClient : IApiClient
 {
     private readonly HttpClient _httpClient;
+    private readonly ILogger<ApiClient> _logger;
 
     public ApiClient(HttpClient httpClient, IOptions<ApiSettings> apiSettings, ILogger<ApiClient> logger)
     {
         _httpClient = httpClient;
+        _logger = logger;
         _httpClient.BaseAddress = new Uri(apiSettings.Value.BaseUrl);
         _httpClient.Timeout = TimeSpan.FromSeconds(apiSettings.Value.Timeout);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -84,19 +86,29 @@ public class ApiClient : IApiClient
 
         try
         {
-            var result = JsonConvert.DeserializeObject<JsonDataResult<T>>(content);
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                var result = JsonConvert.DeserializeObject<JsonDataResult<T>>(content);
+                if (result != null)
+                {
+                    if (!response.IsSuccessStatusCode)
+                        return new ErrorDataResult<T>(result.Message ?? $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}");
 
-            if (result == null)
-                return new ErrorDataResult<T>("Response parse edilemedi.");
+                    return new DataResult<T>(result.Data, result.Success, result.Message);
+                }
+            }
 
             if (!response.IsSuccessStatusCode)
-                return new ErrorDataResult<T>(result.Message ?? $"HTTP Error: {response.StatusCode}");
+            {
+                return new ErrorDataResult<T>($"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}");
+            }
 
-            return new DataResult<T>(result.Data, result.Success, result.Message);
-        }
-        catch
-        {
             return new ErrorDataResult<T>("Response parse edilemedi.");
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "API Response parse hatası. StatusCode: {StatusCode}, Content: {Content}", response.StatusCode, content);
+            return new ErrorDataResult<T>(!response.IsSuccessStatusCode ? $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}" : "Response parse edilemedi.");
         }
     }
 }

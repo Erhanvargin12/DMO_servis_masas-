@@ -1,7 +1,7 @@
+@using Microsoft.AspNetCore.Http
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <div class="sidebar-logo">B</div>
-        <span class="sidebar-brand">DIP</span>
+        <img src="~/dmo-logo.png" asp-append-version="true" class="sidebar-logo">
     </div>
 
     <nav class="sidebar-menu">
@@ -10,12 +10,12 @@
 
     <div class="sidebar-footer">
         <div class="user-card">
-            <div class="user-avatar">
-                @(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value?.Substring(0, 1).ToUpper() ?? "U")
+            <div class="user-avatar" style="@(Context.Session.GetString("UserType") == "Company" ? "background:#10b981;" : "")">
+                @(Context.Session.GetString("CompanyName")?.Substring(0, 1) ?? User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value?.Substring(0, 1).ToUpper() ?? "F")
             </div>
             <div class="user-info">
-                <div class="user-name">@(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "Kullanıcı")</div>
-                <div class="user-role">Yönetici</div>
+                <div class="user-name">@(Context.Session.GetString("CompanyName") ?? User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "Kullanıcı")</div>
+                <div class="user-role">@(Context.Session.GetString("UserType") == "Company" ? "Tedarikçi Yüklenici" : "Yönetici")</div>
             </div>
         </div>
     </div>

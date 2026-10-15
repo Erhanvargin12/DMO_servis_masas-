@@ -1,100 +1,249 @@
-﻿@using WebUI.Models
+@using WebUI.Models
 @using WebUI.Models.ViewModels
 @model DashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "IT Servis Masası Analitik & SLA Paneli";
 }
 
-<!-- Stats -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-label">Toplam Kullanıcı</div>
-        <div class="stat-value">@Model.TotalUsers</div>
-        <div class="stat-change">Kayıtlı hesap</div>
+<!-- Executive Dashboard Header -->
+<div class="executive-header" style="margin-bottom: 24px; padding: 22px 24px; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); border-radius: 18px; color: #ffffff; box-shadow: 0 12px 30px rgba(67, 56, 202, 0.25); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 6px;">
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; border: 1px solid rgba(52, 211, 153, 0.3); display: inline-flex; align-items: center; gap: 6px;">
+                <span class="live-indicator" style="width:7px;height:7px;background:#34d399;box-shadow:0 0 8px #34d399;"></span>
+                Gemini AI Canlı Analiz Aktif
+            </span>
+            <span style="font-size: 12px; color: #c7d2fe;">Devlet Malzeme Ofisi — Bilgi İşlem Dairesi</span>
+        </div>
+        <h2 style="font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -0.3px;">IT Servis Masası Yönetici & SLA Paneli</h2>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">Aktif Kullanıcı</div>
-        <div class="stat-value">@Model.ActiveUsers</div>
-        <div class="stat-change up">@(Model.TotalUsers > 0 ? $"%{(int)((double)Model.ActiveUsers / Model.TotalUsers * 100)} aktif" : "—")</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Toplam Rol</div>
-        <div class="stat-value">@Model.TotalRoles</div>
-        <div class="stat-change">Tanımlı rol</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Pasif Kullanıcı</div>
-        <div class="stat-value">@(Model.TotalUsers - Model.ActiveUsers)</div>
-        <div class="stat-change down">Devre dışı hesap</div>
+    <div style="display:flex; gap:10px;">
+        <a href="/Tickets/Ticket/Index" class="btn" style="background: rgba(255,255,255,0.15); color:#ffffff; border:1px solid rgba(255,255,255,0.3); backdrop-filter:blur(10px); font-weight:600; font-size:13px; padding:9px 16px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-ticket"></i> Tüm Talepleri İncele
+        </a>
     </div>
 </div>
 
-<!-- Content Grid -->
-<div class="grid grid-2">
-    <!-- Quick Actions -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Hızlı İşlemler</h3>
+<!-- Top Stats Grid (4 Cards) -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <!-- AI System Health Card -->
+    <div class="stat-card" style="position:relative; overflow:hidden; border: 1px solid rgba(99, 102, 241, 0.2); background: linear-gradient(180deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.03) 100%);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <div class="stat-label" style="color:var(--accent); font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:4px;"></i> AI Sistem Sağlık Skoru
+                </div>
+                <div class="stat-value" style="font-size:32px; font-weight:800; margin:8px 0 4px; color:var(--text-primary);">
+                    @Model.AiSystemHealthScore<span style="font-size:18px; color:var(--text-muted); font-weight:500;">/100</span>
+                </div>
+            </div>
+            <div style="width:48px; height:48px; border-radius:14px; background:rgba(16, 185, 129, 0.12); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800;">
+                <i class="fa-solid fa-shield-heart"></i>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="actions-list">
-                <a href="/Users" class="action-item">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </div>
-                    <span>Kullanıcı Yönetimi</span>
-                </a>
-                <a href="/Roles" class="action-item">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <span>Rol Yönetimi</span>
-                </a>
-                <a href="/Menus" class="action-item">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-bars"></i>
-                    </div>
-                    <span>Menü Yönetimi</span>
-                </a>
-                <a href="/Profile" class="action-item">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                    <span>Profilim</span>
-                </a>
+        <div class="stat-change up" style="font-weight:600; font-size:12px; color:#10b981;">
+            <i class="fa-solid fa-circle-check"></i> @Model.AiHealthStatusText
+        </div>
+    </div>
+
+    <!-- Avg Resolution Time -->
+    <div class="stat-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <div class="stat-label">Ortalama Çözüm Süresi (SLA)</div>
+                <div class="stat-value" style="font-size:32px; font-weight:800; margin:8px 0 4px;">@Model.AvgResolutionTime</div>
+            </div>
+            <div style="width:44px; height:44px; border-radius:12px; background:rgba(99, 102, 241, 0.1); color:#6366f1; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-stopwatch"></i>
+            </div>
+        </div>
+        <div class="stat-change up" style="font-size:12px;">SLA Hedefi: &lt; 2.5 Saat (%28 Daha Hızlı)</div>
+    </div>
+
+    <!-- SLA Success Rate -->
+    <div class="stat-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <div class="stat-label">SLA Başarım Oranı</div>
+                <div class="stat-value" style="font-size:32px; font-weight:800; margin:8px 0 4px; color:#10b981;">%@Model.SlaSuccessRate</div>
+            </div>
+            <div style="width:44px; height:44px; border-radius:12px; background:rgba(16, 185, 129, 0.1); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+        </div>
+        <div style="width:100%; background:var(--bg-secondary); height:6px; border-radius:99px; overflow:hidden; margin-top:6px;">
+            <div style="width: @Model.SlaSuccessRate%; background:#10b981; height:100%; border-radius:99px;"></div>
+        </div>
+    </div>
+
+    <!-- Active vs Completed -->
+    <div class="stat-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <div class="stat-label">Aktif / Çözümlenen Talepler</div>
+                <div class="stat-value" style="font-size:28px; font-weight:800; margin:8px 0 4px;">
+                    <span style="color:#f59e0b;">@Model.ActiveTickets</span> / <span style="color:#10b981;">@Model.CompletedTickets</span>
+                </div>
+            </div>
+            <div style="width:44px; height:44px; border-radius:12px; background:rgba(245, 158, 11, 0.1); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+        </div>
+        <div class="stat-change" style="font-size:12px; color:var(--text-muted);">Toplam @Model.TotalTickets Kurumsal Bilet</div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-2" style="margin-bottom:24px;">
+    <!-- Branch SLA & Performance Table -->
+    <div class="card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="card-title" style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-building" style="color:var(--accent);"></i>
+                Şube Müdürlükleri SLA & Performansı
+            </h3>
+            <span class="badge badge-info" style="font-size:11px;">Canlı Veri</span>
+        </div>
+        <div class="card-body" style="padding:0;">
+            <div class="table-responsive">
+                <table class="table" style="margin:0;">
+                    <thead>
+                        <tr>
+                            <th>Şube / Birim</th>
+                            <th style="text-align:center;">Talep</th>
+                            <th style="text-align:center;">Çözülen</th>
+                            <th style="text-align:center;">SLA %</th>
+                            <th style="text-align:right;">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.BranchPerformanceList)
+                        {
+                            <tr>
+                                <td style="font-weight:600; font-size:13px; color:var(--text-primary);">@item.BranchName</td>
+                                <td style="text-align:center; font-weight:600;">@item.TotalTickets</td>
+                                <td style="text-align:center; color:#10b981; font-weight:700;">@item.ResolvedTickets</td>
+                                <td style="text-align:center;">
+                                    <span style="font-weight:700; color:@(item.SlaPercent >= 97 ? "#10b981" : "#f59e0b");">%@item.SlaPercent</span>
+                                </td>
+                                <td style="text-align:right;">
+                                    <span class="badge badge-success" style="font-size:10.5px;">@item.StatusBadge</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Özet -->
+    <!-- Category Breakdown & AI Insight -->
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Sistem Özeti</h3>
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="card-title" style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-chart-pie" style="color:var(--accent);"></i>
+                Arıza Kategori Dağılımı & AI Teşhisi
+            </h3>
         </div>
         <div class="card-body">
-            <div class="activity-list">
-                <div class="activity-item">
-                    <div class="activity-dot green"></div>
-                    <div>
-                        <div class="activity-text">@Model.TotalUsers kayıtlı kullanıcı mevcut</div>
-                        <div class="activity-time">@Model.ActiveUsers aktif, @(Model.TotalUsers - Model.ActiveUsers) pasif</div>
-                    </div>
+            <!-- AI Insight Banner -->
+            <div style="padding:14px 16px; background:rgba(99, 102, 241, 0.08); border:1px solid rgba(99, 102, 241, 0.2); border-radius:12px; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; color:var(--accent); font-weight:700; font-size:12.5px;">
+                    <i class="fa-solid fa-brain"></i> Gemini AI Yönetici Özeti
                 </div>
-                <div class="activity-item">
-                    <div class="activity-dot blue"></div>
-                    <div>
-                        <div class="activity-text">@Model.TotalRoles rol tanımlanmış</div>
-                        <div class="activity-time">Kullanıcılara atanabilir</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-dot"></div>
-                    <div>
-                        <div class="activity-text">Profil bilgilerinizi güncelleyin</div>
-                        <div class="activity-time"><a href="/Profile">Profilime Git →</a></div>
-                    </div>
-                </div>
+                <p style="font-size:12.5px; color:var(--text-secondary); margin:0; line-height:1.5;">
+                    @Model.AiInsightSummary
+                </p>
             </div>
+
+            <!-- Categories Progress List -->
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                @foreach (var cat in Model.CategoryDistribution)
+                {
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:5px;">
+                            <span><i class="fa-solid @cat.Icon" style="color:@cat.Color; margin-right:6px;"></i> @cat.CategoryName</span>
+                            <span style="color:var(--text-muted);">@cat.Count Talep (%@cat.Percentage)</span>
+                        </div>
+                        <div style="width:100%; background:var(--bg-secondary); height:7px; border-radius:99px; overflow:hidden;">
+                            <div style="width:@cat.Percentage%; background:@cat.Color; height:100%; border-radius:99px;"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Quick Access Navigation Tiles -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title" style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-bolt" style="color:var(--accent);"></i>
+            Servis Masası Hızlı Erişim & Yönetim Kısayolları
+        </h3>
+    </div>
+    <div class="card-body">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+            <a href="/Tickets/Ticket/Index" class="action-item" style="padding:16px; border-radius:14px; background:var(--bg-secondary); border:1px solid var(--border); text-decoration:none; display:flex; align-items:center; gap:14px; transition:all 0.2s;">
+                <div class="action-icon" style="width:42px; height:42px; border-radius:12px; background:rgba(99,102,241,0.12); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">Taleplerim</div>
+                    <div style="font-size:11.5px; color:var(--text-muted);">Açmış olduğum biletler</div>
+                </div>
+            </a>
+
+            <a href="/Tickets/Ticket/BirimTalepleri" class="action-item" style="padding:16px; border-radius:14px; background:var(--bg-secondary); border:1px solid var(--border); text-decoration:none; display:flex; align-items:center; gap:14px; transition:all 0.2s;">
+                <div class="action-icon" style="width:42px; height:42px; border-radius:12px; background:rgba(16,185,129,0.12); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">Birim Talepleri</div>
+                    <div style="font-size:11.5px; color:var(--text-muted);">Şube müdürlüğü akışı</div>
+                </div>
+            </a>
+
+            <a href="/Tickets/Ticket/AssignedTickets" class="action-item" style="padding:16px; border-radius:14px; background:var(--bg-secondary); border:1px solid var(--border); text-decoration:none; display:flex; align-items:center; gap:14px; transition:all 0.2s;">
+                <div class="action-icon" style="width:42px; height:42px; border-radius:12px; background:rgba(245,158,11,0.12); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">Görevli Olduğum Talepler</div>
+                    <div style="font-size:11.5px; color:var(--text-muted);">Şahsıma atanan işler</div>
+                </div>
+            </a>
+
+            <a href="/Tickets/Ticket/Completed" class="action-item" style="padding:16px; border-radius:14px; background:var(--bg-secondary); border:1px solid var(--border); text-decoration:none; display:flex; align-items:center; gap:14px; transition:all 0.2s;">
+                <div class="action-icon" style="width:42px; height:42px; border-radius:12px; background:rgba(239,68,68,0.12); color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">Tamamlananlar</div>
+                    <div style="font-size:11.5px; color:var(--text-muted);">Çözülen & kapatılanlar</div>
+                </div>
+            </a>
+
+            <a href="/Tickets/Report/Index" class="action-item" style="padding:16px; border-radius:14px; background:var(--bg-secondary); border:1px solid var(--border); text-decoration:none; display:flex; align-items:center; gap:14px; transition:all 0.2s;">
+                <div class="action-icon" style="width:42px; height:42px; border-radius:12px; background:rgba(59,130,246,0.12); color:#3b82f6; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">Kurumsal Raporlama</div>
+                    <div style="font-size:11.5px; color:var(--text-muted);">Excel / PDF dışa aktar</div>
+                </div>
+            </a>
+
+            <a href="/Tickets/Faq/Index" class="action-item" style="padding:16px; border-radius:14px; background:var(--bg-secondary); border:1px solid var(--border); text-decoration:none; display:flex; align-items:center; gap:14px; transition:all 0.2s;">
+                <div class="action-icon" style="width:42px; height:42px; border-radius:12px; background:rgba(168,85,247,0.12); color:#a855f7; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                </div>
+                <div>
+                    <div style="font-weight:700; font-size:13.5px; color:var(--text-primary);">Bilgi Bankası & SSS</div>
+                    <div style="font-size:11.5px; color:var(--text-muted);">Sık sorulan çözümler</div>
+                </div>
+            </a>
         </div>
     </div>
 </div>

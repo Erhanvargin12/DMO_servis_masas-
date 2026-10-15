@@ -5,6 +5,7 @@ using Core.DependencyResolvers;
 using Core.Extensions;
 using Core.Utilities.IoC;
 
+using WebAPI.Jobs;
 using WebAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
+builder.Services.AddHostedService<TicketAutoCloseJob>();
 
 // HttpClient Registration
 builder.Services.AddHttpClient("gateway", client =>
@@ -27,13 +29,17 @@ builder.Services.AddHttpClient("gateway", client =>
         client.BaseAddress = new Uri(gatewayUrl);
     }
 });
-builder.Services.AddHttpClient("dip", client =>
+builder.Services.AddHttpClient("KIP", client =>
 {
-    var gatewayUrl = builder.Configuration["DipApiBaseUrl"];
+    var gatewayUrl = builder.Configuration["KIPApiBaseUrl"];
     if (!string.IsNullOrEmpty(gatewayUrl))
     {
         client.BaseAddress = new Uri(gatewayUrl);
     }
+});
+builder.Services.AddHttpClient("GeminiClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 

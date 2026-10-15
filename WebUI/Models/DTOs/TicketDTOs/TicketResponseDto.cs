@@ -1,4 +1,5 @@
-﻿using Core.Entities;
+using Core.Entities;
+using Entities.Concrete.Ticket;
 
 namespace WebUI.Models.DTOs;
 

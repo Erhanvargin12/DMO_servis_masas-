@@ -1,4 +1,4 @@
-﻿using Business.Constants;
+using Business.Constants;
 using Entities.Concrete;
 using FluentValidation;
 
@@ -15,6 +15,6 @@ public class UserValidator : AbstractValidator<User>
     }
     private bool EndsWithDomain(string arg)
     {
-        return arg.EndsWith("@dmo.gov.tr");
+        return !string.IsNullOrEmpty(arg) && arg.EndsWith("@dmo.gov.tr");
     }
 }

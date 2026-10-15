@@ -46,7 +46,7 @@ namespace Core.Extensions
                 statusCode = (int)HttpStatusCode.BadRequest;
                 validationErrors = ((ValidationException)e).Errors.Select(x => x.ErrorMessage);
             }
-            else if (e.GetType() == typeof(UnauthorizedAccessException))
+            else if (e.GetType() == typeof(UnauthorizedAccessException) || e.GetType() == typeof(System.Security.SecurityException))
             {
                 message = e.Message;
                 statusCode = (int)HttpStatusCode.Unauthorized;

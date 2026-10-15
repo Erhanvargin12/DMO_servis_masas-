@@ -12,6 +12,35 @@
             <i class="fa-solid fa-moon icon-moon" style="display:none"></i>
         </button>
 
+        <!-- Real-Time Live Notification Bell & Dropdown -->
+        <div class="notification-dropdown-wrapper" style="position:relative;">
+            <button class="nav-btn live-notification-btn" id="liveNotifToggle" type="button" title="Anlık Canlı Bildirimler" onclick="toggleLiveNotifMenu(event)">
+                <i class="fa-solid fa-bell"></i>
+                <span class="live-pulse-badge" id="livePulseBadge"></span>
+            </button>
+            <div class="live-notif-menu" id="liveNotifMenu" style="display:none;">
+                <div class="live-notif-header" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border);">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="live-indicator"></span>
+                        <strong style="font-size:13.5px;color:var(--text-primary);">Canlı Bildirim Akışı</strong>
+                    </div>
+                    <button type="button" onclick="markAllNotificationsAsRead(event)" style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; padding:3px 8px; border-radius:6px;">
+                        <i class="fa-solid fa-check-double" style="margin-right:3px;"></i> tümünü okundu yap
+                    </button>
+                </div>
+                <div class="live-notif-list" id="liveNotifList">
+                    <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12.5px;">
+                        <i class="fa-solid fa-spinner fa-spin" style="margin-right:6px;"></i> Canlı akış senkronize ediliyor...
+                    </div>
+                </div>
+                <div class="live-notif-footer">
+                    <a href="/Tickets/Ticket/Index" style="color:var(--accent);font-size:12px;font-weight:600;text-decoration:none;">
+                        Tüm Talepleri İncele <i class="fa-solid fa-arrow-right" style="margin-left:4px;"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
         @if (User.Identity?.IsAuthenticated == true)
         {
             <div class="profile-dropdown" id="profileDropdown">

@@ -22,50 +22,6 @@ namespace WebUI.Core.Middleware
 
         public async Task InvokeAsync(HttpContext context, IMemoryCache cache)
         {
-            var path = context.Request.Path.Value?.ToLower();
-
-            if (ShouldSkip(path))
-            {
-                await _next(context);
-                return;
-            }
-
-            if (context.User.Identity?.IsAuthenticated != true)
-            {
-                await _next(context);
-                return;
-            }
-
-            var isAdmin = context.User.Claims.Any(c => c.Type == ClaimTypes.Role && c.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase));
-
-            if (isAdmin)
-            {
-                await _next(context);
-                return;
-            }
-
-            if (!cache.TryGetValue(CacheKey, out List<string>? inactiveUrls) || inactiveUrls == null)
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var apiClient = scope.ServiceProvider.GetRequiredService<IApiClient>();
-
-                var token = context.User.FindFirst("AccessToken")?.Value;
-                if (!string.IsNullOrEmpty(token))
-                    apiClient.SetBearerToken(token);
-
-                var menus = await apiClient.GetAsync<List<Menu>>("menu/getall");
-                inactiveUrls = menus.Data?.Where(u => u.IsActive == false).Select(u => u.Url).ToList() ?? new List<string>();
-                cache.Set(CacheKey, inactiveUrls, CacheDuration);
-            }
-
-            var isInactiveMenuUrl = inactiveUrls.Any(url => !string.IsNullOrEmpty(url) && path != null && path.Equals(url.ToLower().TrimEnd('/'), StringComparison.OrdinalIgnoreCase));
-
-            if (isInactiveMenuUrl)
-            {
-                _logger.LogWarning("Pasif menüye erişim engellendi: {Path}, Kullanıcı: {User}", path, context.User.Identity?.Name);
-                context.Response.Redirect("/Account/AccessDenied");
-                return;
-            }
             await _next(context);
         }
 

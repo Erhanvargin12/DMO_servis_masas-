@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Project specific ignores
+webui_errors.txt
+WebUI/wwwroot/uploads/

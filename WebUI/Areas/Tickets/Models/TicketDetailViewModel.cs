@@ -7,6 +7,7 @@ public class TicketDetailViewModel
 {
     public TicketDto? TicketDto { get; set; }
     public List<User> Personnel { get; set; } = new();
+    public List<Branch> Branches { get; set; } = new();
     public List<TicketHistoryItem> Histories { get; set; } = new();
 
     public string StatusLabel => TicketDto?.Ticket?.StatusId switch

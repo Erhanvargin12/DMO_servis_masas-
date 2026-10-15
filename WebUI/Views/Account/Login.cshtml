@@ -12,9 +12,17 @@
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-logo">
-            <div class="auth-logo-icon">B</div>
-            <h1>DIP</h1>
-            <p>Hesabınıza giriş yapın</p>
+            <img src="~/dmo-logo.png" asp-append-version="true" alt="KIP Logo" class="auth-logo-image" width="80" height="80">
+        </div>
+
+        <!-- Giriş Sekmeleri (Tabs) -->
+        <div style="display:flex; background:rgba(0,0,0,0.04); padding:4px; border-radius:12px; margin-bottom:20px; gap:4px;">
+            <button type="button" id="tabPersonel" onclick="switchLoginTab('personel')" style="flex:1; padding:10px; border:none; border-radius:8px; font-size:13px; font-weight:700; background:#4f46e5; color:#ffffff; cursor:pointer; transition:all 0.2s;">
+                <i class="fa-solid fa-building-columns" style="margin-right:6px;"></i> Personel Girişi
+            </button>
+            <button type="button" id="tabFirma" onclick="switchLoginTab('firma')" style="flex:1; padding:10px; border:none; border-radius:8px; font-size:13px; font-weight:700; background:transparent; color:var(--text-secondary); cursor:pointer; transition:all 0.2s;">
+                <i class="fa-solid fa-handshake-angle" style="margin-right:6px;"></i> Tedarikçi / Firma
+            </button>
         </div>
 
         @if (successMessage != null)
@@ -35,17 +43,20 @@
             </div>
         }
 
-        <form asp-action="Login" asp-controller="Account" method="post" id="loginForm">
+        <!-- 1. DMO Personel Giriş Formu -->
+        <form asp-action="Login" asp-controller="Account" method="post" id="personelForm">
+            @Html.AntiForgeryToken()
             <input type="hidden" asp-for="ReturnUrl" />
+            <input type="hidden" name="UserType" value="Personel" />
 
             <div class="form-group">
-                <label class="form-label" for="email">E-posta</label>
+                <label class="form-label" for="email">Personel E-posta</label>
                 <input type="email" 
                        class="form-input @(ViewData.ModelState["Email"]?.Errors.Any() == true ? "error" : "")" 
                        id="email" 
                        asp-for="Email" 
-                       placeholder="ornek@email.com" 
-                       autocomplete="email" />
+                       placeholder="personel@dmo.gov.tr" 
+                       autocomplete="email" required />
                 <span asp-validation-for="Email" class="validation-message"></span>
             </div>
 
@@ -56,25 +67,65 @@
                        id="password" 
                        asp-for="Password" 
                        placeholder="••••••••" 
-                       autocomplete="current-password" />
+                       autocomplete="current-password" required />
                 <span asp-validation-for="Password" class="validation-message"></span>
             </div>
 
-@*             <div class="form-options">
-                <div class="form-check">
-                    <input type="checkbox" id="rememberMe" asp-for="RememberMe" />
-                    <label for="rememberMe">Beni hatırla</label>
-                </div>
-                <a asp-action="ForgotPassword" class="forgot-link">Şifremi Unuttum</a>
-            </div> *@
-
-            <button type="submit" class="btn-submit" id="submitBtn">Giriş Yap</button>
+            <button type="submit" class="btn-submit" id="submitBtn">Kurumsal Giriş Yap</button>
         </form>
 
-@*         <div class="auth-footer">
-            <span>Hesabınız yok mu?</span>
-            <a asp-action="Register">Kayıt Ol</a>
-        </div> *@
+        <!-- 2. Tedarikçi / Firma Giriş Formu -->
+        <form asp-action="Login" asp-controller="Account" method="post" id="firmaForm" style="display:none;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ReturnUrl" />
+            <input type="hidden" name="UserType" value="Company" />
+
+            <div class="form-group">
+                <label class="form-label">Firma E-Posta veya Vergi No</label>
+                <input type="text" name="CompanyEmail" class="form-input" placeholder="firma@teknoloji.com.tr veya Vergi No" autocomplete="off" required />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Firma Şifresi</label>
+                <input type="password" name="CompanyPassword" class="form-input" placeholder="••••••••" autocomplete="new-password" required />
+            </div>
+
+            <button type="submit" class="btn-submit" style="background:#059669;">
+                <i class="fa-solid fa-right-to-bracket" style="margin-right:6px;"></i> Tedarikçi Portalı Girişi
+            </button>
+        </form>
+
+        <script>
+            function switchLoginTab(type) {
+                var pTab = document.getElementById('tabPersonel');
+                var fTab = document.getElementById('tabFirma');
+                var pForm = document.getElementById('personelForm');
+                var fForm = document.getElementById('firmaForm');
+
+                if (type === 'firma') {
+                    pTab.style.background = 'transparent';
+                    pTab.style.color = 'var(--text-secondary)';
+                    fTab.style.background = '#059669';
+                    fTab.style.color = '#ffffff';
+                    pForm.style.display = 'none';
+                    fForm.style.display = 'block';
+                } else {
+                    fTab.style.background = 'transparent';
+                    fTab.style.color = 'var(--text-secondary)';
+                    pTab.style.background = '#4f46e5';
+                    pTab.style.color = '#ffffff';
+                    fForm.style.display = 'none';
+                    pForm.style.display = 'block';
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var activeTab = '@(ViewBag.ActiveTab ?? "")';
+                if (activeTab === 'firma') {
+                    switchLoginTab('firma');
+                }
+            });
+        </script>
     </div>
 </div>
 

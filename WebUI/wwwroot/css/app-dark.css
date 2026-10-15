@@ -256,3 +256,84 @@
 [data-theme="dark"] .badge-status-resolved  { background: rgba(5,150,105,.18);   color: #34d399; border-color: rgba(5,150,105,.3); }
 [data-theme="dark"] .badge-status-closed    { background: rgba(71,85,105,.2);    color: #94a3b8; border-color: rgba(71,85,105,.3); }
 
+/* ─── 📚 Bilgi Bankası & SSS (FAQ Engine) Dark Theme Overrides ───────────────── */
+[data-theme="dark"] .faq-hero-box {
+    background: linear-gradient(135deg, #1e1b4b 0%, #1e293b 100%) !important;
+    border-color: #312e81 !important;
+}
+[data-theme="dark"] .faq-search-input {
+    background: #0f1119 !important;
+    border-color: #312e81 !important;
+    color: #e4e7f4 !important;
+}
+[data-theme="dark"] .faq-cat-chip {
+    background: var(--bg-card) !important;
+    border-color: var(--border) !important;
+    color: var(--text-secondary) !important;
+}
+[data-theme="dark"] .faq-cat-chip:hover,
+[data-theme="dark"] .faq-cat-chip.active {
+    background: rgba(99, 102, 241, 0.25) !important;
+    border-color: #6366f1 !important;
+    color: #a5b4fc !important;
+}
+[data-theme="dark"] .faq-article-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+[data-theme="dark"] .faq-article-card:hover {
+    border-color: var(--accent) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+[data-theme="dark"] .faq-step-box {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ─── ⏳ Live SLA Countdown Badges Dark Theme Overrides ───────────────────────── */
+[data-theme="dark"] .sla-normal {
+    background: rgba(99, 102, 241, 0.2) !important;
+    color: #a5b4fc !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
+}
+[data-theme="dark"] .sla-warning {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+}
+[data-theme="dark"] .sla-breached {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+}
+[data-theme="dark"] .sla-completed {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #34d399 !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+/* ─── 📌 Talep Etiketleri & Benzer Çözümler Dark Theme Overrides ───────────────── */
+[data-theme="dark"] .past-solution-item {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ─── 🤖 Gemini AI Derin Analiz Kartı Dark Theme Overrides ─────────────────────── */
+[data-theme="dark"] .ai-summary-box,
+[data-theme="dark"] .ai-steps-box {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ─── 📊 Chart.js & Kurumsal Raporlama Dark Theme Overrides ────────────────────── */
+[data-theme="dark"] #chartFilterBanner {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+}
+[data-theme="dark"] #chartFilterText {
+    color: #fbbf24 !important;
+}
+

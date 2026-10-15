@@ -12,7 +12,7 @@ namespace WebUI.Controllers
         }
 
         [Route("/Error/{statusCode:int}")]
-        public new IActionResult StatusCode(int statusCode)
+        public IActionResult ErrorStatus(int statusCode)
         {
             var feature = HttpContext.Features.Get<IStatusCodeReExecuteFeature>();
             var originalPath = feature?.OriginalPath ?? "";

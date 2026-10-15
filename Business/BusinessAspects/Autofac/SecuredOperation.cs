@@ -1,4 +1,4 @@
-﻿using Business.Constants;
+using Business.Constants;
 using Castle.DynamicProxy;
 using Core.Extensions;
 using Core.Utilities.Interceptors;
@@ -11,21 +11,29 @@ namespace Business.BusinessAspects.Autofac;
 
 public class SecuredOperation : MethodInterception
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
     private readonly string[] _roles;
 
     public SecuredOperation(string roles)
     {
         _roles = roles.Split(',');
-        _httpContextAccessor = ServiceTool.ServiceProvider.GetService<IHttpContextAccessor>();
+        _httpContextAccessor = ServiceTool.ServiceProvider?.GetService<IHttpContextAccessor>();
     }
 
     protected override void OnBefore(IInvocation invocation)
     {
-        var roleClaims = _httpContextAccessor.HttpContext.User.ClaimRoles();
+        var accessor = _httpContextAccessor ?? ServiceTool.ServiceProvider?.GetService<IHttpContextAccessor>();
+        var httpContext = accessor?.HttpContext;
+        var roleClaims = httpContext?.User?.ClaimRoles() ?? new List<string>();
+
+        if (roleClaims.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
         foreach (var role in _roles)
         {
-            if (roleClaims.Contains(role))
+            if (roleClaims.Any(r => r.Equals(role, StringComparison.OrdinalIgnoreCase)))
             {
                 return;
             }

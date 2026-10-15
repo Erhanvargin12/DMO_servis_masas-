@@ -9,7 +9,7 @@ using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class UsersController : BaseController
 {
     private readonly ILogger<UsersController> _logger;
@@ -25,23 +25,29 @@ public class UsersController : BaseController
         var allRoles = await SendRequest<List<OperationClaim>>("operationclaim/getall");
         var userRoles = await SendRequest<List<UserOperationClaim>>("useroperationclaim/getall");
 
-        var users = allUsers.Data.Select(u => new UserManagementViewModel
+        var userList = allUsers?.Data ?? new List<User>();
+        var roleList = allRoles?.Data ?? new List<OperationClaim>();
+        var claimList = userRoles?.Data ?? new List<UserOperationClaim>();
+
+        var users = userList.Select(u => new UserManagementViewModel
         {
             User = u,
-            UserRoles = userRoles.Data.Where(ur => ur.UserId == u.Id).ToList()
+            UserRoles = claimList.Where(ur => ur.UserId == u.Id).ToList()
         }).ToList();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            users = users.Where(u => u.User.FirstName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                                     u.User.LastName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
-                                     u.User.Mail.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+            users = users.Where(u => u.User != null && (
+                (u.User.FirstName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.User.LastName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.User.Mail?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+            )).ToList();
         }
 
         var model = new UserListViewModel
         {
             Users = users,
-            AllRoles = allRoles.Data,
+            AllRoles = roleList,
             SearchTerm = search,
             TotalCount = users.Count
         };
@@ -53,15 +59,44 @@ public class UsersController : BaseController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(UserViewModel user)
     {
-        IDataResult<User> result;
-
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
             return RedirectToAction(nameof(Index));
         }
 
-        result = await SendRequest<User>(user.Id == 0 ? "user/add" : "user/update", user, HttpMethod.Post);
+        IDataResult<User> result;
+        if (user.Id == 0)
+        {
+            var addDto = new Entities.DTOs.UserAddDto
+            {
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Mail = user.Mail,
+                Password = string.IsNullOrWhiteSpace(user.Password) ? "123456" : user.Password,
+                Status = user.Status,
+                EbysUserId = user.EbysUserId ?? string.Empty,
+                BranchId = user.BranchId ?? string.Empty,
+                PositionId = user.PositionId
+            };
+            result = await SendRequest<User>("user/add", addDto, HttpMethod.Post);
+        }
+        else
+        {
+            var updateDto = new Entities.DTOs.UserUpdateDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Mail = user.Mail,
+                Status = user.Status,
+                RegistirationId = user.EbysUserId ?? string.Empty,
+                BranchId = user.BranchId ?? string.Empty,
+                PositionId = user.PositionId
+            };
+            result = await SendRequest<User>("user/update", updateDto, HttpMethod.Post);
+        }
+
         TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
         return RedirectToAction(nameof(Index));
     }
@@ -95,11 +130,13 @@ public class UsersController : BaseController
             return RedirectToAction(nameof(Index));
         }
 
-        var userRoles = await SendRequest<List<UserOperationClaim>>($"useroperationclaim/getbyuserid/{userId}", HttpMethod.Get);
+        var userRoles = await SendRequest<List<UserOperationClaim>>($"useroperationclaim/getbyuserid/{userId}");
+        var existingClaims = userRoles?.Data ?? new List<UserOperationClaim>();
+        var roleIds = selectedRoleIds ?? new List<int>();
 
-        foreach (var roleId in selectedRoleIds)
+        foreach (var roleId in roleIds)
         {
-            if (!userRoles.Data.Any(x => x.OperationClaimId == roleId))
+            if (!existingClaims.Any(x => x.OperationClaimId == roleId))
             {
                 var userClaim = new UserOperationClaim { UserId = userId, OperationClaimId = roleId };
                 var result = await SendRequest<UserOperationClaim>("useroperationclaim/add", userClaim, HttpMethod.Post);
@@ -107,9 +144,9 @@ public class UsersController : BaseController
                 TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] = result.Message;
             }
         }
-        foreach (var role in userRoles.Data)
+        foreach (var role in existingClaims)
         {
-            if (!selectedRoleIds.Contains(role.OperationClaimId))
+            if (!roleIds.Contains(role.OperationClaimId))
             {
                 var userClaim = new UserOperationClaim { Id = role.Id, UserId = userId, OperationClaimId = role.OperationClaimId };
                 var result = await SendRequest<int>($"useroperationclaim/delete", userClaim, HttpMethod.Post);

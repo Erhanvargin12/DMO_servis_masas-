@@ -3,7 +3,6 @@ using Business.Constants;
 using Core.Utilities.Results;
 using DataAccess.Abstract.TicketDal;
 using Entities.Concrete.Ticket;
-using Microsoft.IdentityModel.Tokens;
 using System.Linq.Expressions;
 
 namespace Business.Concrete.TicketManagers
@@ -12,17 +11,29 @@ namespace Business.Concrete.TicketManagers
     {
         private readonly ITicketAssignmentDal _assignmentDal;
         private readonly ITicketResponseDal _responseDal;
+        private readonly ITicketDal _ticketDal;
 
-        public TicketAssignmentManager(ITicketAssignmentDal assignmentDal, ITicketResponseDal responseDal)
+        public TicketAssignmentManager(ITicketAssignmentDal assignmentDal, ITicketResponseDal responseDal, ITicketDal ticketDal)
         {
             _assignmentDal = assignmentDal;
             _responseDal = responseDal;
+            _ticketDal = ticketDal;
         }
+
         public async Task<IResult> AddAsync(Assignment assignment)
         {
             await _assignmentDal.AddAsync(assignment);
 
-            if (!assignment.Description.IsNullOrEmpty())
+            var ticket = await _ticketDal.GetAsync(t => t.Id == assignment.TicketId);
+            if (ticket != null)
+            {
+                ticket.AssignedUserId = assignment.AssignedToId;
+                ticket.StatusId = 2; // Atandı
+                ticket.UpdatedAt = DateTime.Now;
+                await _ticketDal.UpdateAsync(ticket);
+            }
+
+            if (!string.IsNullOrEmpty(assignment.Description))
             {
                 await _responseDal.AddAsync(new Response
                 {

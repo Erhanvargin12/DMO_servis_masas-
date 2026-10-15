@@ -1,0 +1,190 @@
+@model WebUI.Areas.Tickets.Models.TicketViewModel
+@{
+    ViewData["Title"] = "Görevli Olduğum Talepler";
+
+    string StatusBadge(int? id) => id switch
+    {
+        1 => "badge-status-open",
+        2 => "badge-status-assigned",
+        3 => "badge-status-progress",
+        4 => "badge-status-waiting",
+        5 => "badge-status-resolved",
+        6 => "badge-status-closed",
+        _ => ""
+    };
+    string StatusLabel(int? id) => id switch
+    {
+        1 => "Açık",
+        2 => "Atandı",
+        3 => "İşlemde",
+        4 => "Beklemede",
+        5 => "Çözüldü",
+        6 => "Kapatıldı",
+        _ => "—"
+    };
+    string PriorityBadge(int id) => id switch
+    {
+        1 => "badge-priority-low",
+        2 => "badge-priority-medium",
+        3 => "badge-priority-high",
+        4 => "badge-priority-critical",
+        _ => ""
+    };
+    string PriorityLabel(int id) => id switch
+    {
+        1 => "Düşük",
+        2 => "Orta",
+        3 => "Yüksek",
+        4 => "Kritik",
+        _ => "—"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/pages/tickets.js" asp-append-version="true"></script>
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <div class="mgmt-page-icon">
+            <i class="fa-solid fa-clipboard-check"></i>
+        </div>
+        <div>
+            <div class="mgmt-page-title">Görevli Olduğum Talepler</div>
+            <div class="mgmt-page-subtitle">
+                <span>Toplam @Model.OwnCount talep</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="data-table" style="margin-bottom:10px;">
+    <div class="filter-wrap">
+        <form method="get" asp-action="AssignedTickets" asp-controller="Ticket" asp-area="Tickets"
+              class="filter-form" id="ticketFilterForm">
+            <div class="filter-row">
+                <div class="data-table-search filter-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" name="search" value="@Model.SearchTerm" id="ticketSearch"
+                           placeholder="Ticket no, başlık veya açıklama ara..." autocomplete="off" />
+                </div>
+                <div class="filter-select">
+                    <select name="status" class="form-input" id="statusFilter">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="1" selected="@(Model.StatusFilter == "1" ? "selected" : null)">Açık</option>
+                        <option value="2" selected="@(Model.StatusFilter == "2" ? "selected" : null)">Atandı</option>
+                        <option value="3" selected="@(Model.StatusFilter == "3" ? "selected" : null)">İşlemde</option>
+                        <option value="4" selected="@(Model.StatusFilter == "4" ? "selected" : null)">Beklemede</option>
+                        <option value="5" selected="@(Model.StatusFilter == "5" ? "selected" : null)">Çözüldü</option>
+                        <option value="6" selected="@(Model.StatusFilter == "6" ? "selected" : null)">Kapatıldı</option>
+                    </select>
+                </div>
+                <div class="filter-select">
+                    <select name="priority" class="form-input" id="priorityFilter">
+                        <option value="">Tüm Öncelikler</option>
+                        <option value="1" selected="@(Model.PriorityFilter == "1" ? "selected" : null)">Düşük</option>
+                        <option value="2" selected="@(Model.PriorityFilter == "2" ? "selected" : null)">Orta</option>
+                        <option value="3" selected="@(Model.PriorityFilter == "3" ? "selected" : null)">Yüksek</option>
+                        <option value="4" selected="@(Model.PriorityFilter == "4" ? "selected" : null)">Kritik</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary filter-btn">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Ara
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.PriorityFilter))
+                    {
+                        <a href="@Url.Action("AssignedTickets", "Ticket", new { area = "Tickets" })"
+                           class="btn filter-btn">
+                            <i class="fa-solid fa-xmark"></i>
+                            Temizle
+                        </a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="data-table">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>Görevli Olduğum Talepler</span>
+            <span class="stat-chip">@Model.OwnCount</span>
+        </div>
+        <div class="data-table-actions"></div>
+    </div>
+
+    <div class="table-container">
+        <table class="table mgmt-table" id="ticketsTable"
+               data-paginate data-page-size="10">
+            <thead>
+                <tr>
+                    <th data-sort="text" class="col-hide-md">Talep No</th>
+                    <th data-sort="text">Başlık</th>
+                    <th data-sort="text">İçerik</th>
+                    <th data-sort="text">Durum</th>
+                    <th data-sort="text">Öncelik</th>
+                    <th data-sort="text">SLA Kalan Süre</th>
+                    <th data-sort="date" class="col-hide-md">Oluşturma</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.FilteredTickets.Any())
+                {
+                    @foreach (var t in Model.FilteredTickets)
+                    {
+                        var detayUrl = Url.Action("Detail", "Ticket", new { area = "Tickets", id = t.Id });
+                        <tr class="table-row-link" data-href="@detayUrl" style="cursor:pointer;">
+                            <td class="col-hide-md" data-label="No">
+                                <span class="entity-badge-text">@t.TicketNo</span>
+                            </td>
+                            <td data-label="Başlık">
+                                <div class="cell-info">
+                                    <span class="cell-title">@t.Title</span>
+                                </div>
+                            </td>
+                            <td data-label="İçerik">
+                                <div class="cell-info">
+                                    <span class="cell-sub" title="@t.Description">@(t.Description.Length > 60 ? t.Description[..60] + "…" : t.Description)</span>
+                                </div>
+                            </td>
+                            <td data-label="Durum">
+                                <span class="badge @StatusBadge(t.StatusId)">@StatusLabel(t.StatusId)</span>
+                            </td>
+                            <td data-label="Öncelik">
+                                <span class="badge @PriorityBadge(t.PriorityId)">@PriorityLabel(t.PriorityId)</span>
+                            </td>
+                            <td data-label="SLA Kalan Süre"
+                                data-sla-created="@t.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                                data-sla-priority="@t.PriorityId"
+                                data-sla-status="@t.StatusId">
+                                <span class="sla-badge sla-normal"><i class="fa-solid fa-clock"></i> Hesaplanıyor...</span>
+                            </td>
+                            <td class="col-hide-md" data-label="Tarih">@t.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="mgmt-empty">
+                            <div class="mgmt-empty-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+                            <div class="mgmt-empty-text">Görevli olduğunuz talep bulunamadı</div>
+                            <div class="mgmt-empty-sub">Henüz size atanan bir talep yok</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="data-table-footer">
+        <div class="data-table-info"></div>
+    </div>
+</div>

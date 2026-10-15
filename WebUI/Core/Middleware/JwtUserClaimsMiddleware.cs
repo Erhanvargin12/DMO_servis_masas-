@@ -16,8 +16,7 @@ public class JwtUserClaimsMiddleware
         if (context.User.Identity?.IsAuthenticated == true)
         {
             var token = JwtClaimsHelper.GetAccessToken(context);
-            if (!string.IsNullOrEmpty(token))
-                context.User = JwtClaimsHelper.HydratePrincipal(context.User, token);
+            context.User = JwtClaimsHelper.HydratePrincipal(context.User, token);
         }
 
         await _next(context);

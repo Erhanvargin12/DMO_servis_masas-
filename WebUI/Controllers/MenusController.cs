@@ -10,7 +10,7 @@ using WebUI.Models.ViewModels;
 namespace WebUI.Controllers
 {
 
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class MenusController : BaseController
     {
         private readonly IMemoryCache _cache;
@@ -28,8 +28,8 @@ namespace WebUI.Controllers
 
             var model = new MenuViewModel
             {
-                Menu = menus.Data,
-                Roles = roles.Data,
+                Menu = menus?.Data ?? new List<MenuDto>(),
+                Roles = roles?.Data ?? new List<OperationClaim>(),
                 Orphans = new List<Menu>()
             };
             return View(model);

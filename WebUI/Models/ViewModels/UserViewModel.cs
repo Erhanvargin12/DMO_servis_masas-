@@ -10,10 +10,13 @@ namespace WebUI.Models.ViewModels
         public string Mail { get; set; } = string.Empty;
         public string? Password { get; set; }
         public bool Status { get; set; } = true;
-        public int EbysId { get; set; }
-        public int DepartmentId { get; set; }
-        public int ParentDepartmentId { get; set; }
+        public string? EbysUserId { get; set; }
+        public string? BranchId { get; set; }
         public int PositionId { get; set; }
+        
+        public int EbysId { get => int.TryParse(EbysUserId, out var id) ? id : 0; set => EbysUserId = value.ToString(); }
+        public int DepartmentId { get => int.TryParse(BranchId, out var id) ? id : 0; set => BranchId = value.ToString(); }
+        public int ParentDepartmentId { get; set; }
     }
 
     public class UserListViewModel

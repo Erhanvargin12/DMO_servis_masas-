@@ -230,8 +230,13 @@
             this._updateIcon(next);
         },
         apply: function (t) {
-            if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-            else              document.documentElement.removeAttribute('data-theme');
+            if (t === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                if (document.body) document.body.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                if (document.body) document.body.removeAttribute('data-theme');
+            }
         },
         _updateIcon: function (t) {
             var sun  = document.querySelector('.icon-sun');

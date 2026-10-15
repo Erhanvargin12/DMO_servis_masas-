@@ -1,4 +1,4 @@
-﻿using Core.CrossCuttingConcerns.Caching;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Caching.Microsoft;
 using Core.Utilities.IoC;
 using Microsoft.AspNetCore.Http;
@@ -12,17 +12,25 @@ public class CoreModule : ICoreModule
     public void Load(IServiceCollection serviceColleciton)
     {
         serviceColleciton.AddMemoryCache();
-        serviceColleciton.AddSingleton<IHttpContextAccessor,HttpContextAccessor>();
+        serviceColleciton.AddHttpContextAccessor();
         serviceColleciton.AddSingleton<ICacheManager,MemoryCacheManager>();
         serviceColleciton.AddHttpClient("gateway", (sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
-            client.BaseAddress = new Uri(config.GetValue<string>("GatewayApiBaseUrl")!);
+            var gatewayUrl = config.GetValue<string>("GatewayApiBaseUrl");
+            if (!string.IsNullOrEmpty(gatewayUrl))
+            {
+                client.BaseAddress = new Uri(gatewayUrl);
+            }
         });
-        serviceColleciton.AddHttpClient("dip", (sp, client) =>
+        serviceColleciton.AddHttpClient("KIP", (sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
-            client.BaseAddress = new Uri(config.GetValue<string>("DipApiBaseUrl")!);
+            var kipUrl = config.GetValue<string>("KIPApiBaseUrl");
+            if (!string.IsNullOrEmpty(kipUrl))
+            {
+                client.BaseAddress = new Uri(kipUrl);
+            }
         });
 
     }

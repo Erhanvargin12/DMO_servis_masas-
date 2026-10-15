@@ -25,9 +25,9 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> Login(UserForLoginDto userForLoginDto)
         {
             var userToLogin = await _authService.LoginAsync(userForLoginDto);
-            if (!userToLogin.Success)
+            if (!userToLogin.Success || userToLogin.Data == null)
             {
-                return BadRequest("Giriş Hatası");
+                return BadRequest(new { Success = false, Message = userToLogin?.Message ?? "Giriş Hatası" });
             }
 
             var ipAddress = GetIpAddress();
@@ -39,7 +39,7 @@ namespace WebAPI.Controllers
                 return Ok(result);
             }
 
-            return BadRequest(result.Message);
+            return BadRequest(new { Success = false, Message = result.Message });
         }
 
         [HttpPost("refresh")]

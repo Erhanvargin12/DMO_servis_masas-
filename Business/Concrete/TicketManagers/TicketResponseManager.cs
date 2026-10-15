@@ -12,12 +12,18 @@ namespace Business.Concrete.TicketManagers
     {
         private readonly ITicketResponseDal _responseDal;
         private readonly ITicketAttachmentDal _attachmentDal;
+        private readonly ITicketRoutingService _routingService;
 
-        public TicketResponseManager(ITicketResponseDal responseDal, ITicketAttachmentDal attachmentDal)
+        public TicketResponseManager(
+            ITicketResponseDal responseDal,
+            ITicketAttachmentDal attachmentDal,
+            ITicketRoutingService routingService)
         {
             _responseDal = responseDal;
             _attachmentDal = attachmentDal;
+            _routingService = routingService;
         }
+
         public async Task<IResult> AddAsync(TicketResponseDto dto)
         {
             await _responseDal.AddAsync(dto.Response);
@@ -31,6 +37,11 @@ namespace Business.Concrete.TicketManagers
                     await _attachmentDal.AddAsync(attachment);
                 }
             }
+
+            await _routingService.RouteOnStaffReplyAsync(
+                dto.Response.TicketId,
+                dto.Response.SenderId,
+                dto.Response.IsInternal);
 
             return new SuccessDataResult<TicketResponseDto>(dto, Messages.TicketCreated);
         }

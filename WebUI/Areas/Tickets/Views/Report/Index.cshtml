@@ -1,0 +1,400 @@
+@using WebUI.Areas.Tickets.Models
+@model ReportFilterViewModel
+@{
+    ViewData["Title"] = "Kurumsal Raporlama & Export";
+}
+
+<div class="page-header" style="margin-bottom: 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <div>
+        <div class="page-title" style="font-size:22px; font-weight:800; display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-file-invoice-dollar" style="color:var(--accent);"></i>
+            Kurumsal IT Servis Masası Raporlama Engine
+        </div>
+        <div class="page-subtitle" style="color:var(--text-muted); font-size:13px; margin-top:4px;">
+            Tarih aralığı, şube, personel, öncelik ve duruma göre filtreleme ve tek tıkla Excel/PDF dışa aktarımı.
+        </div>
+    </div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <a href="@Url.Action("ExportExcel", "Report", new { area = "Tickets", startDate = Model.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.EndDate?.ToString("yyyy-MM-dd"), branchId = Model.BranchId, statusId = Model.StatusId, priorityId = Model.PriorityId, assignedUserId = Model.AssignedUserId, search = Model.SearchTerm })" 
+           class="btn" style="background:#10b981; color:#ffffff; font-weight:600; font-size:13.5px; padding:10px 18px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; border:none; box-shadow:0 4px 14px rgba(16,185,129,0.3);">
+            <i class="fa-solid fa-file-excel" style="font-size:16px;"></i> Excel (.xlsx / .csv) İndir
+        </a>
+
+        <a href="@Url.Action("PrintPdf", "Report", new { area = "Tickets", startDate = Model.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.EndDate?.ToString("yyyy-MM-dd"), branchId = Model.BranchId, statusId = Model.StatusId, priorityId = Model.PriorityId, assignedUserId = Model.AssignedUserId, search = Model.SearchTerm })" 
+           target="_blank" class="btn" style="background:#ef4444; color:#ffffff; font-weight:600; font-size:13.5px; padding:10px 18px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; border:none; box-shadow:0 4px 14px rgba(239,68,68,0.3);">
+            <i class="fa-solid fa-file-pdf" style="font-size:16px;"></i> PDF Raporu / Yazdır
+        </a>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="card" style="margin-bottom: 24px; border: 1px solid var(--border); border-radius: 16px;">
+    <div class="card-header" style="background:var(--bg-secondary); border-bottom:1px solid var(--border); padding:16px 20px;">
+        <h3 class="card-title" style="font-size:14px; font-weight:700; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-filter" style="color:var(--accent);"></i> Gelişmiş Rapor Filtreleme Paneli
+        </h3>
+    </div>
+    <div class="card-body" style="padding:20px;">
+        <form method="get" action="@Url.Action("Index", "Report", new { area = "Tickets" })">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:16px;">
+                <!-- Start Date -->
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:12px; font-weight:600;">Başlangıç Tarihi</label>
+                    <input type="date" name="startDate" value="@Model.StartDate?.ToString("yyyy-MM-dd")" class="form-input" style="height:38px; font-size:13px;" />
+                </div>
+
+                <!-- End Date -->
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:12px; font-weight:600;">Bitiş Tarihi</label>
+                    <input type="date" name="endDate" value="@Model.EndDate?.ToString("yyyy-MM-dd")" class="form-input" style="height:38px; font-size:13px;" />
+                </div>
+
+                <!-- Branch -->
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:12px; font-weight:600;">Şube / Birim</label>
+                    <select name="branchId" class="form-input" style="height:38px; font-size:13px;">
+                        <option value="">Tüm Şubeler</option>
+                        @foreach (var b in Model.Branches)
+                        {
+                            <option value="@b.Id" selected="@(Model.BranchId == b.Id ? "selected" : null)">🏢 @b.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:12px; font-weight:600;">Talep Durumu</label>
+                    <select name="statusId" class="form-input" style="height:38px; font-size:13px;">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="1" selected="@(Model.StatusId == 1 ? "selected" : null)">Açık</option>
+                        <option value="2" selected="@(Model.StatusId == 2 ? "selected" : null)">Atandı</option>
+                        <option value="3" selected="@(Model.StatusId == 3 ? "selected" : null)">İşlemde</option>
+                        <option value="4" selected="@(Model.StatusId == 4 ? "selected" : null)">Beklemede</option>
+                        <option value="5" selected="@(Model.StatusId == 5 ? "selected" : null)">Çözüldü</option>
+                        <option value="6" selected="@(Model.StatusId == 6 ? "selected" : null)">Kapatıldı</option>
+                    </select>
+                </div>
+
+                <!-- Priority -->
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:12px; font-weight:600;">Öncelik Seviyesi</label>
+                    <select name="priorityId" class="form-input" style="height:38px; font-size:13px;">
+                        <option value="">Tüm Öncelikler</option>
+                        <option value="1" selected="@(Model.PriorityId == 1 ? "selected" : null)">Düşük</option>
+                        <option value="2" selected="@(Model.PriorityId == 2 ? "selected" : null)">Orta</option>
+                        <option value="3" selected="@(Model.PriorityId == 3 ? "selected" : null)">Yüksek</option>
+                        <option value="4" selected="@(Model.PriorityId == 4 ? "selected" : null)">Kritik</option>
+                    </select>
+                </div>
+
+                <!-- Personnel -->
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:12px; font-weight:600;">Atanan Personel</label>
+                    <select name="assignedUserId" class="form-input" style="height:38px; font-size:13px;">
+                        <option value="">Tüm Personeller</option>
+                        @foreach (var p in Model.Personnel)
+                        {
+                            <option value="@p.Id" selected="@(Model.AssignedUserId == p.Id ? "selected" : null)">👤 @p.FirstName @p.LastName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Search input & Action Buttons -->
+            <div style="display:flex; gap:12px; align-items:center;">
+                <div style="flex:1; position:relative;">
+                    <input type="text" name="search" value="@Model.SearchTerm" placeholder="Bilet No, Başlık veya Açıklamada Ara..." class="form-input" style="height:40px; padding-left:36px; font-size:13px;" />
+                    <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:13px; color:var(--text-muted);"></i>
+                </div>
+                <button type="submit" class="btn btn-primary" style="height:40px; padding:0 20px; font-size:13px; font-weight:600;">
+                    <i class="fa-solid fa-filter" style="margin-right:6px;"></i> Filtrele
+                </button>
+                <a href="@Url.Action("Index", "Report", new { area = "Tickets" })" class="btn" style="height:40px; padding:0 16px; font-size:13px; background:var(--bg-secondary); border:1px solid var(--border); color:var(--text-primary);">
+                    Temizle
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Metrics Cards -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-label">Filtrelenen Toplam Talep</div>
+        <div class="stat-value" style="font-size:28px; font-weight:800; color:var(--accent);">@Model.TotalCount</div>
+        <div class="stat-change">Sorgu kriterlerine uyan biletler</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Aktif Talepler</div>
+        <div class="stat-value" style="font-size:28px; font-weight:800; color:#f59e0b;">@Model.ActiveCount</div>
+        <div class="stat-change">Açık, Atandı veya İşlemde</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Çözümlenen / Kapatılan</div>
+        <div class="stat-value" style="font-size:28px; font-weight:800; color:#10b981;">@Model.CompletedCount</div>
+        <div class="stat-change">Başarıyla tamamlanan talepler</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">SLA Tamamlanma Oranı</div>
+        <div class="stat-value" style="font-size:28px; font-weight:800; color:#10b981;">%@Model.SlaRate</div>
+        <div style="width:100%; background:var(--bg-secondary); height:6px; border-radius:99px; overflow:hidden; margin-top:6px;">
+            <div style="width:@Model.SlaRate%; background:#10b981; height:100%;"></div>
+        </div>
+    </div>
+</div>
+
+@{
+    var branchCounts = Model.Branches.Select(b => new {
+        Id = b.Id,
+        Name = b.Name.Length > 18 ? b.Name[..18] + "…" : b.Name,
+        FullName = b.Name,
+        Count = Model.FilteredTickets != null ? Model.FilteredTickets.Count(t => t.CurrentBranchId == b.Id) : 0
+    }).ToList();
+
+    var priorityCounts = new[] {
+        new { Id = 4, Label = "Kritik (2 Sa)", Name = "Kritik", Count = Model.FilteredTickets != null ? Model.FilteredTickets.Count(t => t.PriorityId == 4) : 0, Color = "#dc2626" },
+        new { Id = 3, Label = "Yüksek (4 Sa)", Name = "Yüksek", Count = Model.FilteredTickets != null ? Model.FilteredTickets.Count(t => t.PriorityId == 3) : 0, Color = "#f59e0b" },
+        new { Id = 2, Label = "Orta (8 Sa)", Name = "Orta", Count = Model.FilteredTickets != null ? Model.FilteredTickets.Count(t => t.PriorityId == 2) : 0, Color = "#3b82f6" },
+        new { Id = 1, Label = "Düşük (24 Sa)", Name = "Düşük", Count = Model.FilteredTickets != null ? Model.FilteredTickets.Count(t => t.PriorityId == 1) : 0, Color = "#10b981" }
+    };
+}
+
+<!-- Interactive Chart Analytics Cards -->
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:20px; margin-bottom: 24px;">
+    <!-- Chart 1: Branch Distribution Bar Chart -->
+    <div class="card" style="border-radius:16px; border:1px solid var(--border); padding:20px; background:var(--bg-surface);">
+        <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-chart-column" style="color:var(--accent);"></i>
+                Şube Müdürlükleri Talep Hacim Dağılımı
+            </span>
+            <span style="font-size:11px; font-weight:600; color:var(--text-muted); background:var(--bg-secondary); padding:2px 8px; border-radius:6px;">
+                <i class="fa-solid fa-hand-pointer" style="margin-right:4px;"></i> Çubuğa Tıkla &amp; Filtrele
+            </span>
+        </div>
+        <div style="height:220px; position:relative;">
+            <canvas id="branchChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Priority Distribution Doughnut Chart -->
+    <div class="card" style="border-radius:16px; border:1px solid var(--border); padding:20px; background:var(--bg-surface);">
+        <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-chart-pie" style="color:#f59e0b;"></i>
+                Öncelik Seviyeleri Oransal Dağılımı
+            </span>
+            <span style="font-size:11px; font-weight:600; color:var(--text-muted); background:var(--bg-secondary); padding:2px 8px; border-radius:6px;">
+                <i class="fa-solid fa-hand-pointer" style="margin-right:4px;"></i> Dilime Tıkla &amp; Filtrele
+            </span>
+        </div>
+        <div style="height:220px; position:relative;">
+            <canvas id="priorityChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var branchList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(branchCounts));
+    var priorityList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(priorityCounts));
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Branch Bar Chart
+        var ctxBranch = document.getElementById('branchChart');
+        if (ctxBranch) {
+            new Chart(ctxBranch.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: branchList.map(function(b) { return b.Name; }),
+                    datasets: [{
+                        label: 'Talep Sayısı',
+                        data: branchList.map(function(b) { return b.Count; }),
+                        backgroundColor: 'rgba(99, 102, 241, 0.65)',
+                        borderColor: '#4f46e5',
+                        borderWidth: 1.5,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onHover: function(evt, elements) {
+                        evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: function(evt, elements) {
+                        if (elements.length > 0) {
+                            var idx = elements[0].index;
+                            var b = branchList[idx];
+                            filterReportTableByBranch(b.Id, b.FullName);
+                        }
+                    },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // Priority Doughnut Chart
+        var ctxPriority = document.getElementById('priorityChart');
+        if (ctxPriority) {
+            new Chart(ctxPriority.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: priorityList.map(function(p) { return p.Label; }),
+                    datasets: [{
+                        data: priorityList.map(function(p) { return p.Count; }),
+                        backgroundColor: priorityList.map(function(p) { return p.Color; }),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onHover: function(evt, elements) {
+                        evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                    },
+                    onClick: function(evt, elements) {
+                        if (elements.length > 0) {
+                            var idx = elements[0].index;
+                            var p = priorityList[idx];
+                            filterReportTableByPriority(p.Id, p.Name);
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+    });
+
+    function filterReportTableByBranch(branchId, branchName) {
+        var rows = document.querySelectorAll('.report-table-row');
+        var visibleCount = 0;
+
+        rows.forEach(function(row) {
+            var rowBranch = row.getAttribute('data-branch-id');
+            if (rowBranch == branchId) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        showChartFilterBanner('🏢 Şube: ' + branchName, visibleCount);
+    }
+
+    function filterReportTableByPriority(priorityId, priorityName) {
+        var rows = document.querySelectorAll('.report-table-row');
+        var visibleCount = 0;
+
+        rows.forEach(function(row) {
+            var rowPriority = row.getAttribute('data-priority-id');
+            if (rowPriority == priorityId) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        showChartFilterBanner('⚡ Öncelik: ' + priorityName, visibleCount);
+    }
+
+    function showChartFilterBanner(filterText, count) {
+        var banner = document.getElementById('chartFilterBanner');
+        var textEl = document.getElementById('chartFilterText');
+        if (banner && textEl) {
+            textEl.innerHTML = '<i class="fa-solid fa-bolt" style="color:#f59e0b; margin-right:6px;"></i> <strong>Grafik Çapraz Filtresi Aktif:</strong> ' + filterText + ' (' + count + ' Kayıt)';
+            banner.style.display = 'flex';
+        }
+    }
+
+    function resetChartFilter() {
+        var rows = document.querySelectorAll('.report-table-row');
+        rows.forEach(function(row) { row.style.display = ''; });
+        var banner = document.getElementById('chartFilterBanner');
+        if (banner) banner.style.display = 'none';
+        if (window.AdminUI && window.AdminUI.Toast) {
+            AdminUI.Toast.info('Grafik filtresi kaldırıldı, tüm kayıtlar listeleniyor.');
+        }
+    }
+</script>
+
+<!-- Active Chart Filter Banner -->
+<div id="chartFilterBanner" style="display:none; justify-content:space-between; align-items:center; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:10px 18px; margin-bottom:16px;">
+    <div id="chartFilterText" style="font-size:13px; color:#d97706;"></div>
+    <button type="button" class="btn btn-sm" onclick="resetChartFilter()" style="background:#f59e0b; color:#ffffff; font-weight:700; font-size:12px; border-radius:8px; border:none; padding:4px 12px; cursor:pointer;">
+        <i class="fa-solid fa-xmark" style="margin-right:4px;"></i> Grafik Filtresini Kaldır
+    </button>
+</div>
+
+<!-- Table Card -->
+<div class="card" style="border-radius:16px; border:1px solid var(--border); overflow:hidden;">
+    <div class="card-header" style="background:var(--bg-secondary); padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <h3 class="card-title" style="font-size:14px; font-weight:700; margin:0;">
+            <i class="fa-solid fa-list" style="color:var(--accent); margin-right:6px;"></i> Rapor Önizleme Tablosu (@Model.TotalCount Kayıt)
+        </h3>
+    </div>
+    <div class="card-body" style="padding:0;">
+        @if (Model.FilteredTickets != null && Model.FilteredTickets.Any())
+        {
+            <div class="table-responsive">
+                <table class="table" style="margin:0;">
+                    <thead>
+                        <tr>
+                            <th>Bilet No</th>
+                            <th>Başlık</th>
+                            <th>Şube / Birim</th>
+                            <th>Atanan Personel</th>
+                            <th>Öncelik</th>
+                            <th>Durum</th>
+                            <th>Oluşturma Tarihi</th>
+                            <th style="text-align:right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.FilteredTickets)
+                        {
+                            var bName = Model.Branches.FirstOrDefault(b => b.Id == t.CurrentBranchId)?.Name ?? "Yazılım Şubesi";
+                            var pName = Model.Personnel.FirstOrDefault(p => p.Id == t.AssignedUserId);
+                            var pText = pName != null ? $"{pName.FirstName} {pName.LastName}" : "Atanmadı";
+                            var statusBadge = t.StatusId switch { 1 => "badge-status-open", 2 => "badge-status-assigned", 3 => "badge-status-progress", 4 => "badge-status-waiting", 5 => "badge-status-resolved", 6 => "badge-status-closed", _ => "" };
+                            var statusLabel = t.StatusId switch { 1 => "Açık", 2 => "Atandı", 3 => "İşlemde", 4 => "Beklemede", 5 => "Çözüldü", 6 => "Kapatıldı", _ => "—" };
+                            var priorityBadge = t.PriorityId switch { 1 => "badge-priority-low", 2 => "badge-priority-medium", 3 => "badge-priority-high", 4 => "badge-priority-critical", _ => "" };
+                            var priorityLabel = t.PriorityId switch { 1 => "Düşük", 2 => "Orta", 3 => "Yüksek", 4 => "Kritik", _ => "Orta" };
+
+                            <tr class="report-table-row" data-branch-id="@t.CurrentBranchId" data-priority-id="@t.PriorityId">
+                                <td class="mono" style="font-weight:700; color:var(--accent);">@(string.IsNullOrEmpty(t.TicketNo) ? $"TKT-{t.Id}" : t.TicketNo)</td>
+                                <td style="font-weight:600;">@t.Title</td>
+                                <td><span class="badge" style="background:rgba(99,102,241,0.08); color:#6366f1; border:1px solid rgba(99,102,241,0.2);">🏢 @bName</span></td>
+                                <td><span style="font-size:12.5px; font-weight:500;">👤 @pText</span></td>
+                                <td><span class="badge @priorityBadge">@priorityLabel</span></td>
+                                <td><span class="badge @statusBadge">@statusLabel</span></td>
+                                <td style="font-size:12px; color:var(--text-muted);">@t.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td style="text-align:right;">
+                                    <a href="/Tickets/Ticket/Detail/@t.Id" class="btn btn-sm" style="background:var(--bg-secondary); border:1px solid var(--border); font-size:11.5px; padding:4px 10px;">
+                                        Detay <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div style="padding:40px; text-align:center; color:var(--text-muted);">
+                <i class="fa-solid fa-folder-open" style="font-size:36px; margin-bottom:12px; color:var(--border);"></i>
+                <div style="font-size:14px; font-weight:600;">Arama kriterlerinize uygun kayıt bulunamadı.</div>
+                <div style="font-size:12px; margin-top:4px;">Lütfen filtreleri değiştirerek tekrar deneyiniz.</div>
+            </div>
+        }
+    </div>
+</div>

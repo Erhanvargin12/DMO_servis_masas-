@@ -13,7 +13,6 @@ using DataAccess.Abstract;
 using DataAccess.Abstract.TicketDal;
 using DataAccess.Concrete.EntityFramework;
 using DataAccess.Concrete.EntityFramework.EfTicketDal;
-using DataAccess.Concrete.EntityFramework.EfTicketDal;
 using Microsoft.AspNetCore.Http;
 using Business.Integrations;
 using Business.Abstract.IntegrationServices;
@@ -44,6 +43,9 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<BranchManager>().As<IBranchService>().InstancePerLifetimeScope();
         builder.RegisterType<EfBranchDal>().As<IBranchDal>().InstancePerLifetimeScope();
 
+        builder.RegisterType<CompanyManager>().As<ICompanyService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfCompanyDal>().As<ICompanyDal>().InstancePerLifetimeScope();
+
         builder.RegisterType<AuthManager>().As<IAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<JwtHelper>().As<ITokenHelper>().SingleInstance();
 
@@ -55,6 +57,9 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<DmoAuthClient>().As<IDmoAuthService>().InstancePerLifetimeScope();
         builder.RegisterType<DmoMainClient>().As<IDmoMainService>().InstancePerLifetimeScope();
         builder.RegisterType<DmoEbysClient>().As<IDmoEbysService>().InstancePerLifetimeScope();
+
+        // AI Services
+        builder.RegisterType<GeminiTicketAiManager>().As<ITicketAiService>().InstancePerLifetimeScope();
 
         // Ticket 
         builder.RegisterType<TicketAssignmentManager>().As<ITicketAssignmentService>().InstancePerLifetimeScope();
@@ -69,8 +74,14 @@ public class AutofacBusinessModule : Module
         builder.RegisterType<TicketManager>().As<ITicketService>().InstancePerLifetimeScope();
         builder.RegisterType<EfTicketDal>().As<ITicketDal>().InstancePerLifetimeScope();
 
+        builder.RegisterType<TicketRoutingService>().As<ITicketRoutingService>().InstancePerLifetimeScope();
+
         builder.RegisterType<TicketTransferManager>().As<ITicketTransferService>().InstancePerLifetimeScope();
         builder.RegisterType<EfTicketTransferDal>().As<ITicketTransferDal>().InstancePerLifetimeScope();
+
+        builder.RegisterType<TicketCategoryManager>().As<ITicketCategoryService>().InstancePerLifetimeScope();
+        builder.RegisterType<EfTicketCategoryDal>().As<ITicketCategoryDal>().InstancePerLifetimeScope();
+        builder.RegisterType<EfTicketCategoryBranchDal>().As<ITicketCategoryBranchDal>().InstancePerLifetimeScope();
 
         
         // Assembly

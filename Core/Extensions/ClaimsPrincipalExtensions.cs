@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 
 namespace Core.Extensions
 {
@@ -7,12 +7,21 @@ namespace Core.Extensions
         public static List<string> Claims(this ClaimsPrincipal claimsPrincipal, string claimType)
         {
             var result = claimsPrincipal?.FindAll(claimType)?.Select(x => x.Value).ToList();
-            return result;
+            return result ?? new List<string>();
         }
 
         public static List<string> ClaimRoles(this ClaimsPrincipal claimsPrincipal)
         {
-            return claimsPrincipal?.Claims(ClaimTypes.Role);
+            if (claimsPrincipal == null)
+                return new List<string>();
+
+            var roles = claimsPrincipal.Claims(ClaimTypes.Role)
+                .Concat(claimsPrincipal.Claims("role"))
+                .Concat(claimsPrincipal.Claims("http://schemas.microsoft.com/ws/2008/06/identity/claims/role"))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return roles;
         }
     }
 }

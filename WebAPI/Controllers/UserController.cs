@@ -53,8 +53,8 @@ namespace WebAPI.Controllers
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
                 Status = userDto.Status,
-                EbysUserId = userDto.EbysUserId,
-                BranchId = userDto.BranchId,
+                EbysUserId = userDto.EbysUserId ?? string.Empty,
+                BranchId = userDto.BranchId ?? string.Empty,
                 PositionId = userDto.PositionId,
                 CreateAt = DateTime.Now
             };
@@ -77,8 +77,8 @@ namespace WebAPI.Controllers
                 LastName = userDto.LastName,
                 Mail = userDto.Mail,
                 Status = userDto.Status,
-                EbysUserId = userDto.RegistirationId,
-                BranchId = userDto.BranchId,
+                EbysUserId = userDto.RegistirationId ?? userDto.EbysUserId ?? string.Empty,
+                BranchId = userDto.BranchId ?? string.Empty,
                 PositionId = userDto.PositionId
             };
             
@@ -114,7 +114,7 @@ namespace WebAPI.Controllers
 
             var user = userResult.Data;
 
-            if (!HashingHelper.VerifyPasswordHash(dto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
+            if (user.PasswordHash == null || user.PasswordSalt == null || !HashingHelper.VerifyPasswordHash(dto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
             {
                 return BadRequest(new { Success = false, Message = "Mevcut şifre hatalı" });
             }

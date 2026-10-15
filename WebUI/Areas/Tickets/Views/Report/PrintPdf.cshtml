@@ -1,0 +1,217 @@
+@using WebUI.Areas.Tickets.Models
+@model ReportFilterViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <title>DMO IT Servis Masası Kurumsal Raporu - @DateTime.Now.ToString("dd.MM.yyyy")</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #1e293b;
+            background: #ffffff;
+            margin: 0;
+            padding: 30px;
+            font-size: 13px;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #1e3a8a;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1e3a8a;
+            letter-spacing: -0.5px;
+        }
+
+        .sub-title {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .report-meta {
+            text-align: right;
+            font-size: 12px;
+            color: #475569;
+        }
+
+        .summary-boxes {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-box {
+            flex: 1;
+            padding: 14px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .summary-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .summary-val {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        th {
+            background: #1e3a8a;
+            color: #ffffff;
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+        }
+
+        tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-open { background: #dbeafe; color: #1e40af; }
+        .badge-assigned { background: #fef3c7; color: #92400e; }
+        .badge-progress { background: #e0e7ff; color: #3730a3; }
+        .badge-resolved { background: #dcfce7; color: #166534; }
+        .badge-closed { background: #fee2e2; color: #991b1b; }
+
+        .no-print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+        }
+
+        @@media print {
+            .no-print-btn { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="no-print-btn" onclick="window.print()">🖨️ PDF İndir / Yazdır</button>
+
+    <div class="report-header">
+        <div>
+            <div class="brand-title">DEVLET MALZEME OFİSİ</div>
+            <div class="sub-title">Bilgi İşlem Dairesi Başkanlığı — IT Servis Masası Kurumsal Raporu</div>
+        </div>
+        <div class="report-meta">
+            <div><strong>Tarih:</strong> @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</div>
+            <div><strong>Toplam Kayıt:</strong> @Model.TotalCount Bilet</div>
+        </div>
+    </div>
+
+    <div class="summary-boxes">
+        <div class="summary-box">
+            <div class="summary-label">Toplam Talep</div>
+            <div class="summary-val">@Model.TotalCount</div>
+        </div>
+        <div class="summary-box">
+            <div class="summary-label">Aktif Talepler</div>
+            <div class="summary-val" style="color:#d97706;">@Model.ActiveCount</div>
+        </div>
+        <div class="summary-box">
+            <div class="summary-label">Çözülen / Kapatılan</div>
+            <div class="summary-val" style="color:#16a34a;">@Model.CompletedCount</div>
+        </div>
+        <div class="summary-box">
+            <div class="summary-label">SLA Tamamlanma</div>
+            <div class="summary-val" style="color:#2563eb;">%@Model.SlaRate</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width:120px;">Bilet No</th>
+                <th>Başlık</th>
+                <th style="width:150px;">Şube / Birim</th>
+                <th style="width:140px;">Atanan Personel</th>
+                <th style="width:80px;">Öncelik</th>
+                <th style="width:90px;">Durum</th>
+                <th style="width:120px;">Tarih</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model.FilteredTickets)
+            {
+                var bName = Model.Branches.FirstOrDefault(b => b.Id == t.CurrentBranchId)?.Name ?? "Yazılım Şubesi";
+                var pName = Model.Personnel.FirstOrDefault(p => p.Id == t.AssignedUserId);
+                var pText = pName != null ? $"{pName.FirstName} {pName.LastName}" : "Atanmadı";
+                var statusClass = t.StatusId switch { 1 => "badge-open", 2 => "badge-assigned", 3 => "badge-progress", 5 => "badge-resolved", 6 => "badge-closed", _ => "badge-open" };
+                var statusLabel = t.StatusId switch { 1 => "Açık", 2 => "Atandı", 3 => "İşlemde", 4 => "Beklemede", 5 => "Çözüldü", 6 => "Kapatıldı", _ => "Açık" };
+                var priorityLabel = t.PriorityId switch { 1 => "Düşük", 2 => "Orta", 3 => "Yüksek", 4 => "Kritik", _ => "Orta" };
+
+                <tr>
+                    <td><strong>@(string.IsNullOrEmpty(t.TicketNo) ? $"TKT-{t.Id}" : t.TicketNo)</strong></td>
+                    <td>@t.Title</td>
+                    <td>@bName</td>
+                    <td>@pText</td>
+                    <td>@priorityLabel</td>
+                    <td><span class="badge @statusClass">@statusLabel</span></td>
+                    <td>@t.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div style="margin-top:40px; font-size:11px; color:#94a3b8; text-align:center; border-top:1px solid #e2e8f0; padding-top:12px;">
+        Bu belge Devlet Malzeme Ofisi Bilgi İşlem Dairesi Başkanlığı IT Servis Masası tarafından otomatik oluşturulmuştur.
+    </div>
+
+    <script>
+        // Auto open print dialog on page load
+        window.addEventListener('load', function() {
+            setTimeout(function() { window.print(); }, 500);
+        });
+    </script>
+</body>
+</html>

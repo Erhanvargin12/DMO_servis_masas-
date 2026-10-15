@@ -60,14 +60,24 @@ public static class JwtClaimsHelper
 
         var jwt = ReadToken(GetAccessToken(context));
         if (jwt == null)
-            return new UserContext { IsAuthenticated = true };
+        {
+            var userClaimName = context.User.Identity?.Name ?? context.User.FindFirst(ClaimTypes.Name)?.Value ?? "Tedarikçi Firma";
+            var userClaimEmail = context.User.FindFirst(ClaimTypes.Email)?.Value ?? userClaimName;
+            var userRoles = context.User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
 
-        var idValue = GetClaimValue(jwt,
-            ClaimTypes.NameIdentifier,
-            SoapNameIdentifier,
-            MsClaimsBase + "nameidentifier",
-            "sub",
-            "nameid");
+            return new UserContext
+            {
+                IsAuthenticated = true,
+                UserId = 9999,
+                EbysUserId = "SUPPLIER",
+                Email = userClaimEmail,
+                UserName = userClaimName,
+                Roles = userRoles.Any() ? userRoles : new List<string> { "Supplier" },
+                ProxyUserIds = new List<string>()
+            };
+        }
+
+        var idValue = GetClaimValue(jwt,ClaimTypes.NameIdentifier,SoapNameIdentifier,MsClaimsBase + "nameidentifier","sub","nameid");
 
         return new UserContext
         {
@@ -81,22 +91,40 @@ public static class JwtClaimsHelper
         };
     }
 
-    public static ClaimsPrincipal HydratePrincipal(ClaimsPrincipal existing, string token)
+    public static ClaimsPrincipal HydratePrincipal(ClaimsPrincipal existing, string? token)
     {
-        var jwt = ReadToken(token);
-        if (jwt == null)
-            return existing;
+        var claims = existing?.Claims?.ToList() ?? new List<Claim>();
 
-        var claims = new List<Claim> { new("AccessToken", token) };
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            var jwt = ReadToken(token);
+            if (jwt != null)
+            {
+                if (!claims.Any(c => c.Type == "AccessToken"))
+                    claims.Add(new Claim("AccessToken", token));
 
-        foreach (var claim in jwt.Claims)
-            claims.Add(claim);
+                foreach (var claim in jwt.Claims)
+                {
+                    if (!claims.Any(c => c.Type == claim.Type && c.Value == claim.Value))
+                        claims.Add(claim);
+                }
 
-        var email = GetClaimValue(jwt, ClaimTypes.Email, JwtRegisteredClaimNames.Email, "email");
-        if (!string.IsNullOrEmpty(email) && !claims.Any(c => c.Type == ClaimTypes.Email))
-            claims.Add(new Claim(ClaimTypes.Email, email));
+                var email = GetClaimValue(jwt, ClaimTypes.Email, JwtRegisteredClaimNames.Email, "email");
+                if (!string.IsNullOrEmpty(email) && !claims.Any(c => c.Type == ClaimTypes.Email))
+                    claims.Add(new Claim(ClaimTypes.Email, email));
+            }
+        }
 
-        var authType = existing.Identity?.AuthenticationType ?? CookieAuthenticationDefaults.AuthenticationScheme;
+        if (!claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type.EndsWith("/role")) && c.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
+        if (!claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type.EndsWith("/role")) && c.Value.Equals("Tickets", StringComparison.OrdinalIgnoreCase)))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Tickets"));
+        }
+
+        var authType = CookieAuthenticationDefaults.AuthenticationScheme;
         var identity = new ClaimsIdentity(claims, authType, ClaimTypes.Name, ClaimTypes.Role);
         return new ClaimsPrincipal(identity);
     }

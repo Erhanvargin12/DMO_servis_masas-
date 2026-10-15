@@ -8,74 +8,51 @@ namespace WebAPI.Controllers.TicketControllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+//[Authorize]
 public class TicketTransferController : ControllerBase
 {
     private readonly ITicketTransferService _ticketTransferService;
-    public TicketTransferController(ITicketTransferService ticketTransferService)
+    private readonly ITicketRoutingService _routingService;
+
+    public TicketTransferController(
+        ITicketTransferService ticketTransferService,
+        ITicketRoutingService routingService)
     {
         _ticketTransferService = ticketTransferService;
+        _routingService = routingService;
     }
-
 
     [HttpGet("getall")]
     public async Task<IActionResult> GetAll()
     {
         var result = await _ticketTransferService.GetAllAsync();
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-        return BadRequest(result);
+        return result.Success ? Ok(result) : BadRequest(result);
     }
 
     [HttpGet("getbyid/{id}")]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await _ticketTransferService.GetByIdAsync(id);
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-        return BadRequest(result);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("getbyticketid/{ticketId}")]
+    public async Task<IActionResult> GetByTicketId(int ticketId)
+    {
+        var result = await _ticketTransferService.GetAllAsync(t => t.TicketId == ticketId);
+        return result.Success ? Ok(result) : BadRequest(result);
     }
 
     [HttpPost("add")]
     public async Task<IActionResult> Add(TicketTransferDto dto)
     {
-        var entity = new Transfer();
+        var result = await _routingService.TransferToBranchAsync(
+            dto.TicketId,
+            dto.FromBranchId,
+            dto.ToBranchId,
+            dto.TransferredById,
+            dto.Note);
 
-        var result = await _ticketTransferService.AddAsync(entity);
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-        return BadRequest(result);
-    }
-
-    [HttpPost("update")]
-    public async Task<IActionResult> Update(TicketTransferDto dto)
-    {
-        var entity = new Transfer();
-
-        var result = await _ticketTransferService.UpdateAsync(entity);
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-        return BadRequest(result);
-    }
-
-    [HttpPost("delete")]
-    public async Task<IActionResult> Delete(TicketTransferDto dto)
-    {
-        var entity = new Transfer();
-
-        var result = await _ticketTransferService.DeleteAsync(entity);
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-        return BadRequest(result);
+        return result.Success ? Ok(result) : BadRequest(result);
     }
 }

@@ -8,7 +8,7 @@ using WebUI.Models.ViewModels;
 
 namespace WebUI.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class RolesController : BaseController
     {
         public RolesController(IApiClient apiClient) : base(apiClient){}
@@ -16,12 +16,11 @@ namespace WebUI.Controllers
         public async Task<IActionResult> Index(string? search)
         {
             var allRoles = await SendRequest<List<OperationClaim>>("operationclaim/getall");
-
-            var roles = allRoles.Data;
+            var roles = allRoles?.Data ?? new List<OperationClaim>();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                roles = roles.Where(r => r.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                roles = roles.Where(r => (r.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
                                         (r.Description?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
             }
 

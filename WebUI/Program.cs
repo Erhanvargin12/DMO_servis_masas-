@@ -33,7 +33,7 @@ builder.Services.AddAuthentication("Cookies").AddCookie("Cookies", options =>
 
     options.Events.OnRedirectToAccessDenied = context =>
     {
-        context.Response.Redirect("/Account/AccessDenied");
+        context.Response.Redirect("/Account/Login");
         return Task.CompletedTask;
     };
 });
@@ -47,9 +47,9 @@ builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
     // Geliştirme ortamında localhost self-signed sertifika için SSL doğrulamasını atla
     ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
-builder.Services.AddHttpClient("dip", client =>
+builder.Services.AddHttpClient("KIP", client =>
 {
-    var gatewayUrl = builder.Configuration["DipApiBaseUrl"];
+    var gatewayUrl = builder.Configuration["KIPApiBaseUrl"];
     if (!string.IsNullOrEmpty(gatewayUrl))
     {
         client.BaseAddress = new Uri(gatewayUrl);
@@ -69,6 +69,8 @@ builder.Services.AddHttpClient("gateway", client =>
 
 
 builder.Services.AddScoped<IServiceCommunication, HttpServiceCommunication>();
+builder.Services.AddHttpClient("ChatbotClient");
+builder.Services.AddScoped<IChatbotApiService, ChatbotApiService>();
 builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation().AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = null; });
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
@@ -79,14 +81,14 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 
 var app = builder.Build();
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
+    app.UseDeveloperExceptionPage();
 }
 else
 {
     app.UseExceptionHandler("/Error");
+    app.UseHsts();
 }
 
 app.UseStatusCodePagesWithReExecute("/Error/{0}");
@@ -106,6 +108,9 @@ app.UseJwtUserClaims();
 app.UseAuthorization();
 app.UseMenuAccess();
 
+app.MapControllerRoute(name: "talepler_legacy1", pattern: "Talepler/Talep/{action=Index}/{id?}", defaults: new { area = "Tickets", controller = "Ticket" });
+app.MapControllerRoute(name: "talepler_legacy2", pattern: "Talepler/Ticket/{action=Index}/{id?}", defaults: new { area = "Tickets", controller = "Ticket" });
+app.MapControllerRoute(name: "talep_legacy", pattern: "Talep/{action=Index}/{id?}", defaults: new { area = "Tickets", controller = "Ticket" });
 app.MapControllerRoute(name: "areas", pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
 app.Run();

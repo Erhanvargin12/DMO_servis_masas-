@@ -1,4 +1,4 @@
-﻿using Core.Utilities.Results;
+using Core.Utilities.Results;
 using Microsoft.AspNetCore.Mvc;
 using WebUI.Core.Services.Abstract;
 
@@ -45,7 +45,8 @@ namespace WebUI.Core.Services.Concrete
 
         private void SetUserToken()
         {
-            var token = User.FindFirst("AccessToken")?.Value;
+            var token = HttpContext.Session.GetString("AccessToken") 
+                     ?? User.FindFirst("AccessToken")?.Value;
             if (!string.IsNullOrEmpty(token)) 
                 _apiClient.SetBearerToken(token);
         }

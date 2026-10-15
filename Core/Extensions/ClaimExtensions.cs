@@ -30,13 +30,15 @@ public static class ClaimExtensions
         roles.ToList().ForEach(role => claims.Add(new Claim(ClaimTypes.Role, role)));
     }
 
-    public static void AddBranchId(this ICollection<Claim> claims, string branchId)
+    public static void AddBranchId(this ICollection<Claim> claims, string? branchId)
     {
-        claims.Add(new Claim("branchId", branchId));
+        if (!string.IsNullOrEmpty(branchId))
+            claims.Add(new Claim("branchId", branchId));
     }
-    public static void AddEbysUserId(this ICollection<Claim> claims, string registrationId)
+    public static void AddEbysUserId(this ICollection<Claim> claims, string? registrationId)
     {
-        claims.Add(new Claim("ebysUserId", registrationId));
+        if (!string.IsNullOrEmpty(registrationId))
+            claims.Add(new Claim("ebysUserId", registrationId));
     }
     public static void AddProxyUserIds(this ICollection<Claim> claims, List<string?> proxyUserIds)
     {

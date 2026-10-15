@@ -1,5 +1,6 @@
 using Core.Utilities.Results;
 using Entities.Concrete;
+using Entities.Concrete.Ticket;
 using WebUI.Models;
 
 namespace WebUI.Areas.Tickets.Models;
@@ -20,7 +21,10 @@ public class ProxyEbysUser
 
 public class TicketViewModel
 {
-    public IDataResult<List<Ticket>>? Ticket { get; set; }
+    public IDataResult<List<Entities.Concrete.Ticket.Ticket>>? Ticket { get; set; }
+    
+    // YENİ: Talep eklerken kullanılacak kategoriler
+    public List<TicketCategory> Categories { get; set; } = new();
     public string? SearchTerm    { get; set; }
     public string? StatusFilter  { get; set; }
     public string? PriorityFilter{ get; set; }
@@ -29,7 +33,7 @@ public class TicketViewModel
     public int PageSize { get; set; } = 10;
 
     // Aktif tab'ın gösterdiği liste (controller tarafından doldurulur)
-    public List<Ticket> FilteredTickets { get; set; } = new();
+    public List<Entities.Concrete.Ticket.Ticket> FilteredTickets { get; set; } = new();
 
     public int TotalCount => Ticket?.Data?.Count ?? 0;
 

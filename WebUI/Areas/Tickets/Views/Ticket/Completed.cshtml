@@ -1,0 +1,160 @@
+@model WebUI.Areas.Tickets.Models.TicketViewModel
+@{
+    ViewData["Title"] = "Tamamlanan Talepler";
+
+    string StatusBadge(int? id) => id switch
+    {
+        1 => "badge-status-open",
+        2 => "badge-status-assigned",
+        3 => "badge-status-progress",
+        4 => "badge-status-waiting",
+        5 => "badge-status-resolved",
+        6 => "badge-status-closed",
+        _ => ""
+    };
+    string StatusLabel(int? id) => id switch
+    {
+        1 => "Açık",
+        2 => "Atandı",
+        3 => "İşlemde",
+        4 => "Beklemede",
+        5 => "Çözüldü",
+        6 => "Kapatıldı",
+        _ => "—"
+    };
+    string PriorityBadge(int id) => id switch
+    {
+        1 => "badge-priority-low",
+        2 => "badge-priority-medium",
+        3 => "badge-priority-high",
+        4 => "badge-priority-critical",
+        _ => ""
+    };
+    string PriorityLabel(int id) => id switch
+    {
+        1 => "Düşük",
+        2 => "Orta",
+        3 => "Yüksek",
+        4 => "Kritik",
+        _ => "—"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/pages/tickets.js" asp-append-version="true"></script>
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <div class="mgmt-page-icon">
+            <i class="fa-solid fa-circle-check" style="color:var(--success);"></i>
+        </div>
+        <div>
+            <div class="mgmt-page-title">Tamamlanan Talepler</div>
+            <div class="mgmt-page-subtitle">
+                <span>Çözülen ve kapatılan toplam @Model.OwnCount talep kaydı</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── 🤖 Gemini AI Tamamlanan Talepler Analiz Kartı ────────────────────── *@
+<div class="data-table" style="border: 1px solid rgba(25, 135, 84, 0.4); background: linear-gradient(135deg, rgba(25, 135, 84, 0.08) 0%, rgba(13, 110, 253, 0.08) 100%); margin-bottom: 16px;">
+    <div class="ticket-section-header" style="background: rgba(25, 135, 84, 0.12); border-bottom: 1px solid rgba(25, 135, 84, 0.2); padding: 12px 18px;">
+        <div class="ticket-section-title" style="color: #198754; font-weight: 700; font-size: 1.05rem;">
+            <i class="fa-solid fa-circle-check" style="color: #198754; margin-right: 8px;"></i>
+            Tamamlanan Talepler Çözüm &amp; Geçmiş Arşivi
+            <span class="badge" style="background: rgba(25, 135, 84, 0.2); color: #198754; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; margin-left: 10px; font-weight: 600;">
+                <i class="fa-solid fa-check-double" style="margin-right: 4px;"></i>Başarıyla Çözümlendi
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="data-table" style="margin-bottom:10px;">
+    <div class="filter-wrap">
+        <form method="get" asp-action="Completed" asp-controller="Ticket" asp-area="Tickets" class="filter-form">
+            <div class="filter-row">
+                <div class="data-table-search filter-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" name="search" value="@Model.SearchTerm" placeholder="Talep no, başlık veya açıklama ara..." autocomplete="off" />
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary filter-btn">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Ara
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="data-table">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>Tamamlanan Talepler Listesi</span>
+            <span class="stat-chip">@Model.OwnCount</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="table mgmt-table" id="ticketsTable" data-paginate data-page-size="10">
+            <thead>
+                <tr>
+                    <th data-sort="text" class="col-hide-md">Talep No</th>
+                    <th data-sort="text">Başlık</th>
+                    <th data-sort="text">İçerik</th>
+                    <th data-sort="text">Durum</th>
+                    <th data-sort="text">Öncelik</th>
+                    <th data-sort="date" class="col-hide-md">Oluşturma</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.FilteredTickets.Any())
+                {
+                    @foreach (var t in Model.FilteredTickets)
+                    {
+                        var detayUrl = Url.Action("Detail", "Ticket", new { area = "Tickets", id = t.Id });
+                        <tr class="table-row-link" data-href="@detayUrl" style="cursor:pointer;">
+                            <td class="col-hide-md" data-label="No">
+                                <span class="entity-badge-text">@t.TicketNo</span>
+                            </td>
+                            <td data-label="Başlık">
+                                <div class="cell-info">
+                                    <span class="cell-title">@t.Title</span>
+                                </div>
+                            </td>
+                            <td data-label="İçerik">
+                                <div class="cell-info">
+                                    <span class="cell-sub" title="@t.Description">@(t.Description.Length > 60 ? t.Description[..60] + "…" : t.Description)</span>
+                                </div>
+                            </td>
+                            <td data-label="Durum">
+                                <span class="badge @StatusBadge(t.StatusId)">@StatusLabel(t.StatusId)</span>
+                            </td>
+                            <td data-label="Öncelik">
+                                <span class="badge @PriorityBadge(t.PriorityId)">@PriorityLabel(t.PriorityId)</span>
+                            </td>
+                            <td class="col-hide-md" data-label="Tarih">@t.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="mgmt-empty">
+                            <div class="mgmt-empty-icon"><i class="fa-solid fa-circle-check"></i></div>
+                            <div class="mgmt-empty-text">Tamamlanmış talep bulunamadı</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

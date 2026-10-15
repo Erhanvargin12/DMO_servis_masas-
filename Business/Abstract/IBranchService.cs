@@ -6,6 +6,7 @@ namespace Business.Abstract;
 
 public interface IBranchService
 {
+    Task<IDataResult<List<Branch>>> GetAllAsync();
     Task<IDataResult<Branch>> GetByDepartmentIdAsync(string departmentId);
     Task<IResult> AddIfNotExistsAsync(Branch branch);
 }

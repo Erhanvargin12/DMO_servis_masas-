@@ -9,8 +9,9 @@ public class UserUpdateDto : IDto
     public string LastName { get; set; } = string.Empty;
     public string Mail { get; set; } = string.Empty;
     public bool Status { get; set; }
-    public string RegistirationId { get; set; }
-    public string BranchId { get; set; }
+    public string RegistirationId { get; set; } = string.Empty;
+    public string EbysUserId { get => RegistirationId; set => RegistirationId = value; }
+    public string BranchId { get; set; } = string.Empty;
     public int PositionId { get; set; }
 }
 

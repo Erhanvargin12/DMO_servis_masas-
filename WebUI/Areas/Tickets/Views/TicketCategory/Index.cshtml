@@ -1,0 +1,270 @@
+@using WebUI.Areas.Tickets.Models
+@using Entities.Concrete.Ticket
+@model TicketCategoryListViewModel
+@{
+    ViewData["Title"] = "Problem Kategorileri";
+}
+
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <div class="mgmt-page-icon">
+            <i class="fa-solid fa-list"></i>
+        </div>
+        <div>
+            <div class="mgmt-page-title">Problem Kategorileri Yönetimi</div>
+            <div class="mgmt-page-subtitle">Problem kategorilerini düzenleyin ve şubelere yönlendirin</div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary" data-modal-open="categoryModal">
+        <i class="fa-solid fa-plus"></i>
+        Yeni Kategori
+    </button>
+</div>
+
+<div class="data-table" style="margin-bottom:16px;">
+    <div class="filter-wrap">
+        <form method="get" asp-area="Tickets" asp-controller="TicketCategory" asp-action="Index" class="filter-form">
+            <div class="filter-row">
+                <div class="data-table-search filter-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" name="search" value="@Model.SearchTerm"
+                           placeholder="Kategori adı veya açıklama ara..." autocomplete="off" />
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary filter-btn">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Ara
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                    {
+                        <a asp-area="Tickets" asp-controller="TicketCategory" asp-action="Index" class="btn filter-btn">
+                            <i class="fa-solid fa-xmark"></i>
+                            Temizle
+                        </a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="data-table">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>Kategori Listesi</span>
+            <span class="stat-chip"></span>
+        </div>
+        <div class="data-table-actions"></div>
+    </div>
+
+    <div class="table-container">
+        <table class="table mgmt-table" data-paginate data-page-size="10">
+            <thead>
+                <tr>
+                    <th data-sort="text">Kategori Adı</th>
+                    <th data-sort="text">Açıklama</th>
+                    <th data-sort="num" class="col-hide-md">Bağlı Şube</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Categories.Any())
+                {
+                    @foreach (var item in Model.Categories)
+                    {
+                        <tr data-item-id="@item.Category.Id"
+                            data-branch-ids='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(item.BranchIds))'
+                            data-item='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(item.Category, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }))'>
+                            <td data-label="Kategori Adı">
+                                <div class="entity-cell">
+                                    <div class="entity-badge entity-badge-menu">
+                                        <i class="fa-solid fa-tag"></i>
+                                    </div>
+                                    <div class="entity-info">
+                                        <span class="entity-name">@item.Category.Name</span>
+                                        <span class="entity-meta">ID: @item.Category.Id</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="entity-desc" data-label="Açıklama">@(string.IsNullOrWhiteSpace(item.Category.Description) ? "—" : item.Category.Description)</td>
+                            <td class="col-hide-md" data-label="Bağlı Şube">
+                                <span class="badge @(item.BranchCount > 0 ? "badge-success" : "badge-warning")">
+                                    @item.BranchCount şube
+                                </span>
+                                @if (item.BranchCount > 1)
+                                {
+                                    <span class="entity-meta">sıralı yönlendirme</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="table-actions">
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Şube Ata"
+                                            data-assign-branches data-item-id="@item.Category.Id">
+                                        <i class="fa-solid fa-building"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm" title="Düzenle"
+                                            data-modal-open="categoryModal" data-item-id="@item.Category.Id">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-icon btn-ghost btn-sm btn-icon-danger" title="Sil"
+                                            data-delete="@item.Category.Id" data-delete-name="@item.Category.Name">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4">
+                            <div class="mgmt-empty">
+                                <div class="mgmt-empty-icon">
+                                    <i class="fa-solid fa-list"></i>
+                                </div>
+                                <p class="mgmt-empty-title">
+                                    @(string.IsNullOrEmpty(Model.SearchTerm) ? "Kategori bulunamadı" : $"'{Model.SearchTerm}' için sonuç bulunamadı")
+                                </p>
+                                <p class="mgmt-empty-text">
+                                    @(string.IsNullOrEmpty(Model.SearchTerm) ? "Yeni kategori eklemek için butonu kullanın" : "Farklı bir arama terimi deneyin")
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="data-table-footer"><div class="data-table-info"></div></div>
+</div>
+
+<div class="modal-overlay" id="categoryModal">
+    <div class="modal modal-md">
+        <div class="modal-header">
+            <h3 class="modal-title"
+                data-create-title="Yeni Kategori Ekle"
+                data-edit-title="Kategori Düzenle">Yeni Kategori Ekle</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="TicketCategory" asp-action="Save" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="0" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Kategori Adı</label>
+                    <input type="text" name="Name" class="form-input" placeholder="Örn: Donanım Arızası" required />
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">Açıklama</label>
+                    <textarea name="Description" class="form-input form-textarea" rows="3"
+                              placeholder="Kategori ile ilgili detaylar (isteğe bağlı)"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary"
+                        data-create-text="Kaydet" data-edit-text="Güncelle">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-xs modal-compact">
+        <div class="modal-header">
+            <h3 class="modal-title">Silme Onayı</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="TicketCategory" asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="deleteModalItemId" value="" />
+            <div class="modal-body">
+                <div class="delete-confirm">
+                    <div class="delete-confirm-icon">
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
+                    <p class="delete-confirm-title">Silmek istediğinize emin misiniz?</p>
+                    <p class="delete-confirm-name" id="deleteModalItemName"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>Vazgeç</button>
+                <button type="submit" class="btn btn-danger">Sil</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="branchesModal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Şube Ata</h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="TicketCategory" asp-action="AssignBranches" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="categoryId" id="branchesModalCategoryId" value="0" />
+            <div class="modal-body">
+                <div class="assign-entity-info" style="margin-bottom:16px;">
+                    <div class="assign-entity-badge" id="branchesModalBadge">
+                        <i class="fa-solid fa-tag"></i>
+                    </div>
+                    <div>
+                        <div class="assign-entity-name" id="branchesModalName">—</div>
+                        <div class="assign-help-text" id="branchesModalMeta">—</div>
+                    </div>
+                </div>
+                @if (Model.Branches.Any())
+                {
+                    <div class="assign-help-text" style="margin-bottom:10px;">Şubeleri seçin ve yönlendirme sırasını belirleyin (1 → 2 → 3):</div>
+                    <div class="role-list" id="branchPickerList">
+                        @foreach (var branch in Model.Branches)
+                        {
+                            <label class="role-item branch-picker-item" data-branch-id="@branch.Id" data-branch-name="@branch.Name">
+                                <input type="checkbox" class="role-checkbox branch-checkbox" value="@branch.Id" />
+                                <div class="role-info">
+                                    <span class="role-name">@branch.Name</span>
+                                    @if (!string.IsNullOrWhiteSpace(branch.Description))
+                                    {
+                                        <span class="role-desc">@branch.Description</span>
+                                    }
+                                </div>
+                            </label>
+                        }
+                    </div>
+                    <div class="form-section-title" style="margin-top:16px;">Yönlendirme Sırası</div>
+                    <div id="branchRouteOrder" class="role-list" style="min-height:48px;">
+                        <div class="assign-help-text" id="branchRouteEmpty">Seçilen şubeler burada sıralanır</div>
+                    </div>
+                    <input type="hidden" name="orderedBranchIds" id="orderedBranchIds" value="" />
+                }
+                else
+                {
+                    <div class="mgmt-empty">
+                        <p class="mgmt-empty-title">Sistemde şube bulunamadı</p>
+                        <p class="mgmt-empty-text">Şube kayıtları oluşturulduktan sonra ilişki atanabilir</p>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-check"></i>
+                    Şubeleri Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/pages/ticket-categories.js" asp-append-version="true"></script>
+}

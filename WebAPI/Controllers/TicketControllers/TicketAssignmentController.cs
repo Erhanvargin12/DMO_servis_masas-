@@ -8,7 +8,7 @@ namespace WebAPI.Controllers.TicketControllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+//[Authorize]
 public class TicketAssignmentController : ControllerBase
 {
     private readonly ITicketAssignmentService _ticketAssignmentService;

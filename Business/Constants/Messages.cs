@@ -78,6 +78,7 @@ public static class Messages
     public const string TicketStatusUpdated = "Talep durumu güncellendi!";
     public const string TicketAssigned = "Talep kullanıcıya atandı!";
     public const string TicketTransferred = "Talep başarıyla sevk edildi!";
+    public const string TicketResolved = "Talep çözüldü olarak işaretlendi.";
     public const string TransferTargetRequired = "Sevk için hedef kullanıcı veya rol seçilmelidir!";
 
     public const string AttachmentAdded = "Dosya başarıyla eklendi!";

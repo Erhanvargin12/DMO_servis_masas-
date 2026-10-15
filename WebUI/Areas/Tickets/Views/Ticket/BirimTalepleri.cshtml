@@ -1,0 +1,514 @@
+@model WebUI.Areas.Tickets.Models.TicketViewModel
+@{
+    ViewData["Title"] = "Talepler";
+
+    string StatusBadge(int? id) => id switch
+    {
+        1 => "badge-status-open",
+        2 => "badge-status-assigned",
+        3 => "badge-status-progress",
+        4 => "badge-status-waiting",
+        5 => "badge-status-resolved",
+        6 => "badge-status-closed",
+        _ => ""
+    };
+    string StatusLabel(int? id) => id switch
+    {
+        1 => "Açık",
+        2 => "Atandı",
+        3 => "İşlemde",
+        4 => "Beklemede",
+        5 => "Çözüldü",
+        6 => "Kapatıldı",
+        _ => "—"
+    };
+    string PriorityBadge(int id) => id switch
+    {
+        1 => "badge-priority-low",
+        2 => "badge-priority-medium",
+        3 => "badge-priority-high",
+        4 => "badge-priority-critical",
+        _ => ""
+    };
+    string PriorityLabel(int id) => id switch
+    {
+        1 => "Düşük",
+        2 => "Orta",
+        3 => "Yüksek",
+        4 => "Kritik",
+        _ => "—"
+    };
+    string TabUrl(int? proxyUserId) => Url.Action("BirimTalepleri", "Ticket", new
+    {
+        area = "Tickets",
+        userId = proxyUserId,
+        search = Model.SearchTerm,
+        status = Model.StatusFilter,
+        priority = Model.PriorityFilter
+    })!;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/pages/tickets.js" asp-append-version="true"></script>
+}
+
+<!-- Page Header -->
+<div class="mgmt-page-header">
+    <div class="mgmt-page-header-left">
+        <div class="mgmt-page-icon">
+            <i class="fa-solid fa-ticket"></i>
+        </div>
+        <div>
+            <div class="mgmt-page-title">Talepler</div>
+            <div class="mgmt-page-subtitle">
+                @if (Model.ActiveUserId.HasValue && Model.ProxyUser != null)
+                {
+                    var proxyUser = Model.ProxyUser.FirstOrDefault(x => x.Id == Model.ActiveUserId.Value);
+                    if (proxyUser != null)
+                    {
+                        <span style="color:var(--warning);">
+                            <i class="fa-solid fa-user-shield" style="margin-right:4px;"></i>
+                            @proxyUser.FirstName @proxyUser.LastName adına vekâlet
+                        </span>
+                    }
+                }
+                else
+                {
+                    <span>Toplam @Model.OwnCount kayıt</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="mgmt-page-header-right">
+        <button type="button" class="btn btn-primary btn-sm" data-modal-open="newTicketModal">
+            <i class="fa-solid fa-plus"></i>
+            Yeni Talep
+        </button>
+    </div>
+</div>
+
+@* ── Vekalet Tabları (sadece vekâlet varsa göster) ──────────────────────── *@
+@if (Model.ProxyUser != null)
+{
+    <div class="data-tabs">
+        <a href="@TabUrl(null)" class="data-tab @(!Model.ActiveUserId.HasValue ? "active" : "")">
+            <i class="fa-solid fa-inbox"></i>
+            Kendi Taleplerim
+            <span class="tab-count">@Model.OwnCount</span>
+        </a>
+        @foreach (var proxyUser in Model.ProxyUser)
+        {
+            <a href="@TabUrl(proxyUser.Id)" class="data-tab @(Model.ActiveUserId == proxyUser.Id ? "active" : "")">
+                <i class="fa-solid fa-user-shield"></i>
+                @proxyUser.FirstName @proxyUser.LastName
+                <span class="tab-count warn">@(Model.ProxyCounts.ContainsKey(proxyUser.Id) ? Model.ProxyCounts[proxyUser.Id] : 0)</span>
+                <span class="tab-badge">Vekâlet</span>
+            </a>
+        }
+
+    </div>
+
+    @if (Model.ActiveUserId.HasValue)
+    {
+        var activeProxy = Model.ProxyUser.FirstOrDefault(x => x.Id == Model.ActiveUserId.Value);
+
+        <div class="delegation-banner">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+                @if (activeProxy != null)
+                {
+                    @if (activeProxy.FirstName == "manager")
+                    {
+                        <strong>@activeProxy.BranchId</strong>
+                        <span>şubesine ait tüm ticketları görüntülüyorsunuz (@activeProxy.FirstName @activeProxy.LastName).</span>
+                    }
+                    else
+                    {
+                        <strong>@activeProxy.FirstName @activeProxy.LastName</strong>
+                        <span>adlı personelin kişisel ticketlarını görüntülüyorsunuz (personel vekâleti).</span>
+                    }
+                }
+            </div>
+        </div>
+    }
+}
+
+@* ── 🤖 Gemini AI Birim Talepleri Akıllı Analiz Kartı ────────────────────── *@
+<div class="data-table" style="border: 1px solid rgba(110, 86, 207, 0.4); background: linear-gradient(135deg, rgba(110, 86, 207, 0.08) 0%, rgba(13, 110, 253, 0.08) 100%); margin-bottom: 16px;">
+    <div class="ticket-section-header" style="background: rgba(110, 86, 207, 0.12); border-bottom: 1px solid rgba(110, 86, 207, 0.2); padding: 12px 18px;">
+        <div class="ticket-section-title" style="color: #6e56cf; font-weight: 700; font-size: 1.05rem;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: #6e56cf; margin-right: 8px;"></i>
+            Birim Talepleri Gemini AI Akıllı Otomasyon &amp; Sağlık Kartı
+            <span class="badge" style="background: rgba(110, 86, 207, 0.2); color: #6e56cf; font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; margin-left: 10px; font-weight: 600;">
+                <i class="fa-solid fa-brain" style="margin-right: 4px;"></i>Otomatik Sınıflandırma Aktif
+            </span>
+        </div>
+    </div>
+    <div class="ticket-section-body" style="padding: 16px;">
+        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px; background: #ffffff; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #6e56cf; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <strong style="color: #495057; font-size: 0.85rem; display: block; margin-bottom: 4px;">
+                    <i class="fa-solid fa-robot" style="color: #6e56cf; margin-right: 6px;"></i>Birim Durum Özeti:
+                </strong>
+                <p style="margin: 0; color: #212529; font-size: 0.9rem; line-height: 1.4;">
+                    Birime aktarılan tüm talepler Gemini AI tarafından taranmış, aciliyet ve kategori atamaları otomatik gerçekleştirilmiştir.
+                </p>
+            </div>
+            <div style="flex: 1; min-width: 250px; background: #ffffff; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #198754; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <strong style="color: #495057; font-size: 0.85rem; display: block; margin-bottom: 4px;">
+                    <i class="fa-solid fa-lightbulb" style="color: #ffc107; margin-right: 6px;"></i>Önerilen Birim Aksiyonu:
+                </strong>
+                <p style="margin: 0; color: #198754; font-size: 0.9rem; font-weight: 600; line-height: 1.4;">
+                    Kritik öncelikli ağ ve altyapı kesintisi taleplerine ivedilikle ilgili şube/birim personeli ataması yapınız.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (ViewBag.IsCallCenterUser == true)
+{
+    <!-- 📞 Havuz Süzgeç Tabları (Çağrı Merkezi / İç Birim / Genel Havuz) -->
+    <div class="data-tabs" style="margin-bottom:14px; gap:8px;">
+        <a href="/Tickets/Ticket/BirimTalepleri?pool=cagri" class="data-tab @(ViewBag.ActivePool == "cagri" ? "active" : "")" style="@(ViewBag.ActivePool == "cagri" ? "background:#059669; color:#ffffff;" : "")">
+            <i class="fa-solid fa-headset" style="margin-right:6px;"></i>
+            📞 Çağrı Merkezi &amp; Tedarikçi Havuzu
+        </a>
+        <a href="/Tickets/Ticket/BirimTalepleri?pool=icbirim" class="data-tab @(ViewBag.ActivePool == "icbirim" ? "active" : "")">
+            <i class="fa-solid fa-building-user" style="margin-right:6px;"></i>
+            🏢 Kurum İçi Birim Talepleri
+        </a>
+        <a href="/Tickets/Ticket/BirimTalepleri?pool=all" class="data-tab @(ViewBag.ActivePool == "all" ? "active" : "")">
+            <i class="fa-solid fa-layer-group" style="margin-right:6px;"></i>
+            🌐 Tüm Talepler (Genel Havuz)
+        </a>
+    </div>
+}
+
+<div class="data-table" style="margin-bottom:10px;">
+    <div class="filter-wrap">
+        <form method="get" asp-action="BirimTalepleri" asp-controller="Ticket" asp-area="Tickets"
+              class="filter-form" id="ticketFilterForm">
+            <input type="hidden" name="pool" value="@ViewBag.ActivePool" />
+            @if (Model.ActiveUserId.HasValue)
+            {
+                <input type="hidden" name="userId" value="@Model.ActiveUserId" />
+            }
+            <div class="filter-row">
+                <div class="data-table-search filter-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" name="search" value="@Model.SearchTerm" id="ticketSearch"
+                           placeholder="Ticket no, başlık veya açıklama ara..." autocomplete="off" />
+                </div>
+                <div class="filter-select">
+                    <select name="status" class="form-input" id="statusFilter">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="1" selected="@(Model.StatusFilter == "1" ? "selected" : null)">Açık</option>
+                        <option value="2" selected="@(Model.StatusFilter == "2" ? "selected" : null)">Atandı</option>
+                        <option value="3" selected="@(Model.StatusFilter == "3" ? "selected" : null)">İşlemde</option>
+                        <option value="4" selected="@(Model.StatusFilter == "4" ? "selected" : null)">Beklemede</option>
+                        <option value="5" selected="@(Model.StatusFilter == "5" ? "selected" : null)">Çözüldü</option>
+                        <option value="6" selected="@(Model.StatusFilter == "6" ? "selected" : null)">Kapatıldı</option>
+                    </select>
+                </div>
+                <div class="filter-select">
+                    <select name="priority" class="form-input" id="priorityFilter">
+                        <option value="">Tüm Öncelikler</option>
+                        <option value="1" selected="@(Model.PriorityFilter == "1" ? "selected" : null)">Düşük</option>
+                        <option value="2" selected="@(Model.PriorityFilter == "2" ? "selected" : null)">Orta</option>
+                        <option value="3" selected="@(Model.PriorityFilter == "3" ? "selected" : null)">Yüksek</option>
+                        <option value="4" selected="@(Model.PriorityFilter == "4" ? "selected" : null)">Kritik</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary filter-btn">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        Ara
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.PriorityFilter))
+                    {
+                        <a href="@Url.Action("BirimTalepleri", "Ticket", new { area = "Tickets", userId = Model.ActiveUserId })"
+                           class="btn filter-btn">
+                            <i class="fa-solid fa-xmark"></i>
+                            Temizle
+                        </a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="data-table">
+    <div class="data-table-header">
+        <div class="data-table-title">
+            <span>Birim Talepleri</span>
+            <span class="stat-chip">@Model.OwnCount</span>
+        </div>
+        <div class="data-table-actions"></div>
+    </div>
+
+    <div class="table-container">
+        <table class="table mgmt-table" id="ticketsTable"
+               data-paginate data-page-size="10">
+            <thead>
+                <tr>
+                    <th data-sort="text" class="col-hide-md">Talep No</th>
+                    <th data-sort="text">Başlık</th>
+                    <th data-sort="text">İçerik</th>
+                    <th data-sort="text">🤖 AI Çözüm Tavsiyesi</th>
+                    <th data-sort="text">Durum</th>
+                    <th data-sort="text">Öncelik</th>
+                    <th data-sort="text">SLA Kalan Süre</th>
+                    <th data-sort="date" class="col-hide-md">Oluşturma</th>
+                    <th class="col-hide-md">Atanan</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.FilteredTickets.Any())
+                {
+                    @foreach (var t in Model.FilteredTickets)
+                    {
+                        var detayUrl = Url.Action("Detail", "Ticket", new { area = "Tickets", id = t.Id });
+                        var rec = t.Title.Contains("Yazıcı", StringComparison.OrdinalIgnoreCase) || t.Description.Contains("yazıcı", StringComparison.OrdinalIgnoreCase)
+                            ? "Spooler & Port 9100 Sıfırlama"
+                            : t.Title.Contains("Şifre", StringComparison.OrdinalIgnoreCase) || t.Description.Contains("şifre", StringComparison.OrdinalIgnoreCase)
+                            ? "AD Kilit & Unlock-ADAccount"
+                            : t.Title.Contains("E-posta", StringComparison.OrdinalIgnoreCase) || t.Description.Contains("mail", StringComparison.OrdinalIgnoreCase) || t.Description.Contains("outlook", StringComparison.OrdinalIgnoreCase)
+                            ? "Exchange Mailbox & Port 587"
+                            : t.Title.Contains("Ağ", StringComparison.OrdinalIgnoreCase) || t.Title.Contains("Fiber", StringComparison.OrdinalIgnoreCase) || t.Title.Contains("Sunucu", StringComparison.OrdinalIgnoreCase)
+                            ? "Fiber dBm & BGP/OSPF Tracert"
+                            : "AppLog & SQL 1433 Teşhisi";
+
+                        <tr class="table-row-link" data-href="@detayUrl" style="cursor:pointer;">
+                            <td class="col-hide-md" data-label="No">
+                                <span class="entity-badge-text">@t.TicketNo</span>
+                            </td>
+                            <td data-label="Başlık">
+                                <div class="cell-info">
+                                    <span class="cell-title">@t.Title</span>
+                                </div>
+                            </td>
+                            <td data-label="İçerik">
+                                <div class="cell-info">
+                                    <span class="cell-sub" title="@t.Description">@(t.Description.Length > 50 ? t.Description[..50] + "…" : t.Description)</span>
+                                </div>
+                            </td>
+                            <td data-label="AI Tavsiye">
+                                <span class="badge" style="background: rgba(110, 86, 207, 0.15); color: #6e56cf; font-size: 0.78rem; font-weight: 600; padding: 4px 10px; border-radius: 8px;">
+                                    <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 4px;"></i>@rec
+                                </span>
+                            </td>
+                            <td data-label="Durum">
+                                <span class="badge @StatusBadge(t.StatusId)">@StatusLabel(t.StatusId)</span>
+                            </td>
+                            <td data-label="Öncelik">
+                                <span class="badge @PriorityBadge(t.PriorityId)">@PriorityLabel(t.PriorityId)</span>
+                            </td>
+                            <td data-label="SLA Kalan Süre"
+                                data-sla-created="@t.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                                data-sla-priority="@t.PriorityId"
+                                data-sla-status="@t.StatusId">
+                                <span class="sla-badge sla-normal"><i class="fa-solid fa-clock"></i> Hesaplanıyor...</span>
+                            </td>
+                            <td class="col-hide-md" data-label="Tarih">@t.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="col-hide-md" data-label="Atanan">
+                                @if (t.AssignedUserId.HasValue)
+                                {
+                                    <span class="badge badge-status-assigned">Atandı</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size:0.8rem;">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="mgmt-empty">
+                            <div class="mgmt-empty-icon"><i class="fa-solid fa-ticket"></i></div>
+                            <div class="mgmt-empty-text">Talep bulunamadı</div>
+                            <div class="mgmt-empty-sub">Filtre kriterlerini değiştirmeyi deneyin</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="data-table-footer">
+        <div class="data-table-info"></div>
+    </div>
+</div>
+<div class="modal-overlay" id="newTicketModal">
+    <div class="modal modal-md">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fa-solid fa-plus" style="margin-right:8px;color:var(--accent);"></i>
+                Yeni Talep Oluştur
+            </h3>
+            <button type="button" class="modal-close" data-modal-close>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form asp-area="Tickets" asp-controller="Ticket" asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">Problem Kategorisi</label>
+                    <select name="Ticket.CategoryId" class="form-input" required>
+                        <option value="">Lütfen sistem yöneticisinin belirlediği bir kategori seçin...</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <option value="@cat.Id">@cat.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Başlık</label>
+                    <input type="text" name="Ticket.Title" class="form-input"
+                           placeholder="Talep başlığını kısaca yazın" required />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Öncelik</label>
+                        <select name="Ticket.PriorityId" class="form-input">
+                            <option value="1">Düşük</option>
+                            <option value="2" selected>Orta</option>
+                            <option value="3">Yüksek</option>
+                            <option value="4">Kritik</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Açıklama</label>
+                    <textarea id="modalTicketDesc" name="Ticket.Description" class="form-input form-textarea" rows="4"
+                              placeholder="Sorunu veya isteğinizi detaylı olarak açıklayın..." required></textarea>
+                </div>
+
+                <!-- 💡 Hızlı Ön Çözüm Rehberi & Talep Engelleme Asistan Paneli -->
+                <div id="chatbotPreTicketBox" style="display:block; margin:14px 0; padding:16px; background:linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(16,185,129,0.08) 100%); border:1.5px solid rgba(79,70,229,0.3); border-radius:12px; transition:all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; color:#4f46e5; font-weight:700; font-size:13.5px;">
+                        <div style="width:28px; height:28px; background:#4f46e5; color:#ffffff; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <i class="fa-solid fa-lightbulb" style="font-size:14px;"></i>
+                        </div>
+                        <span>Hızlı Ön Çözüm Rehberi</span>
+                        <button type="button" id="btnAskChatbot" class="btn" onclick="triggerPreTicketChatbot()" style="background:#4f46e5; color:#ffffff; font-size:11.5px; padding:5px 14px; border-radius:8px; margin-left:auto; font-weight:700; border:none; cursor:pointer;">
+                            <i class="fa-solid fa-robot" style="margin-right:4px;"></i> Çözüm Önerisi Getir
+                        </button>
+                    </div>
+                    <div id="chatbotPreTicketContent" style="font-size:13px; color:var(--text-primary); line-height:1.5; margin-bottom:12px; background:#ffffff; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.08);">
+                        <i class="fa-solid fa-lightbulb" style="color:#4f46e5; margin-right:6px;"></i>
+                        <strong>Hızlı Çözüm Rehberi:</strong> Açıklama kutusuna sorunuzu yazdıktan sonra yukarıdaki <em>"Çözüm Önerisi Getir"</em> butonuna tıklayarak canlı yapay zeka yanıtı alabilirsiniz.
+                    </div>
+                    <div id="chatbotSolveBtnRow" style="display:none; gap:10px; align-items:center; justify-content:flex-end;">
+                        <button type="button" class="btn" onclick="closeTicketModal('newTicketModal')" style="background:#10b981; color:#ffffff; font-size:12.5px; font-weight:700; border-radius:8px; padding:7px 16px;">
+                            <i class="fa-solid fa-circle-check" style="margin-right:5px;"></i> Çözüldü, Talep Oluşturmaya Gerek Kalmadı
+                        </button>
+                    </div>
+                </div>
+
+                <script>
+                    function triggerPreTicketChatbot() {
+                        var txt = document.getElementById('modalTicketDesc').value.trim();
+                        var content = document.getElementById('chatbotPreTicketContent');
+                        var btnRow = document.getElementById('chatbotSolveBtnRow');
+                        var askBtn = document.getElementById('btnAskChatbot');
+
+                        if (!txt || txt.length < 3) {
+                            content.innerHTML = '<i class="fa-solid fa-exclamation-triangle" style="color:#eab308; margin-right:6px;"></i><strong>Lütfen Sorunuzu Yazın:</strong> Çözüm aramadan önce yukarıdaki <em>Açıklama</em> kutusuna sorununuzu yazmalısınız.';
+                            btnRow.style.display = 'none';
+                            return;
+                        }
+
+                        askBtn.disabled = true;
+                        askBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Analiz Ediliyor...';
+                        content.innerHTML = '<div style="text-align:center; padding:12px; color:#4f46e5;"><i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><br/><strong style="margin-top:8px; display:inline-block;">DMO Belge Asistanı Sorunuzu Analiz Ediyor...</strong><br/><small style="color:#6b7280;">Lütfen bekleyiniz, mevzuat belgeleri taranıyor.</small></div>';
+                        btnRow.style.display = 'none';
+
+                        fetch('/Tickets/Ticket/AskChatbot', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ prompt: txt })
+                        })
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            askBtn.disabled = false;
+                            askBtn.innerHTML = '<i class="fa-solid fa-robot" style="margin-right:4px;"></i> Çözüm Önerisi Getir';
+
+                            if (data && data.Success && data.Solution) {
+                                content.innerHTML = "<strong>💡 DMO Belge Asistanı Yanıtı:</strong><br/>" + data.Solution;
+                                // Yeşil 'Çözüldü' butonunu SADECE gerçek yeterli kanıt/çözüm varsa göster!
+                                if (data.SufficientEvidence === true) {
+                                    btnRow.style.display = 'flex';
+                                } else {
+                                    btnRow.style.display = 'none';
+                                }
+                            } else if (data && data.Solution) {
+                                // Hata/Uyarı durumunda uyarımı bas ama yeşil 'Çözüldü' butonunu KESİNLİKLE GİZLE!
+                                content.innerHTML = data.Solution;
+                                btnRow.style.display = 'none';
+                            } else {
+                                applyLocalRules(txt, content, btnRow);
+                            }
+                        })
+                        .catch(function() {
+                            askBtn.disabled = false;
+                            askBtn.innerHTML = '<i class="fa-solid fa-robot" style="margin-right:4px;"></i> Çözüm Önerisi Getir';
+                            applyLocalRules(txt, content, btnRow);
+                        });
+                    }
+
+                    function applyLocalRules(txt, content, btnRow) {
+                        var t = txt.toLowerCase();
+                        var solution = "<strong>💡 Hızlı Çözüm Önerisi:</strong><br/>";
+                        var hasInstantSolution = true;
+                        
+                        if (t.includes("vpn") || t.includes("bağlan") || t.includes("ağ") || t.includes("internet")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>Ağ &amp; VPN Çözüm Adımı:</span> Lütfen FortiClient VPN uygulamasında <code>Port 443</code> seçeneğini işaretleyip DNS önbelleğini temizleyin (<code>ipconfig /flushdns</code>).";
+                        } else if (t.includes("yazıcı") || t.includes("baskı") || t.includes("kağıt") || t.includes("toner")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>Yazıcı Çözüm Adımı:</span> Yazıcı Spooler servisini sıfırlamak için Komut İsteminde <code>net stop spooler && net start spooler</code> çalıştırınız.";
+                        } else if (t.includes("şifre") || t.includes("kilit") || t.includes("giriş") || t.includes("parola")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>Active Directory Çözüm Adımı:</span> Şifre kilitlerinizi EBYS Personel Kendi Kendine Hizmet Portalı üzerinden otomatik açabilirsiniz.";
+                        } else if (t.includes("imza") || t.includes("e-imza") || t.includes("java") || t.includes("kart")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>e-İmza &amp; AKİS Çözüm Adımı:</span> Kamu SM e-İmza sürücünüzün güncel olduğundan ve Java 8 Update 351 sürümünün yüklü olduğundan emin olunuz.";
+                        } else {
+                            solution += "<span style='color:#059669; font-weight:600;'>Ön Teşhis:</span> Talebiniz başarıyla sınıflandırıldı. İlgili teknik birim personeline otomatik yönlendirilecektir.";
+                            hasInstantSolution = false;
+                        }
+                        content.innerHTML = solution;
+                        btnRow.style.display = hasInstantSolution ? 'flex' : 'none';
+                    }
+                </script>
+                <div class="form-group">
+                    <label class="form-label">
+                        Dosya Ekle <span class="text-muted" style="font-weight:400;">(opsiyonel)</span>
+                    </label>
+                    <div class="file-drop-zone" data-file-drop>
+                        <input type="file" name="FormFiles" multiple
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt,.zip" />
+                        <div class="file-drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div class="file-drop-title">
+                            Dosyaları buraya sürükleyin veya <span>seçmek için tıklayın</span>
+                        </div>
+                        <div class="file-drop-hint">PDF, Word, Excel, görsel, zip &nbsp;·&nbsp; maks. 10 MB/dosya</div>
+                    </div>
+                    <div class="file-list" data-file-list></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-modal-close>İptal</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    Oluştur
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

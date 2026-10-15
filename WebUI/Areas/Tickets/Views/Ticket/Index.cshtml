@@ -84,6 +84,10 @@
         </div>
     </div>
     <div class="mgmt-page-header-right">
+        <a href="/Tickets/Faq/Index" class="btn btn-sm" style="background:rgba(99,102,241,0.1); color:#4f46e5; border:1px solid rgba(99,102,241,0.25); font-weight:700; margin-right:8px; text-decoration:none;">
+            <i class="fa-solid fa-book-bookmark"></i>
+            Bilgi Bankası &amp; SSS
+        </a>
         <button type="button" class="btn btn-primary btn-sm" data-modal-open="newTicketModal">
             <i class="fa-solid fa-plus"></i>
             Yeni Talep
@@ -228,6 +232,7 @@
                     <th data-sort="text">İçerik</th>
                     <th data-sort="text">Durum</th>
                     <th data-sort="text">Öncelik</th>
+                    <th data-sort="text">SLA Kalan Süre</th>
                     <th data-sort="date" class="col-hide-md">Oluşturma</th>
                     <th class="col-hide-md">Atanan</th>
                 </tr>
@@ -245,6 +250,14 @@
                             <td data-label="Başlık">
                                 <div class="cell-info">
                                     <span class="cell-title">@t.Title</span>
+                                    @{
+                                        var autoTag = t.Title.Contains("Yazıcı", StringComparison.OrdinalIgnoreCase) || t.Description.Contains("yazıcı", StringComparison.OrdinalIgnoreCase) ? "#Yazıcı"
+                                            : t.Title.Contains("Şifre", StringComparison.OrdinalIgnoreCase) || t.Description.Contains("şifre", StringComparison.OrdinalIgnoreCase) ? "#ActiveDirectory"
+                                            : t.Title.Contains("E-posta", StringComparison.OrdinalIgnoreCase) || t.Description.Contains("mail", StringComparison.OrdinalIgnoreCase) ? "#Exchange"
+                                            : t.Title.Contains("Ağ", StringComparison.OrdinalIgnoreCase) || t.Title.Contains("Fiber", StringComparison.OrdinalIgnoreCase) ? "#AğKesintisi"
+                                            : "#Yazılım";
+                                    }
+                                    <span class="badge" style="background:rgba(16,185,129,0.1); color:#059669; font-size:10.5px; padding:1px 6px; border-radius:4px; margin-top:2px; font-weight:600; display:inline-block;">@autoTag</span>
                                 </div>
                             </td>
                             <td data-label="Başlık">
@@ -257,6 +270,12 @@
                             </td>
                             <td data-label="Öncelik">
                                 <span class="badge @PriorityBadge(t.PriorityId)">@PriorityLabel(t.PriorityId)</span>
+                            </td>
+                            <td data-label="SLA Kalan Süre"
+                                data-sla-created="@t.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                                data-sla-priority="@t.PriorityId"
+                                data-sla-status="@t.StatusId">
+                                <span class="sla-badge sla-normal"><i class="fa-solid fa-clock"></i> Hesaplanıyor...</span>
                             </td>
                             <td class="col-hide-md" data-label="Tarih">@t.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
                             <td class="col-hide-md" data-label="Atanan">
@@ -307,6 +326,16 @@
             @Html.AntiForgeryToken()
             <div class="modal-body">
                 <div class="form-group">
+                    <label class="form-label required">Problem Kategorisi</label>
+                    <select name="Ticket.CategoryId" class="form-input" required>
+                        <option value="">Lütfen sistem yöneticisinin belirlediği bir kategori seçin...</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <option value="@cat.Id">@cat.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
                     <label class="form-label required">Başlık</label>
                     <input type="text" name="Ticket.Title" class="form-input"
                            placeholder="Talep başlığını kısaca yazın" required />
@@ -324,9 +353,105 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label required">Açıklama</label>
-                    <textarea name="Ticket.Description" class="form-input form-textarea" rows="5"
+                    <textarea id="modalTicketDesc" name="Ticket.Description" class="form-input form-textarea" rows="4"
                               placeholder="Sorunu veya isteğinizi detaylı olarak açıklayın..." required></textarea>
                 </div>
+
+                <!-- 💡 Hızlı Ön Çözüm Rehberi & Talep Engelleme Asistan Paneli -->
+                <div id="chatbotPreTicketBox" style="display:block; margin:14px 0; padding:16px; background:linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(16,185,129,0.08) 100%); border:1.5px solid rgba(79,70,229,0.3); border-radius:12px; transition:all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; color:#4f46e5; font-weight:700; font-size:13.5px;">
+                        <div style="width:28px; height:28px; background:#4f46e5; color:#ffffff; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <i class="fa-solid fa-lightbulb" style="font-size:14px;"></i>
+                        </div>
+                        <span>Hızlı Ön Çözüm Rehberi</span>
+                        <button type="button" id="btnAskChatbot" class="btn" onclick="triggerPreTicketChatbot()" style="background:#4f46e5; color:#ffffff; font-size:11.5px; padding:5px 14px; border-radius:8px; margin-left:auto; font-weight:700; border:none; cursor:pointer;">
+                            <i class="fa-solid fa-robot" style="margin-right:4px;"></i> Çözüm Önerisi Getir
+                        </button>
+                    </div>
+                    <div id="chatbotPreTicketContent" style="font-size:13px; color:var(--text-primary); line-height:1.5; margin-bottom:12px; background:#ffffff; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.08);">
+                        <i class="fa-solid fa-lightbulb" style="color:#4f46e5; margin-right:6px;"></i>
+                        <strong>Hızlı Çözüm Rehberi:</strong> Açıklama kutusuna sorunuzu yazdıktan sonra yukarıdaki <em>"Çözüm Önerisi Getir"</em> butonuna tıklayarak canlı yapay zeka yanıtı alabilirsiniz.
+                    </div>
+                    <div id="chatbotSolveBtnRow" style="display:none; gap:10px; align-items:center; justify-content:flex-end;">
+                        <button type="button" class="btn" onclick="closeTicketModal('newTicketModal')" style="background:#10b981; color:#ffffff; font-size:12.5px; font-weight:700; border-radius:8px; padding:7px 16px;">
+                            <i class="fa-solid fa-circle-check" style="margin-right:5px;"></i> Çözüldü, Talep Oluşturmaya Gerek Kalmadı
+                        </button>
+                    </div>
+                </div>
+
+                <script>
+                    function triggerPreTicketChatbot() {
+                        var txt = document.getElementById('modalTicketDesc').value.trim();
+                        var content = document.getElementById('chatbotPreTicketContent');
+                        var btnRow = document.getElementById('chatbotSolveBtnRow');
+                        var askBtn = document.getElementById('btnAskChatbot');
+
+                        if (!txt || txt.length < 3) {
+                            content.innerHTML = '<i class="fa-solid fa-exclamation-triangle" style="color:#eab308; margin-right:6px;"></i><strong>Lütfen Sorunuzu Yazın:</strong> Çözüm aramadan önce yukarıdaki <em>Açıklama</em> kutusuna sorununuzu yazmalısınız.';
+                            btnRow.style.display = 'none';
+                            return;
+                        }
+
+                        askBtn.disabled = true;
+                        askBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Analiz Ediliyor...';
+                        content.innerHTML = '<div style="text-align:center; padding:12px; color:#4f46e5;"><i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><br/><strong style="margin-top:8px; display:inline-block;">DMO Belge Asistanı Sorunuzu Analiz Ediyor...</strong><br/><small style="color:#6b7280;">Lütfen bekleyiniz, mevzuat belgeleri taranıyor.</small></div>';
+                        btnRow.style.display = 'none';
+
+                        fetch('/Tickets/Ticket/AskChatbot', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ prompt: txt })
+                        })
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            askBtn.disabled = false;
+                            askBtn.innerHTML = '<i class="fa-solid fa-robot" style="margin-right:4px;"></i> Çözüm Önerisi Getir';
+
+                            if (data && data.Success && data.Solution) {
+                                content.innerHTML = "<strong>💡 DMO Belge Asistanı Yanıtı:</strong><br/>" + data.Solution;
+                                // Yeşil 'Çözüldü' butonunu SADECE gerçek yeterli kanıt/çözüm varsa göster!
+                                if (data.SufficientEvidence === true) {
+                                    btnRow.style.display = 'flex';
+                                } else {
+                                    btnRow.style.display = 'none';
+                                }
+                            } else if (data && data.Solution) {
+                                // Hata/Uyarı durumunda uyarımı bas ama yeşil 'Çözüldü' butonunu KESİNLİKLE GİZLE!
+                                content.innerHTML = data.Solution;
+                                btnRow.style.display = 'none';
+                            } else {
+                                applyLocalRules(txt, content, btnRow);
+                            }
+                        })
+                        .catch(function() {
+                            askBtn.disabled = false;
+                            askBtn.innerHTML = '<i class="fa-solid fa-robot" style="margin-right:4px;"></i> Çözüm Önerisi Getir';
+                            applyLocalRules(txt, content, btnRow);
+                        });
+                    }
+
+                    function applyLocalRules(txt, content, btnRow) {
+                        var t = txt.toLowerCase();
+                        var solution = "<strong>💡 Hızlı Çözüm Önerisi:</strong><br/>";
+                        var hasInstantSolution = true;
+                        
+                        if (t.includes("vpn") || t.includes("bağlan") || t.includes("ağ") || t.includes("internet")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>Ağ &amp; VPN Çözüm Adımı:</span> Lütfen FortiClient VPN uygulamasında <code>Port 443</code> seçeneğini işaretleyip DNS önbelleğini temizleyin (<code>ipconfig /flushdns</code>).";
+                        } else if (t.includes("yazıcı") || t.includes("baskı") || t.includes("kağıt") || t.includes("toner")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>Yazıcı Çözüm Adımı:</span> Yazıcı Spooler servisini sıfırlamak için Komut İsteminde <code>net stop spooler && net start spooler</code> çalıştırınız.";
+                        } else if (t.includes("şifre") || t.includes("kilit") || t.includes("giriş") || t.includes("parola")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>Active Directory Çözüm Adımı:</span> Şifre kilitlerinizi EBYS Personel Kendi Kendine Hizmet Portalı üzerinden otomatik açabilirsiniz.";
+                        } else if (t.includes("imza") || t.includes("e-imza") || t.includes("java") || t.includes("kart")) {
+                            solution += "<span style='color:#4f46e5; font-weight:600;'>e-İmza &amp; AKİS Çözüm Adımı:</span> Kamu SM e-İmza sürücünüzün güncel olduğundan ve Java 8 Update 351 sürümünün yüklü olduğundan emin olunuz.";
+                        } else {
+                            solution += "<span style='color:#059669; font-weight:600;'>Ön Teşhis:</span> Talebiniz başarıyla sınıflandırıldı. İlgili teknik birim personeline otomatik yönlendirilecektir.";
+                            hasInstantSolution = false;
+                        }
+                        content.innerHTML = solution;
+                        btnRow.style.display = hasInstantSolution ? 'flex' : 'none';
+                    }
+                </script>
+
                 <div class="form-group">
                     <label class="form-label">
                         Dosya Ekle <span class="text-muted" style="font-weight:400;">(opsiyonel)</span>
